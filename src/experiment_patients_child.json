@@ -1,0 +1,100 @@
+{
+    "0.9": {
+        "evidence": {
+            "CardiacMixing": "Complete",
+            "GruntingReport": 0,
+            "LungParench": "Congested",
+            "LVH": 0,
+            "DuctFlow": "Rt_to_Lt",
+            "CO2Report": ">=7.5",
+            "BirthAsphyxia": 0,
+            "HypDistrib": "Equal",
+            "RUQO2": "<5"
+        },
+        "true_sdp": 0.8936135016651574
+    },
+    "0.5": {
+        "evidence": {
+            "CO2Report": ">=7.5",
+            "LVHreport": 1,
+            "LungFlow": "High",
+            "BirthAsphyxia": 0,
+            "CO2": "High",
+            "Age": "0-3_days",
+            "HypDistrib": "Equal",
+            "ChestXray": "Asy/Patch",
+            "CardiacMixing": "Complete"
+        },
+        "true_sdp": 0.4935853513963138
+    },
+    "0.7": {
+        "evidence": {
+            "ChestXray": "Asy/Patch",
+            "BirthAsphyxia": 0,
+            "RUQO2": "5-12",
+            "LowerBodyO2": "5-12",
+            "HypDistrib": "Equal",
+            "LungFlow": "Normal",
+            "Age": "0-3_days",
+            "HypoxiaInO2": "Moderate",
+            "Grunting": 1
+        },
+        "true_sdp": 0.6945787572153446
+    },
+    "0.95": {
+        "evidence": {
+            "LungFlow": "Normal",
+            "Disease": "Lung",
+            "LungParench": "Congested",
+            "DuctFlow": "Rt_to_Lt",
+            "RUQO2": "<5",
+            "ChestXray": "Grd_Glass",
+            "CO2Report": "<7.5",
+            "LVH": 0,
+            "CO2": "Normal"
+        },
+        "true_sdp": 0.91
+    },
+    "0.3": {
+        "evidence": {
+            "LVHreport": 0,
+            "HypoxiaInO2": "Moderate",
+            "ChestXray": "Oligaemic",
+            "GruntingReport": 1,
+            "HypDistrib": "Unequal",
+            "CO2Report": ">=7.5",
+            "CardiacMixing": "Mild",
+            "Disease": "PFC",
+            "DuctFlow": "Rt_to_Lt"
+        },
+        "true_sdp": 0.2795553007113301
+    },
+    "0.8": {
+        "evidence": {
+            "CardiacMixing": "None",
+            "LungFlow": "Normal",
+            "XrayReport": "Asy/Patchy",
+            "LungParench": "Abnormal",
+            "RUQO2": "5-12",
+            "HypoxiaInO2": "Mild",
+            "GruntingReport": 1,
+            "Age": "0-3_days",
+            "ChestXray": "Asy/Patch"
+        },
+        "true_sdp": 0.8469353337057969
+    },
+    "0.15": {
+        "evidence": {
+            "HypDistrib": "Unequal",
+            "LungFlow": "Low",
+            "LVHreport": 1,
+            "XrayReport": "Asy/Patchy",
+            "CO2": "High",
+            "LungParench": "Abnormal",
+            "CO2Report": ">=7.5",
+            "DuctFlow": "Rt_to_Lt",
+            "GruntingReport": 1
+        },
+        "true_sdp": 0.18477935183424463
+    }
+}

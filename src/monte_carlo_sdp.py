@@ -66,8 +66,112 @@ def find_exact_experimental_patients(bn, target, target_value, threshold, hidden
     print("All buckets filled successfully!")
     return found_patients
 
+def generate_patient_for_target_sdp(bn, target_node, target_value, decision_threshold, target_sdp, evidence_vars, tolerance=0.03, max_steps=500):
+    """
+    Uses Stochastic Hill Climbing to mutate a patient's symptoms until their exact SDP matches the target.
+    """
+    print(f"\n--- Hunting for Patient with SDP ≈ {target_sdp} ---")
+    inference = VariableElimination(bn)
+    
+    # 1. Start with a random patient THAT MEETS THE BASE DECISION THRESHOLD
+    current_patient = None
+    while current_patient is None:
+        temp_patient = {}
+        for var in evidence_vars:
+            states = bn.get_cpds(var).state_names[var]
+            temp_patient[var] = random.choice(states)
+            
+        # Check base decision BEFORE accepting it as our starting point
+        base_dist = inference.query(variables=[target_node], evidence=temp_patient, show_progress=False)
+        if base_dist.get_value(**{target_node: target_value}) >= decision_threshold:
+            current_patient = temp_patient
+        
+    # Get initial SDP and Error
+    hidden_vars = [v for v in bn.nodes() if v not in current_patient and v != target_node]
+    partitions = get_partitions(bn, hidden_vars, target_node, current_patient)
+    
+    current_sdp = fast_broadcast_sdp(bn, target_node, target_value, current_patient, decision_threshold, partitions)
+    current_error = abs(current_sdp - target_sdp)
+    
+    print(f"Starting random patient SDP: {current_sdp:.4f} (Error: {current_error:.4f})")
+    
+    # 2. Begin Hill Climbing
+    step = 0
+    while current_error > tolerance and step < max_steps:
+        step += 1
+        
+        # Pick ONE random symptom to mutate
+        var_to_mutate = random.choice(evidence_vars)
+        possible_states = bn.get_cpds(var_to_mutate).state_names[var_to_mutate]
+        old_state = current_patient[var_to_mutate]
+        
+        # Pick a different state for that symptom
+        new_state = random.choice([s for s in possible_states if s != old_state])
+        
+        # Create the proposed mutated patient
+        proposed_patient = current_patient.copy()
+        proposed_patient[var_to_mutate] = new_state
+
+        # --- NEW ANCHOR CHECK ---
+        # Ensure the mutation didn't flip the base decision to negative!
+        base_dist = inference.query(variables=[target_node], evidence=proposed_patient, show_progress=False)
+        if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
+            continue # Reject this mutation and try another one
+        # ------------------------
+        
+        # Calculate the new exact SDP
+        # (Since evidence changed, we technically should re-partition, but for fixed evidence vars, partitions often stay stable)
+        partitions = get_partitions(bn, hidden_vars, target_node, proposed_patient)
+        proposed_sdp = fast_broadcast_sdp(bn, target_node, target_value, proposed_patient, decision_threshold, partitions)
+        proposed_error = abs(proposed_sdp - target_sdp)
+        
+        # 3. Acceptance Logic: If the mutation moved us closer to the target SDP, keep it
+        if proposed_error < current_error:
+            current_patient = proposed_patient
+            current_sdp = proposed_sdp
+            current_error = proposed_error
+            print(f"Step {step}: Mutated '{var_to_mutate}' -> SDP improved to {current_sdp:.4f} (Error: {current_error:.4f})")
+            
+        # Optional: Add slight randomness (Simulated Annealing) here to escape local minimums if it gets stuck
+        
+    if current_error <= tolerance:
+        print(f"SUCCESS! Found patient matching target {target_sdp} (Actual: {current_sdp:.4f})")
+        return current_patient, current_sdp
+    else:
+        print(f"Failed to converge within {max_steps} steps. Closest was {current_sdp:.4f}.")
+        return None, None
+    
+def build_experimental_dataset(bn, target_node, target_value, decision_threshold, hidden_size=10, max_attempts=5, buckets=[0.5, 0.7, 0.85, 0.95]):
+    all_vars = list(bn.nodes())
+    all_vars.remove(target_node)
+    
+    # Lock which variables will act as our evidence
+    evidence_size = len(all_vars) - hidden_size
+    evidence_vars = random.sample(all_vars, evidence_size)
+    
+    found_patients = {}
+    
+    for target in buckets:
+        print(f"\n=== Generating patient for target SDP bucket: {target} ===")
+        patient, sdp = None, None
+        attempts = 0
+        
+        # Keep trying until the hill climber succeeds (re-seeds if it gets stuck in a local minimum)
+        while patient is None and attempts < max_attempts:
+            patient, sdp = generate_patient_for_target_sdp(bn, target_node, target_value, decision_threshold, target, evidence_vars)
+            attempts += 1
+            
+        if patient is not None:
+            found_patients[target] = {'evidence': patient, 'true_sdp': sdp}
+            
+    return found_patients
+
 
 def perfect_monte_carlo_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=1000):
+    '''
+    Function used for debugging purposes only. It computes the exact generator distribution, and thus does
+    not function as a real monte carlo
+    '''
     inference = VariableElimination(bn)
     hidden_vars = [node for node in bn.nodes() if node not in patient and node != target]
     
@@ -124,6 +228,9 @@ from pgmpy.inference import VariableElimination
 from pgmpy.factors.discrete import State
 
 def monte_carlo_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=1000):
+    '''
+    Uses the likelihood sampler from pgmpy to draw samples from the distribution. Has shown to be biased.
+    '''
     sampler = BayesianModelSampling(bn)
     
     # 1. pgmpy requires evidence to be a list of State objects
@@ -206,7 +313,7 @@ def monte_carlo_sdp_rejection_sampling(bn,target, target_value,patient,threshold
 
 
 '''
-Markov Chain Monte Carlo (Metropolis Hastings)
+Markov Chain Monte Carlo (Metropolis Hastings). This works better!
 '''
 
 def calculate_log_joint(bn, full_state):
@@ -234,7 +341,7 @@ def calculate_unnormalized_posterior(bn, h_dict, e_dict, target):
             
     return math.log(total_p) if total_p > 0 else float('-inf')
 
-def mcmc_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=2000, burn_in=500, thinning=5):
+def mcmc_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=11000, burn_in=1000, thinning=10):
     hidden_vars = [node for node in bn.nodes() if node not in patient and node != target]
     
     # 1. SEED THE CHAIN: Use Likelihood Weighting just to find ONE physically possible patient.
@@ -290,7 +397,6 @@ def mcmc_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=
             accepted_samples.append(current_h.copy())
             
     # 3. EVALUATE THE DECISION BOUNDARY
-    # These are true samples, so we just use the normal, unweighted mean!
     inference = VariableElimination(bn)
     count_same_decision = 0
     decision_cache = {}

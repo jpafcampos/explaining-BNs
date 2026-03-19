@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 from pgmpy.models import BayesianModel
 from pgmpy.models import BayesianNetwork
@@ -10,9 +9,6 @@ from pgmpy.estimators import BDeuScore, K2Score, BicScore
 from pgmpy.metrics import structure_score
 from pgmpy.utils import get_example_model
 from pgmpy.estimators import ScoreCache
-from pgmpy.inference.CausalInference import CausalInference
-import networkx as nx
-import bnlearn as bn
 import itertools
 import math
 from utils import *

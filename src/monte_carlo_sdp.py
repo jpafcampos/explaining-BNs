@@ -16,83 +16,66 @@ import math
 from same_decision_probability_calculation import *
 from utils import *
 
-def find_exact_experimental_patients(bn, target, target_value, threshold, hidden_size=10, buckets=[0.15, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95]):
-    sampler = BayesianModelSampling(bn)
-    inference = VariableElimination(bn)
-    
-    found_patients = {}
-    all_vars = list(bn.nodes())
-    all_vars.remove(target)
-    
-    evidence_size = len(all_vars) - hidden_size
-    print(f"Hunting for patients... (Locking {evidence_size} variables as evidence)")
-    
-    batch_size = 5000  # Generate 5000 patients at a time to bypass pgmpy overhead
-    
-    while len(found_patients) < len(buckets):
-        print(f"Generating a batch of {batch_size} random realities...")
-        batch_samples = sampler.forward_sample(size=batch_size, show_progress=False)
-        
-        for _, random_state in batch_samples.iterrows():
-            if len(found_patients) == len(buckets):
-                break  # Break out if we filled the last bucket!
-            
-            # Lock a large chunk of the network as evidence
-            evidence_vars = random.sample(all_vars, evidence_size)
-            patient_evidence = {var: random_state[var] for var in evidence_vars}
-            
-            # Ensure the base decision is positive
-            base_dist = inference.query(variables=[target], evidence=patient_evidence, show_progress=False)
-            if base_dist.get_value(**{target: target_value}) < threshold:
-                continue
-                
-            # Get partitions
-            hidden_vars = [v for v in bn.nodes() if v not in patient_evidence and v != target]
-            partitions = get_partitions(bn, hidden_vars, target, patient_evidence)    
-            
-            # Calculate the Absolute Exact SDP
-            true_sdp = fast_broadcast_sdp(bn, target, target_value, patient_evidence, threshold, partitions)
-            print(f"--> Found patient with Exact SDP: {true_sdp:.4f}")
-            # Check if it fits an EMPTY bucket (+/- 0.05 tolerance)
-            for bucket in buckets:
-                if bucket not in found_patients and abs(true_sdp - bucket) <= 0.05:
-                    print(f"--> Filled bucket {bucket} with Exact SDP: {true_sdp:.4f}")
-                    found_patients[bucket] = {
-                        'evidence': patient_evidence,
-                        'true_sdp': true_sdp
-                    }
-                    break
-                    
-    print("All buckets filled successfully!")
-    return found_patients
 
-def generate_patient_for_target_sdp(bn, target_node, target_value, decision_threshold, target_sdp, evidence_vars, tolerance=0.03, max_steps=500):
+def generate_patient_for_target_sdp(bn, target_node, target_value, decision_threshold, target_sdp, evidence_vars, tolerance=0.05, max_steps=1000):
     """
     Uses Stochastic Hill Climbing to mutate a patient's symptoms until their exact SDP matches the target.
+    Includes memory/einsum safety nets and ancestral graph pruning for massive speedups.
     """
     print(f"\n--- Hunting for Patient with SDP ≈ {target_sdp} ---")
-    inference = VariableElimination(bn)
+    
+    # ==========================================
+    # OPTIMIZATION: Barren Node Pruning
+    # Create a tiny, ultra-fast sub-model for checking the Base Decision anchor
+    # ==========================================
+    relevant_nodes = list(evidence_vars) + [target_node]
+    ancestral_structure = bn.get_ancestral_graph(relevant_nodes)
+    
+    sub_model = BayesianNetwork(ancestral_structure.edges())
+    sub_model.add_nodes_from(ancestral_structure.nodes())
+    
+    for node in sub_model.nodes():
+        sub_model.add_cpds(bn.get_cpds(node))
+        
+    inference = VariableElimination(sub_model)
+    # ==========================================
     
     # 1. Start with a random patient THAT MEETS THE BASE DECISION THRESHOLD
     current_patient = None
-    while current_patient is None:
+    attempts = 0
+    while current_patient is None and attempts < 1000:
         temp_patient = {}
         for var in evidence_vars:
-            states = bn.get_cpds(var).state_names[var]
+            states = sub_model.get_cpds(var).state_names[var]
             temp_patient[var] = random.choice(states)
             
-        # Check base decision BEFORE accepting it as our starting point
-        base_dist = inference.query(variables=[target_node], evidence=temp_patient, show_progress=False)
+        # --- SAFETY NET 1: Catch Memory Limits on Base Decision ---
+        try:
+            base_dist = inference.query(variables=[target_node], evidence=temp_patient, show_progress=False)
+        except (ValueError, MemoryError):
+            print(f"    [!] EXACT INFERENCE IMPOSSIBLE: Sub-network treewidth exceeds hardware limits. Skipping network.")
+            return None, None
+            
         if base_dist.get_value(**{target_node: target_value}) >= decision_threshold:
             current_patient = temp_patient
+        attempts += 1
         
-    # Get initial SDP and Error
+    if current_patient is None:
+        print("    [!] Could not find a valid positive starting seed.")
+        return None, None
+        
+    # Get initial SDP and Error (Pass the FULL 'bn' to fast_broadcast_sdp!)
     hidden_vars = [v for v in bn.nodes() if v not in current_patient and v != target_node]
     partitions = get_partitions(bn, hidden_vars, target_node, current_patient)
     
-    current_sdp = fast_broadcast_sdp(bn, target_node, target_value, current_patient, decision_threshold, partitions)
+    # --- SAFETY NET 2: Catch Tensor Explosions in Exact SDP ---
+    try:
+        current_sdp = fast_broadcast_sdp(bn, target_node, target_value, current_patient, decision_threshold, partitions)
+    except (ValueError, MemoryError):
+        print(f"    [!] EXACT SDP IMPOSSIBLE: Tensor exploded during exact calculation. Skipping network.")
+        return None, None
+        
     current_error = abs(current_sdp - target_sdp)
-    
     print(f"Starting random patient SDP: {current_sdp:.4f} (Error: {current_error:.4f})")
     
     # 2. Begin Hill Climbing
@@ -100,60 +83,58 @@ def generate_patient_for_target_sdp(bn, target_node, target_value, decision_thre
     while current_error > tolerance and step < max_steps:
         step += 1
         
-        # Pick ONE random symptom to mutate
         var_to_mutate = random.choice(evidence_vars)
-        possible_states = bn.get_cpds(var_to_mutate).state_names[var_to_mutate]
+        possible_states = sub_model.get_cpds(var_to_mutate).state_names[var_to_mutate]
         old_state = current_patient[var_to_mutate]
         
-        # Pick a different state for that symptom
         new_state = random.choice([s for s in possible_states if s != old_state])
         
-        # Create the proposed mutated patient
         proposed_patient = current_patient.copy()
         proposed_patient[var_to_mutate] = new_state
 
-        # --- NEW ANCHOR CHECK ---
+        # --- STRICT ANCHOR CHECK (with Safety Net) ---
         # Ensure the mutation didn't flip the base decision to negative!
-        base_dist = inference.query(variables=[target_node], evidence=proposed_patient, show_progress=False)
+        try:
+            base_dist = inference.query(variables=[target_node], evidence=proposed_patient, show_progress=False)
+        except (ValueError, MemoryError):
+            continue # If a specific mutation somehow triggers a memory explosion, just reject it
+            
         if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
-            continue # Reject this mutation and try another one
-        # ------------------------
+            continue 
         
-        # Calculate the new exact SDP
-        # (Since evidence changed, we technically should re-partition, but for fixed evidence vars, partitions often stay stable)
+        # --- Calculate new Exact SDP (with Safety Net) ---
         partitions = get_partitions(bn, hidden_vars, target_node, proposed_patient)
-        proposed_sdp = fast_broadcast_sdp(bn, target_node, target_value, proposed_patient, decision_threshold, partitions)
+        try:
+            proposed_sdp = fast_broadcast_sdp(bn, target_node, target_value, proposed_patient, decision_threshold, partitions)
+        except (ValueError, MemoryError):
+            continue # Reject mutations that cause tensor explosions
+            
         proposed_error = abs(proposed_sdp - target_sdp)
         
-        # 3. Acceptance Logic: If the mutation moved us closer to the target SDP, keep it
+        # 3. Acceptance Logic: Keep if it moves us closer to the target SDP
         if proposed_error < current_error:
             current_patient = proposed_patient
             current_sdp = proposed_sdp
             current_error = proposed_error
-            print(f"Step {step}: Mutated '{var_to_mutate}' -> SDP improved to {current_sdp:.4f} (Error: {current_error:.4f})")
+            #print(f"Step {step}: Mutated '{var_to_mutate}' -> SDP improved to {current_sdp:.4f} (Error: {current_error:.4f})")
             
-        # Optional: Add slight randomness (Simulated Annealing) here to escape local minimums if it gets stuck
-        
     if current_error <= tolerance:
         print(f"SUCCESS! Found patient matching target {target_sdp} (Actual: {current_sdp:.4f})")
         return current_patient, current_sdp
     else:
         print(f"Failed to converge within {max_steps} steps. Closest was {current_sdp:.4f}.")
         return None, None
-    
-def build_experimental_dataset(bn, target_node, target_value, decision_threshold, hidden_size=10, max_attempts=5, buckets=[0.5, 0.7, 0.85, 0.95]):
+
+def build_experimental_dataset(bn, target_node, target_value, decision_threshold, evidence_vars, max_attempts=5, buckets=[0.6, 0.75, 0.85, 1]):
     all_vars = list(bn.nodes())
     all_vars.remove(target_node)
     
-    # Lock which variables will act as our evidence
-    evidence_size = len(all_vars) - hidden_size
-    evidence_vars = random.sample(all_vars, evidence_size)
     
     found_patients = {}
     
     for target in buckets:
         print(f"\n=== Generating patient for target SDP bucket: {target} ===")
-        patient, sdp = None, None
+        patient, sdp, final_target_val = None, None, None
         attempts = 0
         
         # Keep trying until the hill climber succeeds (re-seeds if it gets stuck in a local minimum)
@@ -162,10 +143,13 @@ def build_experimental_dataset(bn, target_node, target_value, decision_threshold
             attempts += 1
             
         if patient is not None:
-            found_patients[target] = {'evidence': patient, 'true_sdp': sdp}
+            # Save the final target_val so MCMC knows what to test against!
+            found_patients[target] = {
+                'evidence': patient, 
+                'true_sdp': sdp
+            }
             
     return found_patients
-
 
 def perfect_monte_carlo_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=1000):
     '''
@@ -277,40 +261,6 @@ def monte_carlo_sdp_estimation(bn, target, target_value, patient, threshold, n_s
     return estimated_sdp
 
 
-def monte_carlo_sdp_rejection_sampling(bn,target, target_value,patient,threshold,n_samples=10000):
-
-    H = [v for v in bn.nodes() if v not in patient and v != target]
-
-    sampler = BayesianModelSampling(bn)
-    inference = VariableElimination(bn)
-
-    evidence_states = [State(v, s) for v, s in patient.items()]
-
-    samples = sampler.rejection_sample(
-        size=n_samples,
-        evidence=evidence_states,
-        show_progress=False
-    )
-
-    agreements = 0
-
-    for _, sample in samples.iterrows():
-
-        h_dict = {var: sample[var] for var in H}
-        evidence = {**patient, **h_dict}
-
-        prob = inference.query(
-            variables=[target],
-            evidence=evidence,
-            show_progress=False
-        ).get_value(**{target: target_value})
-
-        if prob >= threshold:
-            agreements += 1
-
-    return agreements / len(samples)
-
-
 
 '''
 Markov Chain Monte Carlo (Metropolis Hastings). This works better!
@@ -410,6 +360,135 @@ def mcmc_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=
             full_evidence = {**patient, **sample_h}
             prob_dist = inference.query(variables=[target], evidence=full_evidence, show_progress=False)
             makes_same = prob_dist.get_value(**{target: target_value}) >= threshold
+            decision_cache[patient_id] = makes_same
+            
+        if makes_same:
+            count_same_decision += 1
+            
+    return count_same_decision / len(accepted_samples)
+
+
+def get_exact_target_posterior_O1(bn, target, target_value, full_state):
+    """
+    Calculates P(Target | All Other Nodes) in O(1) time without Variable Elimination.
+    Relies purely on the Target's Markov Blanket (its own CPD and its children's CPDs).
+    100% immune to treewidth and einsum dimension limits.
+    """
+    target_states = bn.get_cpds(target).state_names[target]
+    log_probs = {}
+    
+    # The ONLY CPDs that change depending on the Target's state:
+    relevant_nodes = [target] + list(bn.get_children(target))
+    
+    for state in target_states:
+        # Test what happens if the Target takes this state
+        test_state = {**full_state, target: state}
+        log_p = 0.0
+        possible = True
+        
+        for node in relevant_nodes:
+            cpd = bn.get_cpds(node)
+            # Extract only the variables this specific CPD needs
+            cpd_args = {v: test_state[v] for v in cpd.variables}
+            prob = cpd.get_value(**cpd_args)
+            
+            if prob == 0.0:
+                possible = False
+                break
+            log_p += math.log(prob)
+            
+        if possible:
+            log_probs[state] = log_p
+        else:
+            log_probs[state] = float('-inf')
+            
+    # Log-Sum-Exp to normalize and get the exact probability
+    valid_log_probs = [lp for lp in log_probs.values() if lp != float('-inf')]
+    if not valid_log_probs:
+        return 0.0 # Mathematically impossible state
+        
+    max_log = max(valid_log_probs)
+    total_p = sum(math.exp(lp - max_log) for lp in valid_log_probs)
+    
+    # Return the normalized probability for the specific target_value
+    target_lp = log_probs.get(target_value, float('-inf'))
+    if target_lp == float('-inf'):
+        return 0.0
+        
+    return math.exp(target_lp - max_log) / total_p
+
+def fast_mcmc_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=11000, burn_in=1000, thinning=10):
+    hidden_vars = [node for node in bn.nodes() if node not in patient and node != target]
+    
+    # 1. SEED THE CHAIN: Use Likelihood Weighting just to find ONE physically possible patient.
+    sampler = BayesianModelSampling(bn)
+    evidence_states = [State(var, state) for var, state in patient.items()]
+    valid_seed_found = False
+    
+    while not valid_seed_found:
+        seed_samples = sampler.likelihood_weighted_sample(size=100, evidence=evidence_states, show_progress=False)
+        valid_seeds = seed_samples[seed_samples['_weight'] > 0] # Filter out impossible realities
+        if not valid_seeds.empty:
+            best_seed = valid_seeds.sort_values('_weight', ascending=False).iloc[0]
+            current_h = {var: best_seed[var] for var in hidden_vars}
+            valid_seed_found = True
+            
+    # Calculate starting probability
+    current_log_p = calculate_unnormalized_posterior(bn, current_h, patient, target)
+    
+    # 2. RUN THE METROPOLIS-HASTINGS CHAIN
+    total_iterations = burn_in + (n_samples * thinning)
+    accepted_samples = []
+    
+    for i in range(total_iterations):
+        # Propose a new reality by flipping ONE random hidden variable
+        var_to_flip = random.choice(hidden_vars)
+        possible_states = bn.get_cpds(var_to_flip).state_names[var_to_flip]
+        current_state_val = current_h[var_to_flip]
+        
+        new_state_val = random.choice([s for s in possible_states if s != current_state_val])
+        
+        proposed_h = current_h.copy()
+        proposed_h[var_to_flip] = new_state_val
+        
+        # Evaluate proposed reality
+        proposed_log_p = calculate_unnormalized_posterior(bn, proposed_h, patient, target)
+        
+        # Metropolis-Hastings Acceptance Criterion: log(alpha) = log_P(new) - log_P(old)
+        log_alpha = proposed_log_p - current_log_p
+        
+        accept = False
+        if log_alpha >= 0:
+            accept = True
+        elif proposed_log_p != float('-inf'):
+            if math.log(random.uniform(0, 1)) < log_alpha:
+                accept = True
+                
+        if accept:
+            current_h = proposed_h
+            current_log_p = proposed_log_p
+            
+        # Save independent samples
+        if i >= burn_in and (i - burn_in) % thinning == 0:
+            accepted_samples.append(current_h.copy())
+            
+    # 3. EVALUATE THE DECISION BOUNDARY
+    inference = VariableElimination(bn)
+    count_same_decision = 0
+    decision_cache = {}
+    
+    for sample_h in accepted_samples:
+        patient_id = tuple(sample_h.items())
+        if patient_id in decision_cache:
+            makes_same = decision_cache[patient_id]
+        else:
+            # Combine evidence and the MCMC hidden sample
+            full_evidence = {**patient, **sample_h}
+            
+            # Use the O(1) Markov Blanket evaluator!
+            p_target = get_exact_target_posterior_O1(bn, target, target_value, full_evidence)
+            makes_same = p_target >= threshold
+            
             decision_cache[patient_id] = makes_same
             
         if makes_same:

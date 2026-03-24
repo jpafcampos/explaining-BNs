@@ -1,3 +1,125 @@
+def harvest_patients_for_all_buckets_simulated_annealing(bn, target_node, target_value, decision_threshold, evidence_vars, target_buckets, tolerance=0.05, max_steps=3000):
+    """
+    Wanders the probability landscape continuously. If it stumbles across an SDP 
+    that fits ANY empty bucket, it saves it. Uses SA to pull toward the nearest empty bucket.
+    """
+    print(f"\n--- Starting Global Harvest for Buckets: {target_buckets} ---")
+    
+    # 1. Setup Pruned Sub-model for fast base-decision checks
+    relevant_nodes = list(evidence_vars) + [target_node]
+    ancestral_structure = bn.get_ancestral_graph(relevant_nodes)
+    sub_model = BayesianNetwork(ancestral_structure.edges())
+    sub_model.add_nodes_from(ancestral_structure.nodes())
+    for node in sub_model.nodes():
+        sub_model.add_cpds(bn.get_cpds(node))
+    inference = VariableElimination(sub_model)
+    
+    # 2. Initialize Buckets
+    unfilled_buckets = {bucket: None for bucket in target_buckets}
+    
+    # 3. Find a Valid Starting Seed
+    current_patient = None
+    attempts = 0
+    while current_patient is None and attempts < 1000:
+        temp_patient = {var: random.choice(sub_model.get_cpds(var).state_names[var]) for var in evidence_vars}
+        try:
+            base_dist = inference.query(variables=[target_node], evidence=temp_patient, show_progress=False)
+            if base_dist.get_value(**{target_node: target_value}) >= decision_threshold:
+                current_patient = temp_patient
+        except (ValueError, MemoryError):
+            return None # Fast fail on impossible networks
+        attempts += 1
+        
+    if current_patient is None:
+        print("    [!] Could not find valid starting seed.")
+        return unfilled_buckets # Return empty dict
+        
+    hidden_vars = [v for v in bn.nodes() if v not in current_patient and v != target_node]
+    
+    # Calculate starting SDP
+    partitions = get_partitions(bn, hidden_vars, target_node, current_patient)
+    try:
+        current_sdp = fast_broadcast_sdp(bn, target_node, target_value, current_patient, decision_threshold, partitions)
+    except (ValueError, MemoryError):
+        return unfilled_buckets
+        
+    # --- CHECK STARTING SEED AGAINST ALL BUCKETS ---
+    for bucket in list(unfilled_buckets.keys()):
+        if abs(current_sdp - bucket) <= tolerance:
+            unfilled_buckets[bucket] = (current_patient.copy(), current_sdp)
+            print(f"    [+] INSTANT HARVEST: Filled bucket {bucket} with SDP {current_sdp:.4f}!")
+            
+    # 4. Global Simulated Annealing Loop
+    step = 0
+    current_temp = 0.5
+    cooling_rate = 0.998 # Slower cooling since we are walking a longer path
+    
+    while step < max_steps and any(v is None for v in unfilled_buckets.values()):
+        step += 1
+        current_temp = max(0.005, current_temp * cooling_rate)
+        
+        # Which empty bucket are we closest to right now? (This is our temporary gravity)
+        empty_targets = [b for b, v in unfilled_buckets.items() if v is None]
+        active_target = min(empty_targets, key=lambda b: abs(current_sdp - b))
+        current_error = abs(current_sdp - active_target)
+        
+        # Mutate
+        num_mutations = random.choices([1, 2], weights=[0.8, 0.2])[0]
+        vars_to_mutate = random.sample(evidence_vars, num_mutations)
+        proposed_patient = current_patient.copy()
+        
+        for var in vars_to_mutate:
+            possible_states = sub_model.get_cpds(var).state_names[var]
+            proposed_patient[var] = random.choice([s for s in possible_states if s != proposed_patient[var]])
+
+        # Safety Check
+        try:
+            base_dist = inference.query(variables=[target_node], evidence=proposed_patient, show_progress=False)
+            if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
+                continue 
+                
+            partitions = get_partitions(bn, hidden_vars, target_node, proposed_patient)
+            proposed_sdp = fast_broadcast_sdp(bn, target_node, target_value, proposed_patient, decision_threshold, partitions)
+        except (ValueError, MemoryError):
+            continue 
+            
+        # --- THE HARVEST CHECK ---
+        # Did we stumble across ANY empty bucket?
+        for bucket in empty_targets:
+            if abs(proposed_sdp - bucket) <= tolerance:
+                unfilled_buckets[bucket] = (proposed_patient.copy(), proposed_sdp)
+                print(f"    [+] HARVEST SUCCESS (Step {step}): Filled bucket {bucket} with SDP {proposed_sdp:.4f}!")
+                # Re-evaluate active target since we just filled one!
+                empty_targets = [b for b, v in unfilled_buckets.items() if v is None]
+                if not empty_targets:
+                    break
+        
+        if not empty_targets:
+            break # We filled them all!
+            
+        # SA Acceptance Logic (relative to the active target we picked at the start of the loop)
+        proposed_error = abs(proposed_sdp - active_target)
+        
+        accept = False
+        if proposed_error < current_error:
+            accept = True
+        else:
+            prob = math.exp((current_error - proposed_error) / current_temp)
+            if random.random() < prob:
+                accept = True
+                
+        if accept:
+            current_patient = proposed_patient
+            current_sdp = proposed_sdp
+            
+    print(f"--- Harvest Complete after {step} steps ---")
+    remaining = [b for b, v in unfilled_buckets.items() if v is None]
+    if remaining:
+        print(f"    Could not fill buckets: {remaining}")
+        
+    return unfilled_buckets
+
+
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_benchmark.csv"):
     bif_files = glob.glob(os.path.join(bif_directory, "*.bif"))
     results = []

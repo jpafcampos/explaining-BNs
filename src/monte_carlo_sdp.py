@@ -16,6 +16,143 @@ import math
 from same_decision_probability_calculation import *
 from utils import *
 
+def harvest_patients_for_all_buckets(bn, target_node, target_value, decision_threshold, evidence_vars, target_buckets, tolerance=0.05, max_restarts=100, max_steps_per_restart=800):
+    """
+    Wanders the probability landscape using Stochastic Hill Climbing.
+    If it gets trapped in a local minimum, it triggers a Random Restart.
+    Harvests any patient that fits an empty bucket along the way.
+    """
+    print(f"\n--- Starting Hill Climbing Harvest for Buckets: {target_buckets} ---")
+    
+    # 1. Setup Pruned Sub-model for fast base-decision checks
+    relevant_nodes = list(evidence_vars) + [target_node]
+    ancestral_structure = bn.get_ancestral_graph(relevant_nodes)
+    sub_model = BayesianNetwork(ancestral_structure.edges())
+    sub_model.add_nodes_from(ancestral_structure.nodes())
+    for node in sub_model.nodes():
+        sub_model.add_cpds(bn.get_cpds(node))
+    inference = VariableElimination(sub_model)
+    
+    unfilled_buckets = {bucket: None for bucket in target_buckets}
+    
+    # ========================================================
+    # RANDOM RESTART LOOP
+    # ========================================================
+    for restart in range(max_restarts):
+        empty_targets = [b for b, v in unfilled_buckets.items() if v is None]
+        if not empty_targets:
+            break # We filled them all!
+            
+        # 1. Find a Valid Starting Seed for this climb
+        current_patient = None
+        attempts = 0
+        while current_patient is None and attempts < 1000:
+            temp_patient = {var: random.choice(sub_model.get_cpds(var).state_names[var]) for var in evidence_vars}
+            try:
+                base_dist = inference.query(variables=[target_node], evidence=temp_patient, show_progress=False)
+                if base_dist.get_value(**{target_node: target_value}) >= decision_threshold:
+                    current_patient = temp_patient
+            except (ValueError, MemoryError):
+                return unfilled_buckets # Fast fail on impossible networks
+            attempts += 1
+            
+        if current_patient is None:
+            continue
+            
+        hidden_vars = [v for v in bn.nodes() if v not in current_patient and v != target_node]
+        partitions = get_partitions(bn, hidden_vars, target_node, current_patient)
+        
+        try:
+            current_sdp = fast_broadcast_sdp(bn, target_node, target_value, current_patient, decision_threshold, partitions)
+        except (ValueError, MemoryError):
+            return unfilled_buckets
+            
+        # Check if the random seed filled anything!
+        for bucket in empty_targets:
+            if abs(current_sdp - bucket) <= tolerance:
+                unfilled_buckets[bucket] = (current_patient.copy(), current_sdp)
+                print(f"    [+] INSTANT HARVEST (Restart {restart}): Filled bucket {bucket} with SDP {current_sdp:.4f}!")
+                empty_targets = [b for b, v in unfilled_buckets.items() if v is None]
+                
+        if not empty_targets:
+            break
+            
+        # ========================================================
+        # HILL CLIMBING LOOP
+        # ========================================================
+        # We track patience. If we reject X mutations in a row, we are stuck.
+        patience = len(evidence_vars) 
+        stuck_counter = 0
+        
+        for step in range(max_steps_per_restart):
+            if not empty_targets:
+                break
+                
+            # Gravity: Pull toward the nearest empty bucket
+            active_target = min(empty_targets, key=lambda b: abs(current_sdp - b))
+            current_error = abs(current_sdp - active_target)
+            
+            # Mutate 1 random variable (Stochastic HC)
+            var_to_mutate = random.choice(evidence_vars)
+            possible_states = sub_model.get_cpds(var_to_mutate).state_names[var_to_mutate]
+            
+            proposed_patient = current_patient.copy()
+            proposed_patient[var_to_mutate] = random.choice([s for s in possible_states if s != proposed_patient[var_to_mutate]])
+
+            # Base Anchor Check
+            try:
+                base_dist = inference.query(variables=[target_node], evidence=proposed_patient, show_progress=False)
+                if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
+                    stuck_counter += 1
+                    if stuck_counter >= patience: break # Local minimum reached
+                    continue 
+            except (ValueError, MemoryError):
+                stuck_counter += 1
+                continue 
+                
+            # Evaluate Exact SDP
+            partitions = get_partitions(bn, hidden_vars, target_node, proposed_patient)
+            try:
+                proposed_sdp = fast_broadcast_sdp(bn, target_node, target_value, proposed_patient, decision_threshold, partitions)
+            except (ValueError, MemoryError):
+                stuck_counter += 1
+                continue 
+                
+            # --- THE HARVEST CHECK ---
+            for bucket in empty_targets:
+                if abs(proposed_sdp - bucket) <= tolerance:
+                    unfilled_buckets[bucket] = (proposed_patient.copy(), proposed_sdp)
+                    print(f"    [+] HARVEST SUCCESS (Restart {restart}, Step {step}): Filled bucket {bucket} (Exact SDP: {proposed_sdp:.4f})!")
+                    empty_targets = [b for b, v in unfilled_buckets.items() if v is None]
+            
+            if not empty_targets:
+                break
+                
+            # --- STRICT GREEDY ACCEPTANCE ---
+            proposed_error = abs(proposed_sdp - active_target)
+            
+            if proposed_error < current_error:
+                # We moved closer! Accept and reset the stuck counter.
+                current_patient = proposed_patient
+                current_sdp = proposed_sdp
+                stuck_counter = 0
+            else:
+                # We got worse (or hit a flat plateau). Reject it.
+                stuck_counter += 1
+                
+            # If we reject too many times in a row, we are trapped
+            # Break the inner loop to trigger a Random Restart!
+            if stuck_counter >= patience:
+                # print(f"      -> Trapped in local minimum at SDP {current_sdp:.4f}. Restarting...")
+                break 
+                
+    remaining = [b for b, v in unfilled_buckets.items() if v is None]
+    if remaining:
+        print(f"--- Harvest Complete. Could not fill buckets: {remaining} ---")
+    else:
+        print(f"--- Harvest Complete. All buckets filled successfully! ---")
+        
+    return unfilled_buckets
 
 def generate_patient_for_target_sdp(bn, target_node, target_value, decision_threshold, target_sdp, evidence_vars, tolerance=0.05, max_steps=1000):
     """
@@ -372,7 +509,6 @@ def get_exact_target_posterior_O1(bn, target, target_value, full_state):
     """
     Calculates P(Target | All Other Nodes) in O(1) time without Variable Elimination.
     Relies purely on the Target's Markov Blanket (its own CPD and its children's CPDs).
-    100% immune to treewidth and einsum dimension limits.
     """
     target_states = bn.get_cpds(target).state_names[target]
     log_probs = {}
@@ -485,7 +621,7 @@ def fast_mcmc_sdp_estimation(bn, target, target_value, patient, threshold, n_sam
             # Combine evidence and the MCMC hidden sample
             full_evidence = {**patient, **sample_h}
             
-            # Use the O(1) Markov Blanket evaluator!
+            # Use the O(1) Markov Blanket evaluator
             p_target = get_exact_target_posterior_O1(bn, target, target_value, full_evidence)
             makes_same = p_target >= threshold
             

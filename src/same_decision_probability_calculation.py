@@ -371,6 +371,7 @@ def fast_broadcast_sdp_old_Wrong(model, D, d_value, evidence, threshold, partiti
     return dfs(0, log_O_d_e, 1.0, 1.0)
 
 def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
+    
     inference = VariableElimination(model)
     
     d_states = model.get_cpds(D).state_names[D]
@@ -537,3 +538,148 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
         return total_sdp
 
     return dfs(0, log_O_d_e, 1.0, 1.0)
+
+from pgmpy.models import NaiveBayes
+from pgmpy.estimators import MaximumLikelihoodEstimator
+def naive_bayes_sdp(
+    model: NaiveBayes,
+    D: str,
+    d_value: str,
+    evidence: dict,
+    threshold: float,
+) -> float:
+    """
+    Compute the Same-Decision Probability (SDP) exactly for a pgmpy NaiveBayes
+    model without using any inference engine, making it robust to pgmpy version
+    differences.
+
+    Implements Algorithm 1 from:
+        Chen, Choi & Darwiche (2014). Algorithms and Applications for the
+        Same-Decision Probability. JAIR 49:601-633.
+
+    Parameters
+    ----------
+    model     : Fitted pgmpy NaiveBayes.
+    D         : Name of the class (hypothesis) variable.
+    d_value   : Target state of D (the "positive" decision value).
+    evidence  : Dict of observed feature assignments, e.g. {'vote1': 'y'}.
+    threshold : Decision threshold T; decision is positive iff P(d|e) >= T.
+
+    Returns
+    -------
+    float — SDP value in [0, 1].
+    """
+
+    # ── 0. Validate inputs ────────────────────────────────────────────────────
+    d_cpd    = model.get_cpds(D)
+    d_states = d_cpd.state_names[D]
+
+    if len(d_states) != 2:
+        raise ValueError(
+            f"SDP requires a binary hypothesis variable; "
+            f"{D} has states {d_states}."
+        )
+
+    d_idx       = d_states.index(d_value)
+    not_d_value = d_states[1 - d_idx]
+    lambda_thresh = math.log(threshold / (1.0 - threshold))
+
+    # ── 1. Compute P(d | e) directly from CPDs ───────────────────────────────
+    # In a Naive Bayes network:
+    #   P(d | e) ∝ P(d) · Π_{xi ∈ e} P(xi | d)
+    # We compute the unnormalised scores for both class values and normalise.
+
+    def class_score(class_val: str) -> float:
+        """Unnormalised P(class_val) · Π P(xi | class_val) for xi in evidence."""
+        score = float(d_cpd.get_value(**{D: class_val}))
+        for feat, feat_val in evidence.items():
+            feat_cpd = model.get_cpds(feat)
+            score *= float(feat_cpd.get_value(**{feat: feat_val, D: class_val}))
+        return score
+
+    score_d   = class_score(d_value)
+    score_nd  = class_score(not_d_value)
+    total     = score_d + score_nd
+
+    if total <= 0.0:
+        raise ValueError("Evidence has zero probability under this model.")
+
+    p_d_e     = score_d  / total
+    p_not_d_e = score_nd / total
+
+    if p_d_e <= 0.0:
+        log_O_e = -math.inf
+    elif p_not_d_e <= 0.0:
+        log_O_e = math.inf
+    else:
+        log_O_e = math.log(p_d_e / p_not_d_e)
+
+    positive_decision = (log_O_e >= lambda_thresh)
+
+    # ── 2. Build per-feature weight tables from CPDs ──────────────────────────
+    # Hidden vars H = all feature nodes not fixed by evidence.
+    # Because Xi ⊥ Xj | D, weights are read straight from CPDs — no inference.
+    hidden_vars = [
+        node for node in model.nodes()
+        if node != D and node not in evidence
+    ]
+
+    features = []
+    for var in hidden_vars:
+        cpd    = model.get_cpds(var)
+        states = cpd.state_names[var]
+
+        weights   = []
+        p_d_list  = []
+        p_nd_list = []
+
+        for state in states:
+            p_d_s  = max(float(cpd.get_value(**{var: state, D: d_value})),     1e-300)
+            p_nd_s = max(float(cpd.get_value(**{var: state, D: not_d_value})), 1e-300)
+
+            weights.append(math.log(p_d_s / p_nd_s))
+            p_d_list.append(p_d_s)
+            p_nd_list.append(p_nd_s)
+
+        features.append({
+            "weights": weights,
+            "p_d":     p_d_list,
+            "p_nd":    p_nd_list,
+            "max_w":   max(weights),
+            "min_w":   min(weights),
+        })
+
+    # ── 3. Sort by weight spread — maximises early pruning ───────────────────
+    features.sort(key=lambda f: f["max_w"] - f["min_w"], reverse=True)
+
+    # ── 4. Suffix max / min arrays for O(1) bound queries ────────────────────
+    n          = len(features)
+    suffix_max = [0.0] * (n + 1)
+    suffix_min = [0.0] * (n + 1)
+    for i in range(n - 1, -1, -1):
+        suffix_max[i] = suffix_max[i + 1] + features[i]["max_w"]
+        suffix_min[i] = suffix_min[i + 1] + features[i]["min_w"]
+
+    # ── 5. DFS with branch-and-bound ─────────────────────────────────────────
+    def dfs(depth: int, log_odds: float, prod_d: float, prod_nd: float) -> float:
+        upper   = log_odds + suffix_max[depth]
+        lower   = log_odds + suffix_min[depth]
+        prob_q  = p_d_e * prod_d + p_not_d_e * prod_nd
+
+        if positive_decision:
+            if lower >= lambda_thresh: return prob_q  # all completions agree
+            if upper <  lambda_thresh: return 0.0     # no  completion  agrees
+        else:
+            if upper <  lambda_thresh: return prob_q
+            if lower >= lambda_thresh: return 0.0
+
+        if depth == n:
+            return prob_q if (log_odds >= lambda_thresh) == positive_decision else 0.0
+
+        f     = features[depth]
+        total = 0.0
+        for w, p_d, p_nd in zip(f["weights"], f["p_d"], f["p_nd"]):
+            total += dfs(depth + 1, log_odds + w, prod_d * p_d, prod_nd * p_nd)
+        return total
+
+    return dfs(0, log_O_e, 1.0, 1.0)

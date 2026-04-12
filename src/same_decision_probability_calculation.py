@@ -372,7 +372,7 @@ def fast_broadcast_sdp_old_Wrong(model, D, d_value, evidence, threshold, partiti
 
 def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     
-    inference = VariableElimination(model)
+    #inference = VariableElimination(model)
     
     d_states = model.get_cpds(D).state_names[D]
     d_index = d_states.index(d_value)

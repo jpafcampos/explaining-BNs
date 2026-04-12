@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import numpy as np
 
+import math
+
 # pgmpy imports with version-compatibility shim
 try:
     from pgmpy.models import DiscreteBayesianNetwork as _DBN
@@ -36,6 +38,44 @@ except ImportError:
 from pgmpy.models import LinearGaussianBayesianNetwork as _LGBN
 from pgmpy.inference import VariableElimination
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Normalized mean conditional entropy (scale-invariant baseline)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def mean_conditional_entropy(bn):
+    """
+    Computes the mean conditional entropy per node H(Xi | Pa(Xi)),
+    averaged across all nodes in the network.
+    Invariant to network size.
+    """
+    total_h = 0.0
+    n = 0
+
+    for cpd in bn.get_cpds():
+        var    = cpd.variable
+        states = cpd.state_names[var]
+        n     += 1
+
+        # cpd.values has shape (|Xi|, |Pa1|, |Pa2|, ...)
+        # Reshape to (|Xi|, n_parent_configs)
+        n_states = len(states)
+        values   = cpd.values.reshape(n_states, -1)  # (states, parent_configs)
+        n_configs = values.shape[1]
+
+        # Marginal probability of each parent config P(pa)
+        # For a fitted BN this requires the parent marginals, but a good
+        # approximation that preserves the scale-invariance is the
+        # uniform-weighted average over parent configurations
+        node_h = 0.0
+        for j in range(n_configs):
+            col = values[:, j]  # P(Xi | pa_j)
+            for p in col:
+                if p > 0:
+                    node_h -= p * math.log2(p)
+
+        total_h += node_h / n_configs  # average over parent configs
+
+    return total_h / n  # average over nodes
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Internal helper
@@ -134,10 +174,6 @@ def entropy_bn(model) -> float:
     """
     Compute the Shannon entropy of a pgmpy Bayesian Network.
 
-    Automatically dispatches to the correct implementation based on model type:
-
-        DiscreteBayesianNetwork        -> entropy_discrete_bn   O(exp(w))
-        LinearGaussianBayesianNetwork  -> entropy_gaussian_bn   O(N)
 
     Parameters
     ----------
@@ -159,9 +195,7 @@ def entropy_bn(model) -> float:
     >>> h = entropy_bn(my_discrete_model)
     >>> h = entropy_bn(my_gaussian_model)
     """
-    if isinstance(model, _LGBN):
-        return entropy_gaussian_bn(model)
-    elif isinstance(model, _DBN):
+    if isinstance(model, _DBN):
         return entropy_discrete_bn(model)
     else:
         raise TypeError(
@@ -211,10 +245,95 @@ def _verify_discrete_example() -> float:
 
 
 
-
+import pandas as pd
+from ucimlrepo import fetch_ucirepo
+from pgmpy.models import NaiveBayes
+from pgmpy.models import BayesianNetwork
+from pgmpy.inference import VariableElimination, ApproxInference, BeliefPropagation
+from pgmpy.estimators import MaximumLikelihoodEstimator
+from pgmpy.estimators import BayesianEstimator
+from pgmpy.estimators import HillClimbSearch
+from pgmpy.estimators import BDeuScore, K2Score, BicScore
+from pgmpy.metrics import structure_score
+from pgmpy.utils import get_example_model
+from pgmpy.estimators import ScoreCache
 
 if __name__ == "__main__":
     print("=" * 60)
     print("  Verifying entropy implementations vs. Scutari (2023)")
     print("=" * 60)
     _verify_discrete_example()
+    # ── VOTING ──────────────────────────────────────────────────────────────────
+    voting = fetch_ucirepo(id=105)
+    df_voting = pd.concat([voting.data.features, voting.data.targets], axis=1)
+    df_voting.columns = [c.strip() for c in df_voting.columns]
+
+    # Replace '?' missing values — Naive Bayes needs complete data
+    df_voting = df_voting.replace('?', pd.NA).dropna()
+
+    # All values must be strings/categories for pgmpy
+    df_voting = df_voting.astype(str)
+
+    target_voting = 'Class'   # 'democrat' / 'republican'
+
+    voting_model = NaiveBayes()
+    voting_model.fit(df_voting, target_voting,
+                    estimator=MaximumLikelihoodEstimator)
+    
+    print("Loading benchmark models and computing entropies...")
+
+    # ── CHESS ────────────────────────────────────────────────────────────────────
+    chess = fetch_ucirepo(id=22)
+    df_chess = pd.concat([chess.data.features, chess.data.targets], axis=1)
+    df_chess = df_chess.astype(str)
+
+    target_chess = 'skach' 
+
+    chess_model = NaiveBayes()
+    chess_model.fit(df_chess, target_chess,
+                estimator=MaximumLikelihoodEstimator)
+    voting_model = BayesianNetwork(voting_model.edges())
+    chess_model = BayesianNetwork(chess_model.edges())
+
+    # fit
+    voting_model.fit(df_voting, estimator=MaximumLikelihoodEstimator)
+    chess_model.fit(df_chess, estimator=MaximumLikelihoodEstimator)
+
+    alarm_model = get_example_model('alarm')
+    child_model = get_example_model('child')
+    #asia_model = get_example_model('asia')
+    insurance_model = get_example_model('insurance')
+    hailfinder_model = get_example_model('hailfinder')
+    hepar_model = get_example_model('hepar2')
+    barley_model = get_example_model('barley')
+    win95pts_model = get_example_model('win95pts')
+    #mildew_model = get_example_model('mildew')
+    #water_model = get_example_model('water')
+    mildew_model = None
+    water_model = None
+
+    # compute entropies
+    print("\nComputing entropies of benchmark models...")
+    df_entropies = []
+    for model, name in [
+        (voting_model, "voting"),
+        (chess_model, "chess"),
+        (alarm_model, "alarm"),
+        (child_model, "child"),
+        #(asia_model, "asia"),
+        (insurance_model, "insurance"),
+        (hailfinder_model, "hailfinder"),
+        (hepar_model, "hepar"),
+        (barley_model, "barley"),
+        (win95pts_model, "win95pts"),
+        #(mildew_model, "Mildew"),
+        #(water_model, "Water"),
+    ]:
+        h = entropy_bn(model)
+        print(f"  {name:12s} H(B) = {h:.4f} nats")
+        df_entropies.append({"Model": name, "Entropy (nats)": h})
+    df_entropies = pd.DataFrame(df_entropies)
+    print("\nSummary of entropies:")
+    print(df_entropies.to_string(index=False))
+    df_entropies.to_csv("bn_entropies.csv", index=False)
+

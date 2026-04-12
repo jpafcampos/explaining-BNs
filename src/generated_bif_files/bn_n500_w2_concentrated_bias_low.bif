@@ -1,0 +1,4080 @@
+network unknown {
+}
+variable X0 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X1 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X10 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X100 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X101 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X102 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X103 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X104 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X105 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X106 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X107 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X108 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X109 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X11 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X110 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X111 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X112 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X113 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X114 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X115 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X116 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X117 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X118 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X119 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X12 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X120 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X121 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X122 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X123 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X124 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X125 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X126 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X127 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X128 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X129 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X13 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X130 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X131 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X132 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X133 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X134 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X135 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X136 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X137 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X138 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X139 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X14 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X140 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X141 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X142 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X143 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X144 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X145 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X146 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X147 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X148 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X149 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X15 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X150 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X151 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X152 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X153 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X154 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X155 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X156 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X157 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X158 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X159 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X16 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X160 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X161 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X162 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X163 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X164 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X165 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X166 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X167 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X168 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X169 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X17 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X170 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X171 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X172 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X173 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X174 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X175 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X176 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X177 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X178 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X179 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X18 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X180 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X181 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X182 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X183 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X184 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X185 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X186 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X187 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X188 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X189 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X19 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X190 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X191 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X192 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X193 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X194 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X195 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X196 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X197 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X198 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X199 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X2 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X20 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X200 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X201 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X202 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X203 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X204 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X205 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X206 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X207 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X208 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X209 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X21 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X210 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X211 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X212 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X213 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X214 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X215 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X216 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X217 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X218 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X219 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X22 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X220 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X221 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X222 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X223 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X224 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X225 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X226 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X227 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X228 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X229 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X23 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X230 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X231 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X232 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X233 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X234 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X235 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X236 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X237 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X238 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X239 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X24 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X240 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X241 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X242 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X243 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X244 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X245 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X246 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X247 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X248 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X249 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X25 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X250 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X251 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X252 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X253 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X254 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X255 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X256 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X257 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X258 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X259 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X26 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X260 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X261 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X262 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X263 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X264 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X265 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X266 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X267 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X268 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X269 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X27 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X270 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X271 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X272 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X273 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X274 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X275 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X276 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X277 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X278 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X279 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X28 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X280 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X281 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X282 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X283 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X284 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X285 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X286 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X287 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X288 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X289 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X29 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X290 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X291 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X292 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X293 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X294 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X295 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X296 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X297 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X298 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X299 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X3 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X30 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X300 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X301 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X302 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X303 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X304 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X305 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X306 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X307 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X308 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X309 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X31 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X310 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X311 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X312 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X313 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X314 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X315 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X316 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X317 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X318 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X319 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X32 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X320 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X321 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X322 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X323 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X324 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X325 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X326 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X327 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X328 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X329 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X33 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X330 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X331 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X332 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X333 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X334 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X335 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X336 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X337 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X338 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X339 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X34 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X340 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X341 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X342 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X343 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X344 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X345 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X346 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X347 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X348 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X349 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X35 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X350 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X351 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X352 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X353 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X354 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X355 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X356 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X357 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X358 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X359 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X36 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X360 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X361 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X362 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X363 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X364 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X365 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X366 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X367 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X368 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X369 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X37 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X370 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X371 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X372 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X373 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X374 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X375 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X376 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X377 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X378 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X379 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X38 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X380 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X381 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X382 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X383 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X384 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X385 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X386 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X387 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X388 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X389 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X39 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X390 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X391 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X392 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X393 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X394 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X395 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X396 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X397 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X398 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X399 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X4 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X40 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X400 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X401 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X402 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X403 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X404 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X405 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X406 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X407 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X408 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X409 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X41 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X410 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X411 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X412 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X413 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X414 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X415 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X416 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X417 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X418 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X419 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X42 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X420 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X421 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X422 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X423 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X424 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X425 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X426 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X427 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X428 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X429 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X43 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X430 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X431 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X432 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X433 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X434 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X435 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X436 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X437 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X438 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X439 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X44 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X440 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X441 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X442 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X443 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X444 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X445 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X446 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X447 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X448 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X449 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X45 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X450 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X451 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X452 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X453 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X454 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X455 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X456 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X457 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X458 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X459 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X46 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X460 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X461 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X462 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X463 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X464 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X465 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X466 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X467 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X468 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X469 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X47 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X470 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X471 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X472 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X473 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X474 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X475 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X476 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X477 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X478 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X479 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X48 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X480 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X481 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X482 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X483 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X484 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X485 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X486 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X487 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X488 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X489 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X49 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X490 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X491 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X492 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X493 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X494 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X495 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X496 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X497 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X498 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X499 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X5 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X50 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X51 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X52 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X53 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X54 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X55 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X56 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X57 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X58 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X59 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X6 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X60 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X61 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X62 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X63 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X64 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X65 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X66 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X67 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X68 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X69 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X7 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X70 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X71 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X72 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X73 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X74 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X75 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X76 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X77 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X78 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X79 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X8 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X80 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X81 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X82 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X83 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X84 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X85 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X86 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X87 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X88 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X89 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X9 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X90 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X91 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X92 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X93 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X94 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X95 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X96 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X97 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X98 {
+    type discrete [ 2 ] { 0, 1 };
+}
+variable X99 {
+    type discrete [ 2 ] { 0, 1 };
+}
+probability ( X0 ) {
+    table 0.8510745508819092, 0.1489254491180908 ;
+}
+probability ( X1 | X0 ) {
+    ( 0 ) 0.8102914219008854, 0.18970857809911457;
+    ( 1 ) 0.9628483880239996, 0.03715161197600038;
+
+}
+probability ( X10 | X9 ) {
+    ( 0 ) 0.9522671564834649, 0.04773284351653504;
+    ( 1 ) 0.8779930468996313, 0.12200695310036865;
+
+}
+probability ( X100 | X99 ) {
+    ( 0 ) 0.8059241346310776, 0.1940758653689224;
+    ( 1 ) 0.9053614826872232, 0.09463851731277689;
+
+}
+probability ( X101 | X100 ) {
+    ( 0 ) 0.8033508873032466, 0.19664911269675348;
+    ( 1 ) 0.7412631416403823, 0.2587368583596176;
+
+}
+probability ( X102 | X101 ) {
+    ( 0 ) 0.9599269040336391, 0.040073095966360904;
+    ( 1 ) 0.9471783874095429, 0.05282161259045719;
+
+}
+probability ( X103 ) {
+    table 0.8960528999402302, 0.10394710005976987 ;
+}
+probability ( X104 | X103 ) {
+    ( 0 ) 0.7267682514326359, 0.27323174856736415;
+    ( 1 ) 0.9669925802968499, 0.033007419703150104;
+
+}
+probability ( X105 | X104 ) {
+    ( 0 ) 0.8682132867029446, 0.13178671329705532;
+    ( 1 ) 0.6730397867012008, 0.32696021329879915;
+
+}
+probability ( X106 | X105 ) {
+    ( 0 ) 0.92528827529065, 0.07471172470934993;
+    ( 1 ) 0.9258683431146073, 0.07413165688539275;
+
+}
+probability ( X107 | X106 ) {
+    ( 0 ) 0.7364231306426577, 0.26357686935734226;
+    ( 1 ) 0.49950219849458866, 0.5004978015054113;
+
+}
+probability ( X108 | X107 ) {
+    ( 0 ) 0.8589176751633115, 0.1410823248366885;
+    ( 1 ) 0.7371494644198655, 0.26285053558013444;
+
+}
+probability ( X109 | X108 ) {
+    ( 0 ) 0.7967349966974842, 0.2032650033025159;
+    ( 1 ) 0.9678953105848734, 0.03210468941512656;
+
+}
+probability ( X11 | X10 ) {
+    ( 0 ) 0.7176366353518964, 0.28236336464810363;
+    ( 1 ) 0.7543617048098895, 0.24563829519011046;
+
+}
+probability ( X110 | X109 ) {
+    ( 0 ) 0.49384909702219604, 0.506150902977804;
+    ( 1 ) 0.7008462040102776, 0.2991537959897223;
+
+}
+probability ( X111 | X110 ) {
+    ( 0 ) 0.9686488482197472, 0.031351151780252856;
+    ( 1 ) 0.8775554439876273, 0.12244455601237274;
+
+}
+probability ( X112 | X111 ) {
+    ( 0 ) 0.742508207174488, 0.25749179282551204;
+    ( 1 ) 0.7707137089482392, 0.2292862910517608;
+
+}
+probability ( X113 | X110, X112 ) {
+    ( 0, 0 ) 0.8705504838120778, 0.12944951618792225;
+    ( 0, 1 ) 0.9013848309357931, 0.09861516906420684;
+    ( 1, 0 ) 0.9945951828627937, 0.00540481713720626;
+    ( 1, 1 ) 0.9374272138261238, 0.06257278617387617;
+
+}
+probability ( X114 | X113 ) {
+    ( 0 ) 0.9345643902020424, 0.0654356097979576;
+    ( 1 ) 0.8915720564948562, 0.1084279435051438;
+
+}
+probability ( X115 | X114 ) {
+    ( 0 ) 0.9269136356489741, 0.07308636435102593;
+    ( 1 ) 0.8965672003664323, 0.10343279963356765;
+
+}
+probability ( X116 | X102, X115 ) {
+    ( 0, 0 ) 0.9148729473516775, 0.08512705264832258;
+    ( 0, 1 ) 0.5712964920405764, 0.4287035079594236;
+    ( 1, 0 ) 0.9846149204004603, 0.015385079599539705;
+    ( 1, 1 ) 0.9270404719323548, 0.07295952806764522;
+
+}
+probability ( X117 | X116 ) {
+    ( 0 ) 0.8919006392283909, 0.1080993607716091;
+    ( 1 ) 0.8588245245263451, 0.14117547547365497;
+
+}
+probability ( X118 | X117 ) {
+    ( 0 ) 0.5226650229895539, 0.47733497701044614;
+    ( 1 ) 0.8398558774446803, 0.1601441225553198;
+
+}
+probability ( X119 | X118 ) {
+    ( 0 ) 0.812215585767664, 0.18778441423233605;
+    ( 1 ) 0.6786705911048889, 0.321329408895111;
+
+}
+probability ( X12 | X11 ) {
+    ( 0 ) 0.7987734097946402, 0.20122659020535977;
+    ( 1 ) 0.9648540784384458, 0.035145921561554175;
+
+}
+probability ( X120 | X119 ) {
+    ( 0 ) 0.7989779291440637, 0.2010220708559362;
+    ( 1 ) 0.9245704022216782, 0.07542959777832185;
+
+}
+probability ( X121 | X120 ) {
+    ( 0 ) 0.7825747653758452, 0.21742523462415475;
+    ( 1 ) 0.729562500456949, 0.27043749954305096;
+
+}
+probability ( X122 | X121 ) {
+    ( 0 ) 0.8927493111900653, 0.10725068880993467;
+    ( 1 ) 0.4825390687248269, 0.5174609312751731;
+
+}
+probability ( X123 | X122 ) {
+    ( 0 ) 0.8944539708394422, 0.10554602916055782;
+    ( 1 ) 0.5604743387462582, 0.4395256612537418;
+
+}
+probability ( X124 | X123 ) {
+    ( 0 ) 0.6140048667344415, 0.38599513326555845;
+    ( 1 ) 0.9584559306338943, 0.041544069366105635;
+
+}
+probability ( X125 | X124 ) {
+    ( 0 ) 0.8847806156970488, 0.11521938430295124;
+    ( 1 ) 0.8902491414592466, 0.10975085854075345;
+
+}
+probability ( X126 | X125 ) {
+    ( 0 ) 0.7596490415023361, 0.24035095849766383;
+    ( 1 ) 0.9244284252033896, 0.0755715747966104;
+
+}
+probability ( X127 | X126 ) {
+    ( 0 ) 0.9179484606913683, 0.08205153930863178;
+    ( 1 ) 0.949936786282466, 0.05006321371753393;
+
+}
+probability ( X128 | X127 ) {
+    ( 0 ) 0.9135184652885096, 0.0864815347114904;
+    ( 1 ) 0.8784689572372057, 0.1215310427627942;
+
+}
+probability ( X129 | X128 ) {
+    ( 0 ) 0.544071249311366, 0.45592875068863403;
+    ( 1 ) 0.7831336252872771, 0.2168663747127229;
+
+}
+probability ( X13 | X12 ) {
+    ( 0 ) 0.8179931809612417, 0.1820068190387583;
+    ( 1 ) 0.9071785273019091, 0.09282147269809093;
+
+}
+probability ( X130 | X129 ) {
+    ( 0 ) 0.7417847343019224, 0.2582152656980777;
+    ( 1 ) 0.8978380449297969, 0.10216195507020309;
+
+}
+probability ( X131 | X129, X130 ) {
+    ( 0, 0 ) 0.918279010162566, 0.08172098983743398;
+    ( 0, 1 ) 0.8147457861226551, 0.1852542138773449;
+    ( 1, 0 ) 0.5607471083625228, 0.43925289163747716;
+    ( 1, 1 ) 0.5677775258018498, 0.4322224741981502;
+
+}
+probability ( X132 | X131 ) {
+    ( 0 ) 0.8427514774460328, 0.15724852255396712;
+    ( 1 ) 0.9957516789811501, 0.00424832101884989;
+
+}
+probability ( X133 | X132 ) {
+    ( 0 ) 0.8341451780805373, 0.1658548219194626;
+    ( 1 ) 0.4695725254332226, 0.5304274745667774;
+
+}
+probability ( X134 | X133 ) {
+    ( 0 ) 0.8756783861803353, 0.12432161381966465;
+    ( 1 ) 0.9153800814152446, 0.08461991858475532;
+
+}
+probability ( X135 | X134 ) {
+    ( 0 ) 0.8418269511456091, 0.1581730488543909;
+    ( 1 ) 0.9673551511844067, 0.03264484881559323;
+
+}
+probability ( X136 | X135 ) {
+    ( 0 ) 0.833497871288077, 0.1665021287119231;
+    ( 1 ) 0.8361679474110528, 0.16383205258894715;
+
+}
+probability ( X137 | X136 ) {
+    ( 0 ) 0.8257335118870623, 0.17426648811293768;
+    ( 1 ) 0.724169385314666, 0.27583061468533404;
+
+}
+probability ( X138 | X137 ) {
+    ( 0 ) 0.9089435569434106, 0.09105644305658947;
+    ( 1 ) 0.9487894726381888, 0.051210527361811226;
+
+}
+probability ( X139 | X138 ) {
+    ( 0 ) 0.9856595589783822, 0.014340441021617838;
+    ( 1 ) 0.971830699519149, 0.028169300480850933;
+
+}
+probability ( X14 | X13 ) {
+    ( 0 ) 0.9307267726590818, 0.06927322734091826;
+    ( 1 ) 0.8686203994617885, 0.13137960053821154;
+
+}
+probability ( X140 | X139 ) {
+    ( 0 ) 0.5724003937111006, 0.4275996062888993;
+    ( 1 ) 0.9250403109543025, 0.07495968904569747;
+
+}
+probability ( X141 | X140 ) {
+    ( 0 ) 0.9914487777698989, 0.008551222230101053;
+    ( 1 ) 0.9955809570921865, 0.004419042907813483;
+
+}
+probability ( X142 | X141 ) {
+    ( 0 ) 0.7830318563862366, 0.21696814361376335;
+    ( 1 ) 0.8619358848492531, 0.13806411515074687;
+
+}
+probability ( X143 | X142 ) {
+    ( 0 ) 0.9504338870475654, 0.049566112952434634;
+    ( 1 ) 0.9233151556120726, 0.07668484438792746;
+
+}
+probability ( X144 | X143 ) {
+    ( 0 ) 0.866676653683152, 0.13332334631684792;
+    ( 1 ) 0.6785124233086932, 0.3214875766913068;
+
+}
+probability ( X145 | X131, X144 ) {
+    ( 0, 0 ) 0.8426373838475856, 0.15736261615241443;
+    ( 0, 1 ) 0.8383868306717603, 0.1616131693282396;
+    ( 1, 0 ) 0.9424883061799104, 0.057511693820089596;
+    ( 1, 1 ) 0.9761201276395092, 0.023879872360490856;
+
+}
+probability ( X146 | X145 ) {
+    ( 0 ) 0.9555387390413178, 0.044461260958682185;
+    ( 1 ) 0.9708292956043714, 0.029170704395628657;
+
+}
+probability ( X147 | X146 ) {
+    ( 0 ) 0.7403673957923732, 0.2596326042076268;
+    ( 1 ) 0.9549925105088669, 0.045007489491133056;
+
+}
+probability ( X148 ) {
+    table 0.8838391219855949, 0.1161608780144051 ;
+}
+probability ( X149 | X148 ) {
+    ( 0 ) 0.9108274062433079, 0.08917259375669201;
+    ( 1 ) 0.9753491958504378, 0.024650804149562222;
+
+}
+probability ( X15 | X14 ) {
+    ( 0 ) 0.9781902129776006, 0.021809787022399437;
+    ( 1 ) 0.5527538302951551, 0.4472461697048448;
+
+}
+probability ( X150 | X149 ) {
+    ( 0 ) 0.9450668307469401, 0.054933169253059896;
+    ( 1 ) 0.8937382592100787, 0.10626174078992137;
+
+}
+probability ( X151 | X150 ) {
+    ( 0 ) 0.8974061401751373, 0.10259385982486266;
+    ( 1 ) 0.8693764968235961, 0.13062350317640395;
+
+}
+probability ( X152 | X151 ) {
+    ( 0 ) 0.5961036906190553, 0.4038963093809446;
+    ( 1 ) 0.821741895744227, 0.17825810425577304;
+
+}
+probability ( X153 | X152 ) {
+    ( 0 ) 0.9804200275794939, 0.01957997242050613;
+    ( 1 ) 0.6212411592888429, 0.378758840711157;
+
+}
+probability ( X154 | X152, X153 ) {
+    ( 0, 0 ) 0.9797173248169879, 0.020282675183012126;
+    ( 0, 1 ) 0.6558212138644406, 0.34417878613555947;
+    ( 1, 0 ) 0.8075723646129295, 0.19242763538707056;
+    ( 1, 1 ) 0.8606274247821339, 0.13937257521786606;
+
+}
+probability ( X155 | X154 ) {
+    ( 0 ) 0.9130254535264206, 0.08697454647357944;
+    ( 1 ) 0.5741905006936796, 0.42580949930632045;
+
+}
+probability ( X156 | X155 ) {
+    ( 0 ) 0.95950996909993, 0.04049003090006992;
+    ( 1 ) 0.9101058691394931, 0.08989413086050693;
+
+}
+probability ( X157 | X156 ) {
+    ( 0 ) 0.93486848965419, 0.06513151034581004;
+    ( 1 ) 0.9354820676631594, 0.0645179323368406;
+
+}
+probability ( X158 | X157 ) {
+    ( 0 ) 0.8867959354970583, 0.11320406450294172;
+    ( 1 ) 0.9764766057286197, 0.023523394271380317;
+
+}
+probability ( X159 | X158 ) {
+    ( 0 ) 0.949010543341335, 0.05098945665866503;
+    ( 1 ) 0.8556697917846982, 0.14433020821530188;
+
+}
+probability ( X16 | X15 ) {
+    ( 0 ) 0.6675617876298638, 0.3324382123701361;
+    ( 1 ) 0.5158316273134214, 0.48416837268657864;
+
+}
+probability ( X160 | X159 ) {
+    ( 0 ) 0.9832750016675489, 0.016724998332451134;
+    ( 1 ) 0.8473149024990572, 0.15268509750094278;
+
+}
+probability ( X161 | X160 ) {
+    ( 0 ) 0.9021717787541708, 0.09782822124582928;
+    ( 1 ) 0.4975799066720612, 0.5024200933279388;
+
+}
+probability ( X162 | X161 ) {
+    ( 0 ) 0.72868822153927, 0.2713117784607299;
+    ( 1 ) 0.7552366727780145, 0.24476332722198543;
+
+}
+probability ( X163 | X162 ) {
+    ( 0 ) 0.9618187985218851, 0.038181201478114865;
+    ( 1 ) 0.9532170539261665, 0.046782946073833445;
+
+}
+probability ( X164 | X163 ) {
+    ( 0 ) 0.9094414546321969, 0.09055854536780304;
+    ( 1 ) 0.9827387274914023, 0.01726127250859764;
+
+}
+probability ( X165 | X164 ) {
+    ( 0 ) 0.9775848393129217, 0.02241516068707831;
+    ( 1 ) 0.9502773853403564, 0.04972261465964358;
+
+}
+probability ( X166 | X165 ) {
+    ( 0 ) 0.8827656601605893, 0.11723433983941066;
+    ( 1 ) 0.8549666654837395, 0.14503333451626058;
+
+}
+probability ( X167 | X150, X166 ) {
+    ( 0, 0 ) 0.9190840691261922, 0.08091593087380781;
+    ( 0, 1 ) 0.8545575371442644, 0.14544246285573562;
+    ( 1, 0 ) 0.9735584167364789, 0.026441583263521112;
+    ( 1, 1 ) 0.6898992373300935, 0.3101007626699065;
+
+}
+probability ( X168 | X148, X167 ) {
+    ( 0, 0 ) 0.8824050305439589, 0.11759496945604107;
+    ( 0, 1 ) 0.960701680804308, 0.039298319195691996;
+    ( 1, 0 ) 0.8893165043585314, 0.11068349564146861;
+    ( 1, 1 ) 0.6499597152520336, 0.3500402847479664;
+
+}
+probability ( X169 | X168 ) {
+    ( 0 ) 0.9332256034016703, 0.06677439659832972;
+    ( 1 ) 0.9080103138359086, 0.09198968616409137;
+
+}
+probability ( X17 | X16 ) {
+    ( 0 ) 0.9347990679561843, 0.06520093204381576;
+    ( 1 ) 0.6542195904640739, 0.34578040953592615;
+
+}
+probability ( X170 | X169 ) {
+    ( 0 ) 0.6582854600525208, 0.34171453994747925;
+    ( 1 ) 0.7717739389447623, 0.2282260610552377;
+
+}
+probability ( X171 | X170 ) {
+    ( 0 ) 0.5930526033011255, 0.4069473966988745;
+    ( 1 ) 0.7069139603608375, 0.29308603963916247;
+
+}
+probability ( X172 | X171 ) {
+    ( 0 ) 0.7171687203596327, 0.28283127964036725;
+    ( 1 ) 0.4735133055826881, 0.5264866944173119;
+
+}
+probability ( X173 | X172 ) {
+    ( 0 ) 0.81698594788868, 0.18301405211132005;
+    ( 1 ) 0.9934823707335516, 0.006517629266448373;
+
+}
+probability ( X174 | X173 ) {
+    ( 0 ) 0.6682977919667564, 0.3317022080332436;
+    ( 1 ) 0.7169762479257519, 0.2830237520742481;
+
+}
+probability ( X175 | X174 ) {
+    ( 0 ) 0.9159219631620148, 0.08407803683798525;
+    ( 1 ) 0.868372441100316, 0.13162755889968397;
+
+}
+probability ( X176 | X175 ) {
+    ( 0 ) 0.7939185830352413, 0.20608141696475873;
+    ( 1 ) 0.9272929856322758, 0.07270701436772414;
+
+}
+probability ( X177 | X176 ) {
+    ( 0 ) 0.821795337570003, 0.178204662429997;
+    ( 1 ) 0.6285742754988883, 0.3714257245011116;
+
+}
+probability ( X178 | X177 ) {
+    ( 0 ) 0.7641162408675917, 0.23588375913240828;
+    ( 1 ) 0.783846755010106, 0.216153244989894;
+
+}
+probability ( X179 | X178 ) {
+    ( 0 ) 0.8770679877409694, 0.12293201225903064;
+    ( 1 ) 0.8862933974845741, 0.1137066025154259;
+
+}
+probability ( X18 | X17 ) {
+    ( 0 ) 0.8920338581299807, 0.10796614187001925;
+    ( 1 ) 0.9655190223437532, 0.03448097765624681;
+
+}
+probability ( X180 | X179 ) {
+    ( 0 ) 0.5785379469707483, 0.42146205302925166;
+    ( 1 ) 0.9108810756111616, 0.08911892438883837;
+
+}
+probability ( X181 | X180 ) {
+    ( 0 ) 0.9270107259083655, 0.07298927409163443;
+    ( 1 ) 0.7118409303341322, 0.28815906966586785;
+
+}
+probability ( X182 | X181 ) {
+    ( 0 ) 0.9898866086428726, 0.010113391357127395;
+    ( 1 ) 0.9572176417313953, 0.0427823582686047;
+
+}
+probability ( X183 | X173, X182 ) {
+    ( 0, 0 ) 0.9754061250131028, 0.02459387498689729;
+    ( 0, 1 ) 0.8265848000584546, 0.17341519994154542;
+    ( 1, 0 ) 0.6967287422329227, 0.30327125776707725;
+    ( 1, 1 ) 0.9346290329185177, 0.06537096708148224;
+
+}
+probability ( X184 | X183 ) {
+    ( 0 ) 0.8491355102385474, 0.15086448976145256;
+    ( 1 ) 0.6849603352963967, 0.31503966470360334;
+
+}
+probability ( X185 | X184 ) {
+    ( 0 ) 0.9884947193611414, 0.011505280638858594;
+    ( 1 ) 0.7554275055768215, 0.24457249442317855;
+
+}
+probability ( X186 | X185 ) {
+    ( 0 ) 0.9597546779171151, 0.040245322082884935;
+    ( 1 ) 0.9158761888110705, 0.08412381118892948;
+
+}
+probability ( X187 | X186 ) {
+    ( 0 ) 0.9616484469298352, 0.03835155307016479;
+    ( 1 ) 0.9081604983215891, 0.0918395016784109;
+
+}
+probability ( X188 | X147, X187 ) {
+    ( 0, 0 ) 0.9524167994078835, 0.04758320059211652;
+    ( 0, 1 ) 0.9773080565019017, 0.022691943498098298;
+    ( 1, 0 ) 0.8446892185995348, 0.15531078140046514;
+    ( 1, 1 ) 0.8387637136942043, 0.16123628630579565;
+
+}
+probability ( X189 | X188 ) {
+    ( 0 ) 0.8534536427162214, 0.14654635728377863;
+    ( 1 ) 0.8940664427801602, 0.10593355721983973;
+
+}
+probability ( X19 | X18 ) {
+    ( 0 ) 0.9880344434775176, 0.011965556522482403;
+    ( 1 ) 0.8651963613494483, 0.13480363865055164;
+
+}
+probability ( X190 | X189 ) {
+    ( 0 ) 0.5551122917812784, 0.4448877082187216;
+    ( 1 ) 0.6309871397870217, 0.36901286021297836;
+
+}
+probability ( X191 | X190 ) {
+    ( 0 ) 0.8802538468553198, 0.11974615314468023;
+    ( 1 ) 0.6933007321099698, 0.30669926789003027;
+
+}
+probability ( X192 | X191 ) {
+    ( 0 ) 0.9612906818144886, 0.03870931818551138;
+    ( 1 ) 0.7677535105743607, 0.23224648942563936;
+
+}
+probability ( X193 | X189, X192 ) {
+    ( 0, 0 ) 0.9829256363995723, 0.01707436360042772;
+    ( 0, 1 ) 0.9410617999525258, 0.058938200047474215;
+    ( 1, 0 ) 0.7969444919668567, 0.20305550803314337;
+    ( 1, 1 ) 0.9245550392229746, 0.07544496077702542;
+
+}
+probability ( X194 | X193 ) {
+    ( 0 ) 0.5828874227337092, 0.4171125772662908;
+    ( 1 ) 0.9619394539077495, 0.03806054609225057;
+
+}
+probability ( X195 | X194 ) {
+    ( 0 ) 0.5730046411225581, 0.4269953588774419;
+    ( 1 ) 0.983176594093363, 0.016823405906637015;
+
+}
+probability ( X196 | X195 ) {
+    ( 0 ) 0.8389031202152737, 0.1610968797847263;
+    ( 1 ) 0.9465260792441695, 0.05347392075583051;
+
+}
+probability ( X197 | X122, X196 ) {
+    ( 0, 0 ) 0.707209938940659, 0.29279006105934097;
+    ( 0, 1 ) 0.7661613117709429, 0.2338386882290571;
+    ( 1, 0 ) 0.8225185795346646, 0.1774814204653355;
+    ( 1, 1 ) 0.9092122633228095, 0.09078773667719055;
+
+}
+probability ( X198 | X197 ) {
+    ( 0 ) 0.7675675617447677, 0.2324324382552323;
+    ( 1 ) 0.8738900602161315, 0.12610993978386856;
+
+}
+probability ( X199 | X198 ) {
+    ( 0 ) 0.9195230253820733, 0.0804769746179267;
+    ( 1 ) 0.9585641204440282, 0.041435879555971805;
+
+}
+probability ( X2 | X1 ) {
+    ( 0 ) 0.9349302855497618, 0.06506971445023828;
+    ( 1 ) 0.9668979608059058, 0.03310203919409417;
+
+}
+probability ( X20 | X19 ) {
+    ( 0 ) 0.5118093520443945, 0.48819064795560557;
+    ( 1 ) 0.9642483358193732, 0.035751664180626815;
+
+}
+probability ( X200 | X199 ) {
+    ( 0 ) 0.8793932824733798, 0.12060671752662022;
+    ( 1 ) 0.9542170122742927, 0.045782987725707366;
+
+}
+probability ( X201 | X200 ) {
+    ( 0 ) 0.8673336859100018, 0.13266631408999824;
+    ( 1 ) 0.9898587018643252, 0.01014129813567472;
+
+}
+probability ( X202 | X201 ) {
+    ( 0 ) 0.8029459672736736, 0.19705403272632638;
+    ( 1 ) 0.9642457293656709, 0.03575427063432911;
+
+}
+probability ( X203 | X202 ) {
+    ( 0 ) 0.9013158024424388, 0.09868419755756122;
+    ( 1 ) 0.7731611251388442, 0.22683887486115578;
+
+}
+probability ( X204 | X203 ) {
+    ( 0 ) 0.9369598908587135, 0.06304010914128651;
+    ( 1 ) 0.9887121813005558, 0.01128781869944421;
+
+}
+probability ( X205 | X204 ) {
+    ( 0 ) 0.9643819668014998, 0.035618033198500196;
+    ( 1 ) 0.915983042162835, 0.08401695783716502;
+
+}
+probability ( X206 | X205 ) {
+    ( 0 ) 0.9845347087376006, 0.015465291262399403;
+    ( 1 ) 0.9387249791141259, 0.06127502088587416;
+
+}
+probability ( X207 | X206 ) {
+    ( 0 ) 0.7121884774044984, 0.2878115225955015;
+    ( 1 ) 0.7970187976549588, 0.2029812023450413;
+
+}
+probability ( X208 | X207 ) {
+    ( 0 ) 0.9374417521259345, 0.06255824787406547;
+    ( 1 ) 0.9025002092309109, 0.09749979076908913;
+
+}
+probability ( X209 | X208 ) {
+    ( 0 ) 0.8732585019511365, 0.12674149804886342;
+    ( 1 ) 0.9812310705120267, 0.018768929487973283;
+
+}
+probability ( X21 | X20 ) {
+    ( 0 ) 0.936979061033222, 0.06302093896677802;
+    ( 1 ) 0.9989397816930864, 0.001060218306913643;
+
+}
+probability ( X210 | X209 ) {
+    ( 0 ) 0.986739983247181, 0.013260016752818984;
+    ( 1 ) 0.4707781689702141, 0.5292218310297859;
+
+}
+probability ( X211 | X210 ) {
+    ( 0 ) 0.8467876176120175, 0.15321238238798246;
+    ( 1 ) 0.9091329385698925, 0.09086706143010752;
+
+}
+probability ( X212 | X211 ) {
+    ( 0 ) 0.8134543742264717, 0.18654562577352835;
+    ( 1 ) 0.948204848109912, 0.05179515189008797;
+
+}
+probability ( X213 | X212 ) {
+    ( 0 ) 0.672267790291732, 0.32773220970826805;
+    ( 1 ) 0.9914852381385202, 0.008514761861479807;
+
+}
+probability ( X214 | X213 ) {
+    ( 0 ) 0.9835783069849998, 0.016421693015000214;
+    ( 1 ) 0.9452819738650443, 0.05471802613495573;
+
+}
+probability ( X215 | X214 ) {
+    ( 0 ) 0.6583776296208481, 0.3416223703791519;
+    ( 1 ) 0.6969296188765353, 0.3030703811234647;
+
+}
+probability ( X216 | X215 ) {
+    ( 0 ) 0.5514245412466039, 0.44857545875339605;
+    ( 1 ) 0.8146689052190899, 0.1853310947809102;
+
+}
+probability ( X217 | X216 ) {
+    ( 0 ) 0.8987021136911165, 0.10129788630888348;
+    ( 1 ) 0.9559342785200217, 0.04406572147997832;
+
+}
+probability ( X218 | X217 ) {
+    ( 0 ) 0.877360313389552, 0.12263968661044798;
+    ( 1 ) 0.8970927276717351, 0.10290727232826485;
+
+}
+probability ( X219 | X218 ) {
+    ( 0 ) 0.9418510511364684, 0.058148948863531634;
+    ( 1 ) 0.9919103218214279, 0.00808967817857212;
+
+}
+probability ( X22 | X21 ) {
+    ( 0 ) 0.823156244832973, 0.17684375516702694;
+    ( 1 ) 0.9877226880168632, 0.012277311983136733;
+
+}
+probability ( X220 | X219 ) {
+    ( 0 ) 0.7066809409091441, 0.2933190590908559;
+    ( 1 ) 0.9134694016904384, 0.0865305983095616;
+
+}
+probability ( X221 | X220 ) {
+    ( 0 ) 0.9168243864678165, 0.08317561353218351;
+    ( 1 ) 0.8748938314537079, 0.1251061685462921;
+
+}
+probability ( X222 | X221 ) {
+    ( 0 ) 0.635514400449356, 0.36448559955064397;
+    ( 1 ) 0.8750197516477052, 0.12498024835229486;
+
+}
+probability ( X223 | X222 ) {
+    ( 0 ) 0.872353237786554, 0.12764676221344598;
+    ( 1 ) 0.9240483388057581, 0.0759516611942419;
+
+}
+probability ( X224 | X223 ) {
+    ( 0 ) 0.9318438994536121, 0.06815610054638783;
+    ( 1 ) 0.8692451357270471, 0.13075486427295294;
+
+}
+probability ( X225 | X224 ) {
+    ( 0 ) 0.8373693686369161, 0.16263063136308392;
+    ( 1 ) 0.9592741325977847, 0.04072586740221532;
+
+}
+probability ( X226 | X225 ) {
+    ( 0 ) 0.8081537443183964, 0.19184625568160366;
+    ( 1 ) 0.9710922743396733, 0.02890772566032679;
+
+}
+probability ( X227 | X226 ) {
+    ( 0 ) 0.965426506433698, 0.034573493566301995;
+    ( 1 ) 0.98378378696231, 0.01621621303769;
+
+}
+probability ( X228 | X227 ) {
+    ( 0 ) 0.9512607205674656, 0.04873927943253443;
+    ( 1 ) 0.6060760189985903, 0.3939239810014097;
+
+}
+probability ( X229 | X228 ) {
+    ( 0 ) 0.691220979525451, 0.30877902047454897;
+    ( 1 ) 0.7232463061946653, 0.27675369380533466;
+
+}
+probability ( X23 | X22 ) {
+    ( 0 ) 0.7930928929728016, 0.2069071070271984;
+    ( 1 ) 0.9788391886269792, 0.02116081137302087;
+
+}
+probability ( X230 | X221, X229 ) {
+    ( 0, 0 ) 0.5710879013380338, 0.4289120986619662;
+    ( 0, 1 ) 0.7659827388219572, 0.23401726117804275;
+    ( 1, 0 ) 0.7542923621618657, 0.24570763783813435;
+    ( 1, 1 ) 0.8911850201294972, 0.10881497987050279;
+
+}
+probability ( X231 | X230 ) {
+    ( 0 ) 0.8827486981258701, 0.11725130187412992;
+    ( 1 ) 0.7524388955588712, 0.2475611044411288;
+
+}
+probability ( X232 | X231 ) {
+    ( 0 ) 0.9351798745320455, 0.06482012546795446;
+    ( 1 ) 0.8946675845125425, 0.10533241548745748;
+
+}
+probability ( X233 | X232 ) {
+    ( 0 ) 0.9981280096163909, 0.0018719903836090397;
+    ( 1 ) 0.9226338622948269, 0.07736613770517314;
+
+}
+probability ( X234 | X233 ) {
+    ( 0 ) 0.9122573550236293, 0.08774264497637076;
+    ( 1 ) 0.9397210281281704, 0.06027897187182966;
+
+}
+probability ( X235 | X234 ) {
+    ( 0 ) 0.9561128996056653, 0.043887100394334785;
+    ( 1 ) 0.9641204924189737, 0.03587950758102635;
+
+}
+probability ( X236 | X235 ) {
+    ( 0 ) 0.6215808805676808, 0.37841911943231915;
+    ( 1 ) 0.9897839136718042, 0.010216086328195867;
+
+}
+probability ( X237 | X236 ) {
+    ( 0 ) 0.8721661050039814, 0.12783389499601858;
+    ( 1 ) 0.8994741391935964, 0.10052586080640356;
+
+}
+probability ( X238 | X237 ) {
+    ( 0 ) 0.7252640747047467, 0.27473592529525326;
+    ( 1 ) 0.614435883333371, 0.385564116666629;
+
+}
+probability ( X239 | X238 ) {
+    ( 0 ) 0.879686244838801, 0.12031375516119899;
+    ( 1 ) 0.9873686323136986, 0.01263136768630135;
+
+}
+probability ( X24 | X23 ) {
+    ( 0 ) 0.5035574283820022, 0.49644257161799776;
+    ( 1 ) 0.9094187004551338, 0.09058129954486618;
+
+}
+probability ( X240 | X239 ) {
+    ( 0 ) 0.7738062350069126, 0.22619376499308744;
+    ( 1 ) 0.8181630444791589, 0.1818369555208411;
+
+}
+probability ( X241 | X240 ) {
+    ( 0 ) 0.9227218033105352, 0.07727819668946483;
+    ( 1 ) 0.8563876757315317, 0.14361232426846826;
+
+}
+probability ( X242 | X241 ) {
+    ( 0 ) 0.9380355087722198, 0.06196449122778028;
+    ( 1 ) 0.8475162516848526, 0.15248374831514744;
+
+}
+probability ( X243 ) {
+    table 0.713185901666205, 0.28681409833379495 ;
+}
+probability ( X244 | X243 ) {
+    ( 0 ) 0.8813061405066407, 0.11869385949335932;
+    ( 1 ) 0.6861190884091869, 0.3138809115908131;
+
+}
+probability ( X245 | X243, X244 ) {
+    ( 0, 0 ) 0.8397592085371824, 0.16024079146281753;
+    ( 0, 1 ) 0.8911038590738283, 0.10889614092617174;
+    ( 1, 0 ) 0.6867362503753782, 0.31326374962462183;
+    ( 1, 1 ) 0.8691579418286641, 0.13084205817133593;
+
+}
+probability ( X246 | X245 ) {
+    ( 0 ) 0.6999667035967376, 0.30003329640326243;
+    ( 1 ) 0.7696837617123662, 0.23031623828763376;
+
+}
+probability ( X247 | X246 ) {
+    ( 0 ) 0.7069088618958234, 0.29309113810417664;
+    ( 1 ) 0.876594457911229, 0.12340554208877093;
+
+}
+probability ( X248 | X247 ) {
+    ( 0 ) 0.9895690868401341, 0.010430913159865869;
+    ( 1 ) 0.886292807906644, 0.11370719209335602;
+
+}
+probability ( X249 | X248 ) {
+    ( 0 ) 0.6531609310565342, 0.34683906894346583;
+    ( 1 ) 0.9408967415850595, 0.05910325841494049;
+
+}
+probability ( X25 | X24 ) {
+    ( 0 ) 0.9225104640638704, 0.07748953593612966;
+    ( 1 ) 0.6933937707226422, 0.3066062292773578;
+
+}
+probability ( X250 | X249 ) {
+    ( 0 ) 0.8628598451792038, 0.1371401548207962;
+    ( 1 ) 0.5777898467163869, 0.4222101532836131;
+
+}
+probability ( X251 | X250 ) {
+    ( 0 ) 0.9450914318180035, 0.05490856818199655;
+    ( 1 ) 0.7758806559521672, 0.22411934404783285;
+
+}
+probability ( X252 | X251 ) {
+    ( 0 ) 0.9903683824317271, 0.00963161756827296;
+    ( 1 ) 0.8695605274167711, 0.13043947258322883;
+
+}
+probability ( X253 | X252 ) {
+    ( 0 ) 0.8431603365019625, 0.15683966349803746;
+    ( 1 ) 0.9978415391777502, 0.002158460822249797;
+
+}
+probability ( X254 | X253 ) {
+    ( 0 ) 0.9661008325703754, 0.0338991674296246;
+    ( 1 ) 0.7956136707973904, 0.20438632920260957;
+
+}
+probability ( X255 | X254 ) {
+    ( 0 ) 0.9676233836904098, 0.03237661630959024;
+    ( 1 ) 0.8727817647855505, 0.1272182352144495;
+
+}
+probability ( X256 | X249, X255 ) {
+    ( 0, 0 ) 0.9347898161956772, 0.0652101838043228;
+    ( 0, 1 ) 0.9024687422753671, 0.0975312577246329;
+    ( 1, 0 ) 0.7667315223475519, 0.2332684776524481;
+    ( 1, 1 ) 0.7991087631349888, 0.2008912368650112;
+
+}
+probability ( X257 | X256 ) {
+    ( 0 ) 0.969813071468028, 0.030186928531972048;
+    ( 1 ) 0.8663731777072912, 0.1336268222927088;
+
+}
+probability ( X258 | X257 ) {
+    ( 0 ) 0.49273731955484423, 0.5072626804451558;
+    ( 1 ) 0.9175834303001865, 0.08241656969981347;
+
+}
+probability ( X259 | X233, X258 ) {
+    ( 0, 0 ) 0.7258502799742147, 0.2741497200257853;
+    ( 0, 1 ) 0.8788607477150077, 0.12113925228499232;
+    ( 1, 0 ) 0.9429573967835074, 0.057042603216492606;
+    ( 1, 1 ) 0.6630315568911497, 0.3369684431088503;
+
+}
+probability ( X26 | X25 ) {
+    ( 0 ) 0.7333617283154359, 0.2666382716845641;
+    ( 1 ) 0.7839769312041397, 0.21602306879586033;
+
+}
+probability ( X260 | X259 ) {
+    ( 0 ) 0.944512159743109, 0.055487840256890984;
+    ( 1 ) 0.8975217157874459, 0.10247828421255412;
+
+}
+probability ( X261 | X260 ) {
+    ( 0 ) 0.8130791485205862, 0.1869208514794139;
+    ( 1 ) 0.8609956389528233, 0.13900436104717678;
+
+}
+probability ( X262 | X261 ) {
+    ( 0 ) 0.7607765209694822, 0.23922347903051777;
+    ( 1 ) 0.7381303840604334, 0.26186961593956665;
+
+}
+probability ( X263 | X262 ) {
+    ( 0 ) 0.7222374061340586, 0.2777625938659414;
+    ( 1 ) 0.9082547556812561, 0.0917452443187439;
+
+}
+probability ( X264 | X217, X263 ) {
+    ( 0, 0 ) 0.9925078750172416, 0.007492124982758422;
+    ( 0, 1 ) 0.9544394999192819, 0.045560500080718054;
+    ( 1, 0 ) 0.994456516652373, 0.005543483347627033;
+    ( 1, 1 ) 0.8770447780807344, 0.12295522191926556;
+
+}
+probability ( X265 | X264 ) {
+    ( 0 ) 0.7751398192759026, 0.22486018072409739;
+    ( 1 ) 0.8753592828550482, 0.12464071714495188;
+
+}
+probability ( X266 | X265 ) {
+    ( 0 ) 0.7100508622000699, 0.2899491377999302;
+    ( 1 ) 0.9798864090672053, 0.020113590932794745;
+
+}
+probability ( X267 | X266 ) {
+    ( 0 ) 0.7257915930717951, 0.2742084069282049;
+    ( 1 ) 0.9770955929772415, 0.022904407022758585;
+
+}
+probability ( X268 | X267 ) {
+    ( 0 ) 0.5562279858895638, 0.44377201411043626;
+    ( 1 ) 0.9325273665217607, 0.06747263347823926;
+
+}
+probability ( X269 | X268 ) {
+    ( 0 ) 0.9608991823010647, 0.03910081769893524;
+    ( 1 ) 0.7050712475625487, 0.2949287524374513;
+
+}
+probability ( X27 | X26 ) {
+    ( 0 ) 0.8346961015573646, 0.16530389844263538;
+    ( 1 ) 0.8640784989132178, 0.13592150108678222;
+
+}
+probability ( X270 | X204, X269 ) {
+    ( 0, 0 ) 0.9774559446134748, 0.022544055386525184;
+    ( 0, 1 ) 0.9610528473088467, 0.038947152691153376;
+    ( 1, 0 ) 0.7491495209089889, 0.25085047909101105;
+    ( 1, 1 ) 0.9024773889813396, 0.09752261101866048;
+
+}
+probability ( X271 | X270 ) {
+    ( 0 ) 0.7722138019107628, 0.22778619808923714;
+    ( 1 ) 0.6015137723109437, 0.3984862276890563;
+
+}
+probability ( X272 | X271 ) {
+    ( 0 ) 0.8935364973390961, 0.10646350266090389;
+    ( 1 ) 0.5786083360368821, 0.4213916639631179;
+
+}
+probability ( X273 | X272 ) {
+    ( 0 ) 0.9559347927996091, 0.04406520720039083;
+    ( 1 ) 0.9819872897602095, 0.018012710239790408;
+
+}
+probability ( X274 | X273 ) {
+    ( 0 ) 0.7856541476565935, 0.21434585234340656;
+    ( 1 ) 0.893096339479223, 0.10690366052077706;
+
+}
+probability ( X275 | X274 ) {
+    ( 0 ) 0.7250882312304986, 0.2749117687695014;
+    ( 1 ) 0.5781085891738125, 0.42189141082618753;
+
+}
+probability ( X276 | X275 ) {
+    ( 0 ) 0.8497425113910193, 0.15025748860898075;
+    ( 1 ) 0.9013466825163599, 0.09865331748364013;
+
+}
+probability ( X277 | X276 ) {
+    ( 0 ) 0.7793468587587982, 0.22065314124120186;
+    ( 1 ) 0.8355966985235924, 0.1644033014764076;
+
+}
+probability ( X278 | X277 ) {
+    ( 0 ) 0.7595957576647732, 0.2404042423352269;
+    ( 1 ) 0.6952266776168721, 0.3047733223831279;
+
+}
+probability ( X279 | X278 ) {
+    ( 0 ) 0.9823916392192449, 0.017608360780755155;
+    ( 1 ) 0.9934689362178932, 0.006531063782106826;
+
+}
+probability ( X28 | X27 ) {
+    ( 0 ) 0.7057558078850428, 0.2942441921149572;
+    ( 1 ) 0.8956820326713663, 0.10431796732863378;
+
+}
+probability ( X280 | X279 ) {
+    ( 0 ) 0.4867819157869655, 0.5132180842130345;
+    ( 1 ) 0.9815574979750604, 0.018442502024939533;
+
+}
+probability ( X281 | X280 ) {
+    ( 0 ) 0.966999201096701, 0.033000798903298954;
+    ( 1 ) 0.8035770316302958, 0.1964229683697042;
+
+}
+probability ( X282 | X281 ) {
+    ( 0 ) 0.9959689196885796, 0.00403108031142045;
+    ( 1 ) 0.6164078384799241, 0.38359216152007586;
+
+}
+probability ( X283 | X282 ) {
+    ( 0 ) 0.8769077485858349, 0.12309225141416517;
+    ( 1 ) 0.676373904973967, 0.32362609502603307;
+
+}
+probability ( X284 | X203, X283 ) {
+    ( 0, 0 ) 0.8935780443694341, 0.10642195563056583;
+    ( 0, 1 ) 0.8007444137411424, 0.19925558625885761;
+    ( 1, 0 ) 0.9881706189865467, 0.011829381013453315;
+    ( 1, 1 ) 0.9255247818248349, 0.07447521817516509;
+
+}
+probability ( X285 | X284 ) {
+    ( 0 ) 0.7659434787109696, 0.2340565212890304;
+    ( 1 ) 0.9374904169890862, 0.06250958301091383;
+
+}
+probability ( X286 | X285 ) {
+    ( 0 ) 0.8756285609397052, 0.12437143906029485;
+    ( 1 ) 0.9531867452996016, 0.04681325470039839;
+
+}
+probability ( X287 | X286 ) {
+    ( 0 ) 0.9731993401283401, 0.026800659871659877;
+    ( 1 ) 0.6208124709042748, 0.37918752909572523;
+
+}
+probability ( X288 | X287 ) {
+    ( 0 ) 0.7836303544599879, 0.2163696455400121;
+    ( 1 ) 0.8455535621854362, 0.1544464378145638;
+
+}
+probability ( X289 | X288 ) {
+    ( 0 ) 0.9053001074363679, 0.09469989256363212;
+    ( 1 ) 0.969680219542548, 0.03031978045745193;
+
+}
+probability ( X29 | X28 ) {
+    ( 0 ) 0.8177897354084578, 0.18221026459154227;
+    ( 1 ) 0.9372989741587057, 0.06270102584129436;
+
+}
+probability ( X290 | X289 ) {
+    ( 0 ) 0.9226956455661252, 0.07730435443387489;
+    ( 1 ) 0.9989744703675663, 0.0010255296324337682;
+
+}
+probability ( X291 | X290 ) {
+    ( 0 ) 0.9396090880309363, 0.0603909119690637;
+    ( 1 ) 0.9305265699569696, 0.06947343004303039;
+
+}
+probability ( X292 | X291 ) {
+    ( 0 ) 0.8681201210852151, 0.13187987891478492;
+    ( 1 ) 0.9900273965404098, 0.009972603459590173;
+
+}
+probability ( X293 | X292 ) {
+    ( 0 ) 0.9029143868884555, 0.0970856131115445;
+    ( 1 ) 0.3217739258845914, 0.6782260741154086;
+
+}
+probability ( X294 | X122, X293 ) {
+    ( 0, 0 ) 0.8382073077990679, 0.16179269220093206;
+    ( 0, 1 ) 0.7843298361688564, 0.2156701638311435;
+    ( 1, 0 ) 0.9416967151096738, 0.05830328489032622;
+    ( 1, 1 ) 0.750197135650682, 0.24980286434931803;
+
+}
+probability ( X295 | X294 ) {
+    ( 0 ) 0.969612748631757, 0.030387251368243034;
+    ( 1 ) 0.5371074182661671, 0.46289258173383285;
+
+}
+probability ( X296 | X295 ) {
+    ( 0 ) 0.9843767701355527, 0.015623229864447348;
+    ( 1 ) 0.9375823413289981, 0.062417658671001935;
+
+}
+probability ( X297 | X296 ) {
+    ( 0 ) 0.7258347101356811, 0.2741652898643189;
+    ( 1 ) 0.7651365760930335, 0.23486342390696652;
+
+}
+probability ( X298 | X297 ) {
+    ( 0 ) 0.9368268544994799, 0.06317314550052008;
+    ( 1 ) 0.769097854175087, 0.23090214582491295;
+
+}
+probability ( X299 | X298 ) {
+    ( 0 ) 0.840854420860693, 0.15914557913930702;
+    ( 1 ) 0.7910212624106556, 0.2089787375893444;
+
+}
+probability ( X3 | X2 ) {
+    ( 0 ) 0.8179218354736686, 0.18207816452633144;
+    ( 1 ) 0.6553200225994088, 0.3446799774005912;
+
+}
+probability ( X30 | X29 ) {
+    ( 0 ) 0.8239128028854417, 0.17608719711455836;
+    ( 1 ) 0.9667654926696023, 0.03323450733039762;
+
+}
+probability ( X300 | X299 ) {
+    ( 0 ) 0.9703084694901238, 0.029691530509876142;
+    ( 1 ) 0.604204280375098, 0.39579571962490195;
+
+}
+probability ( X301 | X300 ) {
+    ( 0 ) 0.8615839294344186, 0.13841607056558136;
+    ( 1 ) 0.909330540372471, 0.090669459627529;
+
+}
+probability ( X302 | X301 ) {
+    ( 0 ) 0.9748206789381901, 0.02517932106180989;
+    ( 1 ) 0.9045341877667878, 0.09546581223321221;
+
+}
+probability ( X303 | X302 ) {
+    ( 0 ) 0.8826969326052756, 0.11730306739472446;
+    ( 1 ) 0.4266034776337777, 0.5733965223662223;
+
+}
+probability ( X304 | X119, X303 ) {
+    ( 0, 0 ) 0.7995426509372268, 0.2004573490627733;
+    ( 0, 1 ) 0.974574127549047, 0.025425872450952937;
+    ( 1, 0 ) 0.6049574512970352, 0.39504254870296485;
+    ( 1, 1 ) 0.9480170584938375, 0.05198294150616249;
+
+}
+probability ( X305 | X304 ) {
+    ( 0 ) 0.8954775651940111, 0.10452243480598893;
+    ( 1 ) 0.5259223487051736, 0.4740776512948263;
+
+}
+probability ( X306 | X305 ) {
+    ( 0 ) 0.6762582219070621, 0.32374177809293797;
+    ( 1 ) 0.9424245023627856, 0.057575497637214375;
+
+}
+probability ( X307 | X306 ) {
+    ( 0 ) 0.7221220855237036, 0.2778779144762964;
+    ( 1 ) 0.8881306917663389, 0.11186930823366116;
+
+}
+probability ( X308 | X307 ) {
+    ( 0 ) 0.9778172539924371, 0.022182746007562842;
+    ( 1 ) 0.791950461892426, 0.20804953810757396;
+
+}
+probability ( X309 | X308 ) {
+    ( 0 ) 0.9944541930801242, 0.005545806919875819;
+    ( 1 ) 0.9878563861016088, 0.012143613898391196;
+
+}
+probability ( X31 | X22, X30 ) {
+    ( 0, 0 ) 0.7690991694667187, 0.23090083053328128;
+    ( 0, 1 ) 0.9849312402064033, 0.01506875979359664;
+    ( 1, 0 ) 0.9739393939328342, 0.026060606067165776;
+    ( 1, 1 ) 0.9592242287942961, 0.0407757712057039;
+
+}
+probability ( X310 | X309 ) {
+    ( 0 ) 0.7733648616908704, 0.2266351383091296;
+    ( 1 ) 0.912062508291282, 0.08793749170871801;
+
+}
+probability ( X311 | X101, X310 ) {
+    ( 0, 0 ) 0.9040258947804825, 0.09597410521951749;
+    ( 0, 1 ) 0.6584051920009857, 0.34159480799901437;
+    ( 1, 0 ) 0.9121781744918932, 0.08782182550810684;
+    ( 1, 1 ) 0.6254835331592173, 0.37451646684078266;
+
+}
+probability ( X312 | X311 ) {
+    ( 0 ) 0.9321047487259786, 0.06789525127402139;
+    ( 1 ) 0.6479252018361721, 0.3520747981638279;
+
+}
+probability ( X313 | X312 ) {
+    ( 0 ) 0.9225000037299143, 0.0774999962700857;
+    ( 1 ) 0.9329825231363387, 0.06701747686366129;
+
+}
+probability ( X314 | X313 ) {
+    ( 0 ) 0.7563170330891772, 0.2436829669108228;
+    ( 1 ) 0.5862231264579291, 0.41377687354207093;
+
+}
+probability ( X315 | X314 ) {
+    ( 0 ) 0.8121132346802251, 0.1878867653197749;
+    ( 1 ) 0.6187003749020538, 0.38129962509794624;
+
+}
+probability ( X316 | X315 ) {
+    ( 0 ) 0.8041693407119301, 0.19583065928806984;
+    ( 1 ) 0.9808443972613905, 0.01915560273860949;
+
+}
+probability ( X317 | X316 ) {
+    ( 0 ) 0.7827196117863587, 0.21728038821364126;
+    ( 1 ) 0.6192310607716963, 0.3807689392283037;
+
+}
+probability ( X318 | X317 ) {
+    ( 0 ) 0.8284723415460761, 0.17152765845392395;
+    ( 1 ) 0.9415001722344732, 0.05849982776552679;
+
+}
+probability ( X319 | X318 ) {
+    ( 0 ) 0.6734814311776807, 0.3265185688223193;
+    ( 1 ) 0.6686007424173175, 0.33139925758268246;
+
+}
+probability ( X32 | X31 ) {
+    ( 0 ) 0.9822917794701036, 0.017708220529896353;
+    ( 1 ) 0.8704755916679145, 0.12952440833208542;
+
+}
+probability ( X320 | X319 ) {
+    ( 0 ) 0.9933139239096815, 0.006686076090318509;
+    ( 1 ) 0.8806998252515807, 0.11930017474841925;
+
+}
+probability ( X321 | X320 ) {
+    ( 0 ) 0.6710307856098212, 0.3289692143901788;
+    ( 1 ) 0.9201764248565445, 0.07982357514345553;
+
+}
+probability ( X322 | X321 ) {
+    ( 0 ) 0.8587438985803487, 0.1412561014196513;
+    ( 1 ) 0.9022464485467098, 0.09775355145329026;
+
+}
+probability ( X323 | X322 ) {
+    ( 0 ) 0.8996289541484745, 0.10037104585152545;
+    ( 1 ) 0.9200275934433977, 0.07997240655660232;
+
+}
+probability ( X324 | X323 ) {
+    ( 0 ) 0.8787375433638548, 0.1212624566361452;
+    ( 1 ) 0.8088349900181664, 0.19116500998183356;
+
+}
+probability ( X325 | X324 ) {
+    ( 0 ) 0.905463737639958, 0.09453626236004195;
+    ( 1 ) 0.6379381024100426, 0.3620618975899575;
+
+}
+probability ( X326 | X325 ) {
+    ( 0 ) 0.7690719776913943, 0.2309280223086056;
+    ( 1 ) 0.8739404577333254, 0.12605954226667462;
+
+}
+probability ( X327 | X326 ) {
+    ( 0 ) 0.3722471365513206, 0.6277528634486794;
+    ( 1 ) 0.8714103901741796, 0.1285896098258203;
+
+}
+probability ( X328 | X327 ) {
+    ( 0 ) 0.3661699426014341, 0.6338300573985659;
+    ( 1 ) 0.9255761582256897, 0.0744238417743103;
+
+}
+probability ( X329 | X328 ) {
+    ( 0 ) 0.9566891284435423, 0.04331087155645772;
+    ( 1 ) 0.8472950518290567, 0.15270494817094327;
+
+}
+probability ( X33 | X32 ) {
+    ( 0 ) 0.7872813735999464, 0.21271862640005357;
+    ( 1 ) 0.7164692848066541, 0.28353071519334594;
+
+}
+probability ( X330 | X329 ) {
+    ( 0 ) 0.989359011101005, 0.010640988898994973;
+    ( 1 ) 0.814552922055604, 0.18544707794439597;
+
+}
+probability ( X331 | X330 ) {
+    ( 0 ) 0.792049740855646, 0.207950259144354;
+    ( 1 ) 0.8687866255518926, 0.13121337444810746;
+
+}
+probability ( X332 | X331 ) {
+    ( 0 ) 0.6894759841792957, 0.3105240158207043;
+    ( 1 ) 0.7036338521507264, 0.29636614784927356;
+
+}
+probability ( X333 | X332 ) {
+    ( 0 ) 0.8821403598364878, 0.11785964016351229;
+    ( 1 ) 0.8725429548649631, 0.12745704513503683;
+
+}
+probability ( X334 | X333 ) {
+    ( 0 ) 0.7257365235187107, 0.27426347648128935;
+    ( 1 ) 0.9885198591455285, 0.011480140854471486;
+
+}
+probability ( X335 | X314, X334 ) {
+    ( 0, 0 ) 0.7790237431401166, 0.2209762568598834;
+    ( 0, 1 ) 0.9130881573673979, 0.0869118426326021;
+    ( 1, 0 ) 0.7044280271674209, 0.2955719728325791;
+    ( 1, 1 ) 0.5232224776979313, 0.47677752230206877;
+
+}
+probability ( X336 | X335 ) {
+    ( 0 ) 0.8338333570230042, 0.16616664297699582;
+    ( 1 ) 0.9512857244189683, 0.04871427558103165;
+
+}
+probability ( X337 | X336 ) {
+    ( 0 ) 0.3753585018325821, 0.6246414981674179;
+    ( 1 ) 0.9577887053572819, 0.04221129464271815;
+
+}
+probability ( X338 | X337 ) {
+    ( 0 ) 0.8014324403749625, 0.19856755962503747;
+    ( 1 ) 0.5175613033956222, 0.48243869660437777;
+
+}
+probability ( X339 | X338 ) {
+    ( 0 ) 0.9357297783628606, 0.0642702216371393;
+    ( 1 ) 0.9707006167493283, 0.029299383250671704;
+
+}
+probability ( X34 | X33 ) {
+    ( 0 ) 0.9930794853431164, 0.006920514656883577;
+    ( 1 ) 0.7270428341230739, 0.27295716587692603;
+
+}
+probability ( X340 | X339 ) {
+    ( 0 ) 0.9689303088808949, 0.031069691119105125;
+    ( 1 ) 0.9656835960019217, 0.0343164039980783;
+
+}
+probability ( X341 | X340 ) {
+    ( 0 ) 0.8973305681782262, 0.10266943182177377;
+    ( 1 ) 0.9777267929231996, 0.022273207076800354;
+
+}
+probability ( X342 | X341 ) {
+    ( 0 ) 0.7834079715168737, 0.21659202848312634;
+    ( 1 ) 0.7913303802563221, 0.2086696197436779;
+
+}
+probability ( X343 | X342 ) {
+    ( 0 ) 0.8502215351873693, 0.1497784648126307;
+    ( 1 ) 0.9608638930287269, 0.03913610697127311;
+
+}
+probability ( X344 | X343 ) {
+    ( 0 ) 0.9934196483502309, 0.006580351649769077;
+    ( 1 ) 0.9831114578741242, 0.01688854212587578;
+
+}
+probability ( X345 | X344 ) {
+    ( 0 ) 0.9580264452885816, 0.0419735547114184;
+    ( 1 ) 0.8202520526253401, 0.17974794737466;
+
+}
+probability ( X346 | X345 ) {
+    ( 0 ) 0.9789471413561284, 0.021052858643871672;
+    ( 1 ) 0.7729618272039991, 0.22703817279600086;
+
+}
+probability ( X347 | X346 ) {
+    ( 0 ) 0.9692326183722177, 0.03076738162778229;
+    ( 1 ) 0.8396117335695802, 0.16038826643041978;
+
+}
+probability ( X348 | X347 ) {
+    ( 0 ) 0.9381170356502622, 0.0618829643497378;
+    ( 1 ) 0.999151406216784, 0.0008485937832160273;
+
+}
+probability ( X349 | X348 ) {
+    ( 0 ) 0.7518418648442229, 0.24815813515577706;
+    ( 1 ) 0.9680891974769701, 0.031910802523029885;
+
+}
+probability ( X35 | X34 ) {
+    ( 0 ) 0.6525831524306881, 0.3474168475693119;
+    ( 1 ) 0.9351084409738808, 0.06489155902611918;
+
+}
+probability ( X350 | X349 ) {
+    ( 0 ) 0.9977407451464171, 0.0022592548535828832;
+    ( 1 ) 0.8829652160291567, 0.11703478397084335;
+
+}
+probability ( X351 | X350 ) {
+    ( 0 ) 0.8328238214861678, 0.16717617851383218;
+    ( 1 ) 0.9886383660503664, 0.011361633949633633;
+
+}
+probability ( X352 | X351 ) {
+    ( 0 ) 0.5646242006934559, 0.4353757993065441;
+    ( 1 ) 0.808882536016706, 0.191117463983294;
+
+}
+probability ( X353 | X352 ) {
+    ( 0 ) 0.8130276127357023, 0.1869723872642977;
+    ( 1 ) 0.5646692481327011, 0.43533075186729886;
+
+}
+probability ( X354 | X353 ) {
+    ( 0 ) 0.982796113061516, 0.017203886938483924;
+    ( 1 ) 0.7460741693508499, 0.2539258306491501;
+
+}
+probability ( X355 | X354 ) {
+    ( 0 ) 0.8370784495079654, 0.16292155049203458;
+    ( 1 ) 0.9930887888581894, 0.00691121114181062;
+
+}
+probability ( X356 | X355 ) {
+    ( 0 ) 0.9663370528368458, 0.03366294716315416;
+    ( 1 ) 0.763562496205815, 0.2364375037941851;
+
+}
+probability ( X357 | X356 ) {
+    ( 0 ) 0.9222322031445754, 0.07776779685542456;
+    ( 1 ) 0.855950601106533, 0.14404939889346702;
+
+}
+probability ( X358 | X357 ) {
+    ( 0 ) 0.9888257766505596, 0.011174223349440446;
+    ( 1 ) 0.6854749267606912, 0.31452507323930873;
+
+}
+probability ( X359 | X342, X358 ) {
+    ( 0, 0 ) 0.7777593357187373, 0.22224066428126263;
+    ( 0, 1 ) 0.7793857522910081, 0.2206142477089919;
+    ( 1, 0 ) 0.6069785297846261, 0.3930214702153739;
+    ( 1, 1 ) 0.9651049787385998, 0.03489502126140019;
+
+}
+probability ( X36 | X35 ) {
+    ( 0 ) 0.6187885927270896, 0.38121140727291036;
+    ( 1 ) 0.6254899234919291, 0.37451007650807094;
+
+}
+probability ( X360 | X359 ) {
+    ( 0 ) 0.9872582175024422, 0.012741782497557717;
+    ( 1 ) 0.9853757597221491, 0.014624240277850887;
+
+}
+probability ( X361 | X360 ) {
+    ( 0 ) 0.8642926039253171, 0.13570739607468288;
+    ( 1 ) 0.7684632478759542, 0.23153675212404579;
+
+}
+probability ( X362 | X361 ) {
+    ( 0 ) 0.9867760177135655, 0.013223982286434458;
+    ( 1 ) 0.9239755055143359, 0.07602449448566405;
+
+}
+probability ( X363 | X362 ) {
+    ( 0 ) 0.6651950069592063, 0.33480499304079375;
+    ( 1 ) 0.9869295703562732, 0.013070429643726896;
+
+}
+probability ( X364 | X363 ) {
+    ( 0 ) 0.8643666408012336, 0.1356333591987664;
+    ( 1 ) 0.4351119384750005, 0.5648880615249995;
+
+}
+probability ( X365 | X364 ) {
+    ( 0 ) 0.7913908895265337, 0.20860911047346634;
+    ( 1 ) 0.7090551102191387, 0.29094488978086125;
+
+}
+probability ( X366 | X365 ) {
+    ( 0 ) 0.6673487195721648, 0.33265128042783515;
+    ( 1 ) 0.7594018031142628, 0.24059819688573722;
+
+}
+probability ( X367 | X359, X366 ) {
+    ( 0, 0 ) 0.8010914903315934, 0.1989085096684066;
+    ( 0, 1 ) 0.9597287448982733, 0.04027125510172668;
+    ( 1, 0 ) 0.941552938185036, 0.05844706181496395;
+    ( 1, 1 ) 0.99772515839082, 0.0022748416091800537;
+
+}
+probability ( X368 | X367 ) {
+    ( 0 ) 0.9664762607040447, 0.033523739295955333;
+    ( 1 ) 0.8070195470730842, 0.19298045292691582;
+
+}
+probability ( X369 | X341, X368 ) {
+    ( 0, 0 ) 0.9216416488806674, 0.07835835111933268;
+    ( 0, 1 ) 0.7761709629821629, 0.22382903701783707;
+    ( 1, 0 ) 0.984782740824246, 0.015217259175754056;
+    ( 1, 1 ) 0.9825971906672973, 0.017402809332702652;
+
+}
+probability ( X37 | X36 ) {
+    ( 0 ) 0.7565536277356141, 0.24344637226438595;
+    ( 1 ) 0.8451669823263988, 0.1548330176736013;
+
+}
+probability ( X370 | X369 ) {
+    ( 0 ) 0.8755206909276575, 0.12447930907234253;
+    ( 1 ) 0.9930135610034382, 0.006986438996561784;
+
+}
+probability ( X371 | X370 ) {
+    ( 0 ) 0.842785560078981, 0.15721443992101902;
+    ( 1 ) 0.5375193098180013, 0.4624806901819987;
+
+}
+probability ( X372 | X371 ) {
+    ( 0 ) 0.8856261607410294, 0.11437383925897066;
+    ( 1 ) 0.7734955111663107, 0.22650448883368937;
+
+}
+probability ( X373 | X372 ) {
+    ( 0 ) 0.6539783970561142, 0.34602160294388584;
+    ( 1 ) 0.6936097582467671, 0.306390241753233;
+
+}
+probability ( X374 | X373 ) {
+    ( 0 ) 0.9307041669354826, 0.06929583306451739;
+    ( 1 ) 0.900859398628675, 0.09914060137132502;
+
+}
+probability ( X375 | X374 ) {
+    ( 0 ) 0.8579988907017324, 0.14200110929826762;
+    ( 1 ) 0.9057995006806276, 0.09420049931937237;
+
+}
+probability ( X376 | X375 ) {
+    ( 0 ) 0.8277046256942602, 0.1722953743057398;
+    ( 1 ) 0.9575812244756268, 0.04241877552437329;
+
+}
+probability ( X377 | X376 ) {
+    ( 0 ) 0.9661796759663053, 0.03382032403369476;
+    ( 1 ) 0.9267748703505404, 0.0732251296494596;
+
+}
+probability ( X378 | X377 ) {
+    ( 0 ) 0.8972091263191379, 0.10279087368086219;
+    ( 1 ) 0.8573900070299756, 0.14260999297002439;
+
+}
+probability ( X379 | X336, X378 ) {
+    ( 0, 0 ) 0.9597355541603293, 0.04026444583967069;
+    ( 0, 1 ) 0.9504326004307637, 0.04956739956923629;
+    ( 1, 0 ) 0.7373702898021799, 0.26262971019782017;
+    ( 1, 1 ) 0.8205937346404512, 0.17940626535954887;
+
+}
+probability ( X38 | X37 ) {
+    ( 0 ) 0.9852117935479396, 0.014788206452060306;
+    ( 1 ) 0.9570398511857408, 0.04296014881425922;
+
+}
+probability ( X380 | X99, X379 ) {
+    ( 0, 0 ) 0.8551184712515592, 0.14488152874844087;
+    ( 0, 1 ) 0.933217063923299, 0.06678293607670101;
+    ( 1, 0 ) 0.9162734199391832, 0.08372658006081679;
+    ( 1, 1 ) 0.8793782104058954, 0.12062178959410463;
+
+}
+probability ( X381 | X380 ) {
+    ( 0 ) 0.7463703954119911, 0.25362960458800893;
+    ( 1 ) 0.8448917910649512, 0.1551082089350489;
+
+}
+probability ( X382 | X381 ) {
+    ( 0 ) 0.9303738877526749, 0.06962611224732507;
+    ( 1 ) 0.9578520575044696, 0.04214794249553039;
+
+}
+probability ( X383 | X382 ) {
+    ( 0 ) 0.9537399458966552, 0.0462600541033448;
+    ( 1 ) 0.805311513290347, 0.19468848670965297;
+
+}
+probability ( X384 | X383 ) {
+    ( 0 ) 0.7830923969726928, 0.2169076030273071;
+    ( 1 ) 0.8284898488527993, 0.17151015114720067;
+
+}
+probability ( X385 | X384 ) {
+    ( 0 ) 0.7531524099402521, 0.2468475900597479;
+    ( 1 ) 0.5391659939889744, 0.4608340060110257;
+
+}
+probability ( X386 | X385 ) {
+    ( 0 ) 0.7736753838564209, 0.22632461614357915;
+    ( 1 ) 0.4302751475700969, 0.5697248524299031;
+
+}
+probability ( X387 ) {
+    table 0.8269167158209765, 0.17308328417902347 ;
+}
+probability ( X388 | X387 ) {
+    ( 0 ) 0.9962383708594262, 0.003761629140573807;
+    ( 1 ) 0.8979691405575455, 0.10203085944245445;
+
+}
+probability ( X389 | X388 ) {
+    ( 0 ) 0.8767120364683848, 0.12328796353161521;
+    ( 1 ) 0.9226237840525945, 0.07737621594740555;
+
+}
+probability ( X39 | X38 ) {
+    ( 0 ) 0.7729635474289622, 0.22703645257103772;
+    ( 1 ) 0.705264032750458, 0.29473596724954204;
+
+}
+probability ( X390 | X389 ) {
+    ( 0 ) 0.8060328357770903, 0.19396716422290966;
+    ( 1 ) 0.9343475334831894, 0.0656524665168106;
+
+}
+probability ( X391 | X390 ) {
+    ( 0 ) 0.9568542719113375, 0.04314572808866248;
+    ( 1 ) 0.6908789677293803, 0.30912103227061977;
+
+}
+probability ( X392 | X391 ) {
+    ( 0 ) 0.9408800159829923, 0.059119984017007694;
+    ( 1 ) 0.9347717016151, 0.0652282983849;
+
+}
+probability ( X393 | X392 ) {
+    ( 0 ) 0.8248815808502208, 0.17511841914977924;
+    ( 1 ) 0.9755635669778648, 0.0244364330221352;
+
+}
+probability ( X394 | X393 ) {
+    ( 0 ) 0.9081183860289749, 0.09188161397102512;
+    ( 1 ) 0.9834582811190302, 0.0165417188809698;
+
+}
+probability ( X395 | X394 ) {
+    ( 0 ) 0.9657721368540143, 0.03422786314598566;
+    ( 1 ) 0.8626362385832964, 0.13736376141670353;
+
+}
+probability ( X396 | X395 ) {
+    ( 0 ) 0.760551202584605, 0.23944879741539504;
+    ( 1 ) 0.9478564881685769, 0.052143511831423045;
+
+}
+probability ( X397 | X396 ) {
+    ( 0 ) 0.9633203830192518, 0.03667961698074814;
+    ( 1 ) 0.7737380381688013, 0.2262619618311987;
+
+}
+probability ( X398 | X397 ) {
+    ( 0 ) 0.7371270238861996, 0.26287297611380045;
+    ( 1 ) 0.7722254565193463, 0.2277745434806538;
+
+}
+probability ( X399 | X398 ) {
+    ( 0 ) 0.8231635144203884, 0.17683648557961168;
+    ( 1 ) 0.7350934894051084, 0.2649065105948915;
+
+}
+probability ( X4 | X3 ) {
+    ( 0 ) 0.9668388725919687, 0.0331611274080313;
+    ( 1 ) 0.9261428109217782, 0.07385718907822185;
+
+}
+probability ( X40 | X39 ) {
+    ( 0 ) 0.6609356686676027, 0.3390643313323973;
+    ( 1 ) 0.9558517490533941, 0.044148250946605946;
+
+}
+probability ( X400 | X399 ) {
+    ( 0 ) 0.711478560693874, 0.28852143930612595;
+    ( 1 ) 0.7919526810692874, 0.20804731893071257;
+
+}
+probability ( X401 | X400 ) {
+    ( 0 ) 0.9947005435087822, 0.005299456491217792;
+    ( 1 ) 0.9369729606006535, 0.06302703939934652;
+
+}
+probability ( X402 | X401 ) {
+    ( 0 ) 0.916433046993751, 0.08356695300624899;
+    ( 1 ) 0.9995658876421376, 0.0004341123578623893;
+
+}
+probability ( X403 | X402 ) {
+    ( 0 ) 0.5550506570603884, 0.4449493429396116;
+    ( 1 ) 0.8155577808849279, 0.18444221911507214;
+
+}
+probability ( X404 | X403 ) {
+    ( 0 ) 0.6022673887393806, 0.3977326112606195;
+    ( 1 ) 0.8589509787824696, 0.14104902121753032;
+
+}
+probability ( X405 | X404 ) {
+    ( 0 ) 0.6058857132110267, 0.3941142867889733;
+    ( 1 ) 0.9793218358373152, 0.020678164162684785;
+
+}
+probability ( X406 | X405 ) {
+    ( 0 ) 0.9412052388308495, 0.05879476116915053;
+    ( 1 ) 0.6993786762262248, 0.3006213237737752;
+
+}
+probability ( X407 | X406 ) {
+    ( 0 ) 0.6011118218773845, 0.39888817812261546;
+    ( 1 ) 0.9797230744816627, 0.02027692551833731;
+
+}
+probability ( X408 | X407 ) {
+    ( 0 ) 0.9822534812232078, 0.01774651877679227;
+    ( 1 ) 0.9415009339199221, 0.05849906608007795;
+
+}
+probability ( X409 | X408 ) {
+    ( 0 ) 0.9771088285459611, 0.022891171454038864;
+    ( 1 ) 0.9624857191131102, 0.03751428088688983;
+
+}
+probability ( X41 | X40 ) {
+    ( 0 ) 0.9413583359766589, 0.0586416640233412;
+    ( 1 ) 0.9791065707938486, 0.020893429206151493;
+
+}
+probability ( X410 | X409 ) {
+    ( 0 ) 0.636649277400781, 0.363350722599219;
+    ( 1 ) 0.9131783369995955, 0.08682166300040452;
+
+}
+probability ( X411 | X404, X410 ) {
+    ( 0, 0 ) 0.8794461289648966, 0.12055387103510344;
+    ( 0, 1 ) 0.82264832973092, 0.17735167026908;
+    ( 1, 0 ) 0.7174230154664565, 0.2825769845335436;
+    ( 1, 1 ) 0.8664664772369701, 0.13353352276302988;
+
+}
+probability ( X412 | X411 ) {
+    ( 0 ) 0.9424979123323747, 0.05750208766762529;
+    ( 1 ) 0.8562518860689337, 0.14374811393106635;
+
+}
+probability ( X413 | X412 ) {
+    ( 0 ) 0.7624862344009983, 0.2375137655990017;
+    ( 1 ) 0.7284434617964448, 0.27155653820355524;
+
+}
+probability ( X414 | X413 ) {
+    ( 0 ) 0.9793624015165378, 0.02063759848346225;
+    ( 1 ) 0.8989908428674768, 0.10100915713252323;
+
+}
+probability ( X415 | X414 ) {
+    ( 0 ) 0.9918588017703039, 0.008141198229696028;
+    ( 1 ) 0.8811806613749165, 0.11881933862508359;
+
+}
+probability ( X416 | X415 ) {
+    ( 0 ) 0.9931776273009816, 0.006822372699018471;
+    ( 1 ) 0.8575377202508514, 0.14246227974914855;
+
+}
+probability ( X417 | X416 ) {
+    ( 0 ) 0.9096048000994958, 0.09039519990050417;
+    ( 1 ) 0.8201962207096488, 0.1798037792903512;
+
+}
+probability ( X418 | X389, X417 ) {
+    ( 0, 0 ) 0.9682354423118436, 0.03176455768815649;
+    ( 0, 1 ) 0.9669169474639068, 0.033083052536093276;
+    ( 1, 0 ) 0.8832799074027102, 0.11672009259728983;
+    ( 1, 1 ) 0.7254933536014323, 0.27450664639856776;
+
+}
+probability ( X419 | X418 ) {
+    ( 0 ) 0.6160836625040075, 0.3839163374959925;
+    ( 1 ) 0.907981798501669, 0.09201820149833098;
+
+}
+probability ( X42 | X41 ) {
+    ( 0 ) 0.9612756364343523, 0.03872436356564771;
+    ( 1 ) 0.9510059736710025, 0.04899402632899755;
+
+}
+probability ( X420 | X419 ) {
+    ( 0 ) 0.4280658228050578, 0.5719341771949422;
+    ( 1 ) 0.8488971910533624, 0.1511028089466376;
+
+}
+probability ( X421 | X420 ) {
+    ( 0 ) 0.7032022769514406, 0.2967977230485595;
+    ( 1 ) 0.7784618109161905, 0.22153818908380954;
+
+}
+probability ( X422 | X64, X421 ) {
+    ( 0, 0 ) 0.8516584295736711, 0.1483415704263289;
+    ( 0, 1 ) 0.9264470270881529, 0.07355297291184713;
+    ( 1, 0 ) 0.9998601872557884, 0.0001398127442115756;
+    ( 1, 1 ) 0.9745126996460947, 0.025487300353905343;
+
+}
+probability ( X423 | X422 ) {
+    ( 0 ) 0.6062529340820946, 0.3937470659179055;
+    ( 1 ) 0.9105318185568148, 0.08946818144318529;
+
+}
+probability ( X424 | X49, X423 ) {
+    ( 0, 0 ) 0.7319166599489042, 0.26808334005109585;
+    ( 0, 1 ) 0.9743820115508206, 0.025617988449179358;
+    ( 1, 0 ) 0.902555632521994, 0.09744436747800604;
+    ( 1, 1 ) 0.9975678299589108, 0.002432170041089166;
+
+}
+probability ( X425 | X424 ) {
+    ( 0 ) 0.7078190812240763, 0.29218091877592367;
+    ( 1 ) 0.9789290307613805, 0.021070969238619543;
+
+}
+probability ( X426 | X425 ) {
+    ( 0 ) 0.9289106292067258, 0.07108937079327411;
+    ( 1 ) 0.7088109849802992, 0.29118901501970085;
+
+}
+probability ( X427 | X426 ) {
+    ( 0 ) 0.9851140667542653, 0.014885933245734752;
+    ( 1 ) 0.652319043507566, 0.347680956492434;
+
+}
+probability ( X428 | X427 ) {
+    ( 0 ) 0.8232709147324455, 0.17672908526755454;
+    ( 1 ) 0.6146029018304566, 0.38539709816954343;
+
+}
+probability ( X429 | X428 ) {
+    ( 0 ) 0.9767887021418262, 0.023211297858173743;
+    ( 1 ) 0.7669695711072395, 0.2330304288927605;
+
+}
+probability ( X43 | X42 ) {
+    ( 0 ) 0.7500228361211476, 0.24997716387885238;
+    ( 1 ) 0.7912004954712212, 0.20879950452877885;
+
+}
+probability ( X430 | X429 ) {
+    ( 0 ) 0.9550695907768384, 0.044930409223161646;
+    ( 1 ) 0.7925222812934615, 0.20747771870653856;
+
+}
+probability ( X431 | X35, X430 ) {
+    ( 0, 0 ) 0.7613910544145575, 0.23860894558544252;
+    ( 0, 1 ) 0.6994348317027419, 0.30056516829725816;
+    ( 1, 0 ) 0.9736305737064102, 0.026369426293589827;
+    ( 1, 1 ) 0.652561644242676, 0.347438355757324;
+
+}
+probability ( X432 | X431 ) {
+    ( 0 ) 0.8303341914770854, 0.16966580852291455;
+    ( 1 ) 0.5161777365318237, 0.48382226346817625;
+
+}
+probability ( X433 | X432 ) {
+    ( 0 ) 0.8889502097794397, 0.11104979022056032;
+    ( 1 ) 0.9455567001261028, 0.054443299873897136;
+
+}
+probability ( X434 | X433 ) {
+    ( 0 ) 0.9213184251413121, 0.07868157485868786;
+    ( 1 ) 0.6087702467150102, 0.3912297532849898;
+
+}
+probability ( X435 | X434 ) {
+    ( 0 ) 0.9692846559920507, 0.0307153440079493;
+    ( 1 ) 0.885100322940696, 0.11489967705930405;
+
+}
+probability ( X436 | X2, X435 ) {
+    ( 0, 0 ) 0.8094272518049758, 0.1905727481950242;
+    ( 0, 1 ) 0.8499759969904971, 0.15002400300950294;
+    ( 1, 0 ) 0.7231928955175547, 0.2768071044824453;
+    ( 1, 1 ) 0.9654038905426783, 0.034596109457321694;
+
+}
+probability ( X437 | X436 ) {
+    ( 0 ) 0.7779437513624167, 0.22205624863758336;
+    ( 1 ) 0.9616313000362632, 0.038368699963736846;
+
+}
+probability ( X438 | X437 ) {
+    ( 0 ) 0.8360359741109226, 0.1639640258890774;
+    ( 1 ) 0.8123782589950534, 0.18762174100494655;
+
+}
+probability ( X439 | X438 ) {
+    ( 0 ) 0.927002149005492, 0.07299785099450797;
+    ( 1 ) 0.943775781209945, 0.05622421879005504;
+
+}
+probability ( X44 | X43 ) {
+    ( 0 ) 0.9986027202428314, 0.001397279757168673;
+    ( 1 ) 0.7339319055776132, 0.26606809442238677;
+
+}
+probability ( X440 | X439 ) {
+    ( 0 ) 0.7082310626654413, 0.2917689373345586;
+    ( 1 ) 0.7499875806370615, 0.2500124193629385;
+
+}
+probability ( X441 | X440 ) {
+    ( 0 ) 0.924181608021534, 0.07581839197846599;
+    ( 1 ) 0.9980085033176226, 0.0019914966823774568;
+
+}
+probability ( X442 | X441 ) {
+    ( 0 ) 0.4886696777868793, 0.5113303222131207;
+    ( 1 ) 0.6458156543964595, 0.35418434560354045;
+
+}
+probability ( X443 | X442 ) {
+    ( 0 ) 0.9269111407752592, 0.07308885922474087;
+    ( 1 ) 0.929581239949479, 0.07041876005052093;
+
+}
+probability ( X444 | X443 ) {
+    ( 0 ) 0.895481305345609, 0.10451869465439102;
+    ( 1 ) 0.9853224830477381, 0.014677516952261981;
+
+}
+probability ( X445 | X444 ) {
+    ( 0 ) 0.8636187299289477, 0.1363812700710523;
+    ( 1 ) 0.6239639389690448, 0.3760360610309552;
+
+}
+probability ( X446 | X445 ) {
+    ( 0 ) 0.9602000101331793, 0.039799989866820616;
+    ( 1 ) 0.8357632765688797, 0.16423672343112025;
+
+}
+probability ( X447 | X446 ) {
+    ( 0 ) 0.9480132233546618, 0.05198677664533826;
+    ( 1 ) 0.8149572524249474, 0.1850427475750526;
+
+}
+probability ( X448 | X447 ) {
+    ( 0 ) 0.9878101303085582, 0.01218986969144179;
+    ( 1 ) 0.926666631920402, 0.07333336807959795;
+
+}
+probability ( X449 | X448 ) {
+    ( 0 ) 0.6550564372806892, 0.3449435627193108;
+    ( 1 ) 0.7448452815452942, 0.2551547184547059;
+
+}
+probability ( X45 | X44 ) {
+    ( 0 ) 0.8764150306080131, 0.12358496939198696;
+    ( 1 ) 0.47721186763948464, 0.5227881323605154;
+
+}
+probability ( X450 | X449 ) {
+    ( 0 ) 0.7412988209394092, 0.25870117906059076;
+    ( 1 ) 0.6741392325202498, 0.3258607674797502;
+
+}
+probability ( X451 | X450 ) {
+    ( 0 ) 0.8939804252860944, 0.10601957471390555;
+    ( 1 ) 0.836770169113606, 0.16322983088639395;
+
+}
+probability ( X452 | X451 ) {
+    ( 0 ) 0.4566620087163351, 0.5433379912836649;
+    ( 1 ) 0.9697161596019931, 0.030283840398006863;
+
+}
+probability ( X453 | X452 ) {
+    ( 0 ) 0.7943762611234394, 0.20562373887656063;
+    ( 1 ) 0.8669944153513314, 0.13300558464866863;
+
+}
+probability ( X454 | X453 ) {
+    ( 0 ) 0.8771496549538176, 0.12285034504618245;
+    ( 1 ) 0.8478696901406212, 0.15213030985937884;
+
+}
+probability ( X455 | X454 ) {
+    ( 0 ) 0.8611004502824646, 0.13889954971753532;
+    ( 1 ) 0.9090814310907607, 0.09091856890923937;
+
+}
+probability ( X456 | X455 ) {
+    ( 0 ) 0.8756455553725804, 0.12435444462741964;
+    ( 1 ) 0.9471481435581205, 0.05285185644187951;
+
+}
+probability ( X457 | X456 ) {
+    ( 0 ) 0.9532259718139641, 0.04677402818603598;
+    ( 1 ) 0.6245823832021191, 0.3754176167978809;
+
+}
+probability ( X458 | X457 ) {
+    ( 0 ) 0.9683636119051912, 0.03163638809480881;
+    ( 1 ) 0.7932261669160963, 0.20677383308390368;
+
+}
+probability ( X459 | X458 ) {
+    ( 0 ) 0.8040601579299809, 0.19593984207001916;
+    ( 1 ) 0.4080931339095156, 0.5919068660904844;
+
+}
+probability ( X46 | X41, X45 ) {
+    ( 0, 0 ) 0.7279532806043023, 0.2720467193956977;
+    ( 0, 1 ) 0.8244883319894138, 0.17551166801058612;
+    ( 1, 0 ) 0.8726867430985307, 0.12731325690146933;
+    ( 1, 1 ) 0.9916931198142978, 0.00830688018570221;
+
+}
+probability ( X460 | X459 ) {
+    ( 0 ) 0.8744601372468795, 0.12553986275312043;
+    ( 1 ) 0.6539624709589038, 0.34603752904109614;
+
+}
+probability ( X461 | X460 ) {
+    ( 0 ) 0.8398009618645254, 0.16019903813547462;
+    ( 1 ) 0.8909575131690403, 0.10904248683095973;
+
+}
+probability ( X462 | X461 ) {
+    ( 0 ) 0.8101918233015037, 0.1898081766984962;
+    ( 1 ) 0.8910719615152816, 0.10892803848471844;
+
+}
+probability ( X463 | X462 ) {
+    ( 0 ) 0.8294877411676251, 0.17051225883237492;
+    ( 1 ) 0.9807395466375799, 0.019260453362420125;
+
+}
+probability ( X464 | X463 ) {
+    ( 0 ) 0.7516912948069382, 0.2483087051930618;
+    ( 1 ) 0.9331887031239393, 0.06681129687606067;
+
+}
+probability ( X465 | X464 ) {
+    ( 0 ) 0.8461863756450678, 0.15381362435493218;
+    ( 1 ) 0.9953965944262061, 0.004603405573793939;
+
+}
+probability ( X466 | X465 ) {
+    ( 0 ) 0.7064787662129897, 0.2935212337870103;
+    ( 1 ) 0.9258361392779298, 0.07416386072207012;
+
+}
+probability ( X467 | X466 ) {
+    ( 0 ) 0.9941032821276595, 0.005896717872340482;
+    ( 1 ) 0.978301335344127, 0.02169866465587302;
+
+}
+probability ( X468 | X467 ) {
+    ( 0 ) 0.8470099407994478, 0.15299005920055214;
+    ( 1 ) 0.9416083466653368, 0.05839165333466319;
+
+}
+probability ( X469 | X468 ) {
+    ( 0 ) 0.8747338940934013, 0.1252661059065987;
+    ( 1 ) 0.9915279080980635, 0.008472091901936592;
+
+}
+probability ( X47 | X46 ) {
+    ( 0 ) 0.7538890391342907, 0.24611096086570933;
+    ( 1 ) 0.9553059587444298, 0.04469404125557022;
+
+}
+probability ( X470 | X469 ) {
+    ( 0 ) 0.8931736689655206, 0.10682633103447932;
+    ( 1 ) 0.9356402293978809, 0.06435977060211907;
+
+}
+probability ( X471 | X470 ) {
+    ( 0 ) 0.9753330378632861, 0.0246669621367139;
+    ( 1 ) 0.5436418456616483, 0.45635815433835164;
+
+}
+probability ( X472 | X453, X471 ) {
+    ( 0, 0 ) 0.6406824460609248, 0.3593175539390752;
+    ( 0, 1 ) 0.7373465079917456, 0.26265349200825433;
+    ( 1, 0 ) 0.5692678242832956, 0.43073217571670447;
+    ( 1, 1 ) 0.780782542637702, 0.21921745736229808;
+
+}
+probability ( X473 | X472 ) {
+    ( 0 ) 0.5912280784684245, 0.4087719215315755;
+    ( 1 ) 0.8015252490847027, 0.19847475091529737;
+
+}
+probability ( X474 | X473 ) {
+    ( 0 ) 0.4590924673742337, 0.5409075326257663;
+    ( 1 ) 0.7666706546577651, 0.23332934534223498;
+
+}
+probability ( X475 | X474 ) {
+    ( 0 ) 0.7779754561474341, 0.2220245438525659;
+    ( 1 ) 0.9516930360778194, 0.04830696392218055;
+
+}
+probability ( X476 | X475 ) {
+    ( 0 ) 0.8573911654397794, 0.14260883456022058;
+    ( 1 ) 0.9597061160479678, 0.04029388395203216;
+
+}
+probability ( X477 | X476 ) {
+    ( 0 ) 0.7865162642197967, 0.21348373578020333;
+    ( 1 ) 0.9897813332089451, 0.010218666791054848;
+
+}
+probability ( X478 | X477 ) {
+    ( 0 ) 0.666537806003231, 0.3334621939967691;
+    ( 1 ) 0.953169271131175, 0.04683072886882498;
+
+}
+probability ( X479 | X478 ) {
+    ( 0 ) 0.9962008389406267, 0.003799161059373247;
+    ( 1 ) 0.6290212867204696, 0.37097871327953036;
+
+}
+probability ( X48 | X47 ) {
+    ( 0 ) 0.9742821063979333, 0.02571789360206664;
+    ( 1 ) 0.9402892409479745, 0.05971075905202545;
+
+}
+probability ( X480 | X479 ) {
+    ( 0 ) 0.9968605500750758, 0.0031394499249242248;
+    ( 1 ) 0.8835145694052977, 0.11648543059470232;
+
+}
+probability ( X481 | X480 ) {
+    ( 0 ) 0.974594745006211, 0.025405254993789;
+    ( 1 ) 0.9287698263449253, 0.07123017365507467;
+
+}
+probability ( X482 | X481 ) {
+    ( 0 ) 0.9505482672730793, 0.04945173272692072;
+    ( 1 ) 0.9817530300168816, 0.018246969983118366;
+
+}
+probability ( X483 | X482 ) {
+    ( 0 ) 0.9494091743097308, 0.05059082569026924;
+    ( 1 ) 0.9501107610666863, 0.049889238933313665;
+
+}
+probability ( X484 | X483 ) {
+    ( 0 ) 0.9613121540311144, 0.038687845968885685;
+    ( 1 ) 0.9652969561286875, 0.03470304387131249;
+
+}
+probability ( X485 | X484 ) {
+    ( 0 ) 0.7333066366930165, 0.2666933633069835;
+    ( 1 ) 0.911801972987245, 0.08819802701275506;
+
+}
+probability ( X486 | X485 ) {
+    ( 0 ) 0.7869502364888261, 0.2130497635111739;
+    ( 1 ) 0.8418059466692822, 0.1581940533307178;
+
+}
+probability ( X487 | X486 ) {
+    ( 0 ) 0.6549311430792584, 0.3450688569207417;
+    ( 1 ) 0.9822728168691679, 0.01772718313083207;
+
+}
+probability ( X488 | X472, X487 ) {
+    ( 0, 0 ) 0.9245150198887636, 0.0754849801112364;
+    ( 0, 1 ) 0.4931387890698974, 0.5068612109301026;
+    ( 1, 0 ) 0.7496833188510501, 0.25031668114894984;
+    ( 1, 1 ) 0.9642728658497666, 0.03572713415023345;
+
+}
+probability ( X489 | X440, X488 ) {
+    ( 0, 0 ) 0.9391742468065025, 0.06082575319349745;
+    ( 0, 1 ) 0.864035535085367, 0.13596446491463304;
+    ( 1, 0 ) 0.7573265664730804, 0.24267343352691959;
+    ( 1, 1 ) 0.5067324647669309, 0.4932675352330691;
+
+}
+probability ( X49 | X48 ) {
+    ( 0 ) 0.7432148787057242, 0.2567851212942757;
+    ( 1 ) 0.9071437528531539, 0.09285624714684615;
+
+}
+probability ( X490 | X489 ) {
+    ( 0 ) 0.6435521944348234, 0.35644780556517663;
+    ( 1 ) 0.9798199947307075, 0.020180005269292554;
+
+}
+probability ( X491 | X490 ) {
+    ( 0 ) 0.9520530109188875, 0.04794698908111248;
+    ( 1 ) 0.8692385970393177, 0.13076140296068223;
+
+}
+probability ( X492 | X439, X491 ) {
+    ( 0, 0 ) 0.8205293606731984, 0.17947063932680166;
+    ( 0, 1 ) 0.9410534007210147, 0.05894659927898531;
+    ( 1, 0 ) 0.44207272017909605, 0.557927279820904;
+    ( 1, 1 ) 0.9185308763774157, 0.08146912362258425;
+
+}
+probability ( X493 | X492 ) {
+    ( 0 ) 0.8978225480623737, 0.10217745193762628;
+    ( 1 ) 0.9250829672309064, 0.07491703276909353;
+
+}
+probability ( X494 | X493 ) {
+    ( 0 ) 0.41286184229347034, 0.5871381577065297;
+    ( 1 ) 0.9016797173090041, 0.09832028269099587;
+
+}
+probability ( X495 | X494 ) {
+    ( 0 ) 0.8796972843195315, 0.12030271568046844;
+    ( 1 ) 0.7606857283679218, 0.23931427163207822;
+
+}
+probability ( X496 | X495 ) {
+    ( 0 ) 0.7378269277098557, 0.26217307229014436;
+    ( 1 ) 0.8735403903864913, 0.12645960961350872;
+
+}
+probability ( X497 | X496 ) {
+    ( 0 ) 0.2921767733874475, 0.7078232266125525;
+    ( 1 ) 0.999619602971059, 0.00038039702894094516;
+
+}
+probability ( X498 | X497 ) {
+    ( 0 ) 0.9062886562661521, 0.09371134373384792;
+    ( 1 ) 0.9884891122411383, 0.01151088775886167;
+
+}
+probability ( X499 | X498 ) {
+    ( 0 ) 0.9099578453374704, 0.0900421546625296;
+    ( 1 ) 0.8685489070988095, 0.1314510929011905;
+
+}
+probability ( X5 | X4 ) {
+    ( 0 ) 0.9301418987008649, 0.0698581012991351;
+    ( 1 ) 0.9182267971591138, 0.08177320284088618;
+
+}
+probability ( X50 | X49 ) {
+    ( 0 ) 0.8121536839679041, 0.18784631603209592;
+    ( 1 ) 0.7903692841297374, 0.2096307158702626;
+
+}
+probability ( X51 ) {
+    table 0.5928317666139784, 0.40716823338602165 ;
+}
+probability ( X52 | X51 ) {
+    ( 0 ) 0.8619304462185432, 0.1380695537814568;
+    ( 1 ) 0.7095139445119747, 0.29048605548802536;
+
+}
+probability ( X53 | X52 ) {
+    ( 0 ) 0.9910823437586973, 0.0089176562413027;
+    ( 1 ) 0.9267201730586057, 0.07327982694139434;
+
+}
+probability ( X54 | X53 ) {
+    ( 0 ) 0.6411570309444198, 0.3588429690555802;
+    ( 1 ) 0.7271772731140637, 0.27282272688593634;
+
+}
+probability ( X55 | X54 ) {
+    ( 0 ) 0.9440814125894756, 0.055918587410524315;
+    ( 1 ) 0.9186083346526792, 0.08139166534732079;
+
+}
+probability ( X56 | X55 ) {
+    ( 0 ) 0.9036124980908393, 0.09638750190916065;
+    ( 1 ) 0.8680036618735102, 0.1319963381264898;
+
+}
+probability ( X57 | X56 ) {
+    ( 0 ) 0.8695693167181544, 0.13043068328184557;
+    ( 1 ) 0.9137258497788161, 0.0862741502211839;
+
+}
+probability ( X58 | X57 ) {
+    ( 0 ) 0.7378615371868673, 0.26213846281313263;
+    ( 1 ) 0.9834738081257947, 0.016526191874205395;
+
+}
+probability ( X59 | X58 ) {
+    ( 0 ) 0.946573632047708, 0.053426367952292005;
+    ( 1 ) 0.9297608412754187, 0.07023915872458132;
+
+}
+probability ( X6 | X2, X5 ) {
+    ( 0, 0 ) 0.8840483323889431, 0.11595166761105694;
+    ( 0, 1 ) 0.8830853410849719, 0.11691465891502803;
+    ( 1, 0 ) 0.8598110562025013, 0.14018894379749872;
+    ( 1, 1 ) 0.9515667335767698, 0.04843326642323022;
+
+}
+probability ( X60 | X59 ) {
+    ( 0 ) 0.3981765545648044, 0.6018234454351956;
+    ( 1 ) 0.7564876822007351, 0.24351231779926485;
+
+}
+probability ( X61 | X60 ) {
+    ( 0 ) 0.722573245815343, 0.277426754184657;
+    ( 1 ) 0.9763606763071795, 0.023639323692820503;
+
+}
+probability ( X62 | X61 ) {
+    ( 0 ) 0.6368584964664992, 0.36314150353350083;
+    ( 1 ) 0.9932796114157557, 0.00672038858424424;
+
+}
+probability ( X63 | X62 ) {
+    ( 0 ) 0.9169276623686762, 0.08307233763132384;
+    ( 1 ) 0.925093890584294, 0.07490610941570593;
+
+}
+probability ( X64 | X63 ) {
+    ( 0 ) 0.6692487363053533, 0.3307512636946467;
+    ( 1 ) 0.8082114809839545, 0.1917885190160455;
+
+}
+probability ( X65 | X64 ) {
+    ( 0 ) 0.9176486044295595, 0.08235139557044048;
+    ( 1 ) 0.7133575170824985, 0.2866424829175015;
+
+}
+probability ( X66 | X65 ) {
+    ( 0 ) 0.9626990226138925, 0.037300977386107534;
+    ( 1 ) 0.9502549420334293, 0.049745057966570666;
+
+}
+probability ( X67 | X66 ) {
+    ( 0 ) 0.7305090664822316, 0.2694909335177685;
+    ( 1 ) 0.7400555264995404, 0.25994447350045957;
+
+}
+probability ( X68 | X64, X67 ) {
+    ( 0, 0 ) 0.7918205209326998, 0.20817947906730014;
+    ( 0, 1 ) 0.8675947580117436, 0.13240524198825643;
+    ( 1, 0 ) 0.8625037643136173, 0.13749623568638275;
+    ( 1, 1 ) 0.9341033974105626, 0.06589660258943741;
+
+}
+probability ( X69 | X61, X68 ) {
+    ( 0, 0 ) 0.9272280573054403, 0.07277194269455961;
+    ( 0, 1 ) 0.9838731086002728, 0.01612689139972725;
+    ( 1, 0 ) 0.8735542137250765, 0.1264457862749236;
+    ( 1, 1 ) 0.949784155120287, 0.05021584487971297;
+
+}
+probability ( X7 | X6 ) {
+    ( 0 ) 0.9914491255492217, 0.008550874450778307;
+    ( 1 ) 0.7533670743941917, 0.24663292560580827;
+
+}
+probability ( X70 | X69 ) {
+    ( 0 ) 0.902654831702044, 0.09734516829795602;
+    ( 1 ) 0.4403352412482229, 0.5596647587517771;
+
+}
+probability ( X71 | X57, X70 ) {
+    ( 0, 0 ) 0.7789562217980371, 0.22104377820196286;
+    ( 0, 1 ) 0.828409467063894, 0.17159053293610602;
+    ( 1, 0 ) 0.9767198156061581, 0.023280184393841896;
+    ( 1, 1 ) 0.6662155290722032, 0.33378447092779684;
+
+}
+probability ( X72 | X71 ) {
+    ( 0 ) 0.8916628581136099, 0.10833714188639014;
+    ( 1 ) 0.7381150190086143, 0.26188498099138574;
+
+}
+probability ( X73 | X72 ) {
+    ( 0 ) 0.7640229882494394, 0.23597701175056068;
+    ( 1 ) 0.9541451502990804, 0.045854849700919534;
+
+}
+probability ( X74 | X73 ) {
+    ( 0 ) 0.8353554000908292, 0.16464459990917074;
+    ( 1 ) 0.956372669806753, 0.04362733019324707;
+
+}
+probability ( X75 | X74 ) {
+    ( 0 ) 0.8698953562130812, 0.13010464378691874;
+    ( 1 ) 0.9097293487984375, 0.09027065120156255;
+
+}
+probability ( X76 | X75 ) {
+    ( 0 ) 0.6998436740903498, 0.3001563259096502;
+    ( 1 ) 0.3892607164792268, 0.6107392835207732;
+
+}
+probability ( X77 | X76 ) {
+    ( 0 ) 0.468681678230076, 0.531318321769924;
+    ( 1 ) 0.6925846424345214, 0.3074153575654786;
+
+}
+probability ( X78 | X77 ) {
+    ( 0 ) 0.765028890743184, 0.23497110925681597;
+    ( 1 ) 0.992441152770104, 0.007558847229895917;
+
+}
+probability ( X79 | X78 ) {
+    ( 0 ) 0.6300195689943164, 0.36998043100568356;
+    ( 1 ) 0.7708577856604498, 0.2291422143395502;
+
+}
+probability ( X8 | X7 ) {
+    ( 0 ) 0.6603915057122245, 0.3396084942877755;
+    ( 1 ) 0.9760274157658116, 0.023972584234188313;
+
+}
+probability ( X80 | X79 ) {
+    ( 0 ) 0.9543017386739983, 0.0456982613260017;
+    ( 1 ) 0.7905591072987117, 0.20944089270128827;
+
+}
+probability ( X81 | X80 ) {
+    ( 0 ) 0.37007500293102025, 0.6299249970689798;
+    ( 1 ) 0.9763472162421308, 0.023652783757869115;
+
+}
+probability ( X82 | X81 ) {
+    ( 0 ) 0.9744382180027471, 0.025561781997252876;
+    ( 1 ) 0.9003342834313974, 0.0996657165686026;
+
+}
+probability ( X83 | X82 ) {
+    ( 0 ) 0.8513059892353618, 0.14869401076463823;
+    ( 1 ) 0.8577500860661524, 0.1422499139338476;
+
+}
+probability ( X84 | X83 ) {
+    ( 0 ) 0.7933765928393878, 0.20662340716061223;
+    ( 1 ) 0.8903170726266489, 0.10968292737335111;
+
+}
+probability ( X85 | X84 ) {
+    ( 0 ) 0.8923525527080305, 0.10764744729196955;
+    ( 1 ) 0.5284412369911917, 0.4715587630088082;
+
+}
+probability ( X86 | X85 ) {
+    ( 0 ) 0.777697749895826, 0.22230225010417407;
+    ( 1 ) 0.5768628387004306, 0.4231371612995693;
+
+}
+probability ( X87 | X86 ) {
+    ( 0 ) 0.7972121224084092, 0.2027878775915908;
+    ( 1 ) 0.9169015389240659, 0.08309846107593406;
+
+}
+probability ( X88 | X87 ) {
+    ( 0 ) 0.6719328492740926, 0.3280671507259075;
+    ( 1 ) 0.9839435330277961, 0.01605646697220387;
+
+}
+probability ( X89 | X88 ) {
+    ( 0 ) 0.8625362321326764, 0.13746376786732356;
+    ( 1 ) 0.9270465330211203, 0.07295346697887974;
+
+}
+probability ( X9 | X8 ) {
+    ( 0 ) 0.9580584003753222, 0.041941599624677806;
+    ( 1 ) 0.9497409347567151, 0.05025906524328495;
+
+}
+probability ( X90 | X89 ) {
+    ( 0 ) 0.9796630895489724, 0.020336910451027635;
+    ( 1 ) 0.8726164491227759, 0.12738355087722406;
+
+}
+probability ( X91 | X77, X90 ) {
+    ( 0, 0 ) 0.8352430666405901, 0.16475693335940983;
+    ( 0, 1 ) 0.936039145273942, 0.0639608547260579;
+    ( 1, 0 ) 0.8851785857773097, 0.11482141422269035;
+    ( 1, 1 ) 0.9258434591401133, 0.07415654085988668;
+
+}
+probability ( X92 | X91 ) {
+    ( 0 ) 0.5925326091520147, 0.4074673908479854;
+    ( 1 ) 0.9933782856387806, 0.006621714361219361;
+
+}
+probability ( X93 | X92 ) {
+    ( 0 ) 0.7507675312140131, 0.2492324687859869;
+    ( 1 ) 0.7230929636446382, 0.27690703635536185;
+
+}
+probability ( X94 | X93 ) {
+    ( 0 ) 0.8447110161185106, 0.15528898388148937;
+    ( 1 ) 0.911350631451136, 0.08864936854886393;
+
+}
+probability ( X95 | X94 ) {
+    ( 0 ) 0.9587708315177197, 0.04122916848228028;
+    ( 1 ) 0.7005815878156991, 0.2994184121843008;
+
+}
+probability ( X96 | X95 ) {
+    ( 0 ) 0.8539425174442368, 0.14605748255576326;
+    ( 1 ) 0.8296126915016764, 0.17038730849832365;
+
+}
+probability ( X97 | X96 ) {
+    ( 0 ) 0.9921765445735441, 0.007823455426455895;
+    ( 1 ) 0.9464015330877504, 0.05359846691224962;
+
+}
+probability ( X98 | X97 ) {
+    ( 0 ) 0.769240979469437, 0.2307590205305629;
+    ( 1 ) 0.7202012162702088, 0.27979878372979117;
+
+}
+probability ( X99 | X74, X98 ) {
+    ( 0, 0 ) 0.8845297924713339, 0.11547020752866609;
+    ( 0, 1 ) 0.8857014686480078, 0.11429853135199215;
+    ( 1, 0 ) 0.7726167625930803, 0.22738323740691965;
+    ( 1, 1 ) 0.9864580794027334, 0.013541920597266534;
+
+}

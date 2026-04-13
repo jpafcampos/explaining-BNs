@@ -275,7 +275,7 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
                     continue # Reject and generate a new random patient
             except (ValueError, MemoryError):
                 print(f"    [!] EXACT INFERENCE IMPOSSIBLE: Sub-network exceeded hardware limits.")
-                return unfilled_buckets # Bail out safely
+                return unfilled_buckets
                 
             # 3. Calculate Exact SDP
             partitions = get_partitions(bn, hidden_vars, target_node, temp_patient)

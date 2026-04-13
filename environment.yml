@@ -7,9 +7,10 @@ dependencies:
   - pip
   - numpy
   - pip:
-    - pgmpy
+    - pgmpy==0.1.23
+    - networkx==3.1
     - rapidfuzz
-    - igraph
+    - python-igraph
     - xgboost
     - imbalanced-learn
     - pandas

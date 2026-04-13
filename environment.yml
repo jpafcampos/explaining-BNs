@@ -1,6 +1,7 @@
 name: bn-medical
 channels:
-  - defaults
+  - conda-forge
+  - nodefaults
 dependencies:
   - pexpect==4.9.0=pyhd8ed1ab_0
   - asttokens==2.4.1=pyhd8ed1ab_0

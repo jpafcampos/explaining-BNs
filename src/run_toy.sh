@@ -9,4 +9,5 @@ source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs
 
 python synthetic_experiments_script.py \
+    --toy \
     --output results/experiment_$SLURM_JOB_ID.csv

@@ -752,81 +752,189 @@ def fast_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
 
     return count_same / len(accepted_samples)
 
-def fast_mcmc_sdp_estimation_old(bn, target, target_value, patient, threshold, n_samples=11000, burn_in=1000, thinning=10):
-    hidden_vars = [node for node in bn.nodes() if node not in patient and node != target]
-    
-    # 1. SEED THE CHAIN: Use Likelihood Weighting just to find ONE physically possible patient.
-    sampler = BayesianModelSampling(bn)
-    evidence_states = [State(var, state) for var, state in patient.items()]
-    valid_seed_found = False
-    
-    while not valid_seed_found:
-        seed_samples = sampler.likelihood_weighted_sample(size=100, evidence=evidence_states, show_progress=False)
-        valid_seeds = seed_samples[seed_samples['_weight'] > 0] # Filter out impossible realities
-        if not valid_seeds.empty:
-            best_seed = valid_seeds.sort_values('_weight', ascending=False).iloc[0]
-            current_h = {var: best_seed[var] for var in hidden_vars}
-            valid_seed_found = True
-            
-    # Calculate starting probability
-    current_log_p = calculate_unnormalized_posterior(bn, current_h, patient, target)
-    
-    # 2. RUN THE METROPOLIS-HASTINGS CHAIN
-    total_iterations = burn_in + (n_samples * thinning)
+def pt_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
+                            n_samples=11000, burn_in=1000, thinning=10,
+                            n_chains=4, max_temp=10.0):
+
+
+    hidden_vars     = [n for n in bn.nodes() if n not in patient and n != target]
+    target_states   = bn.get_cpds(target).state_names[target]
+    cpd_cache       = {n: bn.get_cpds(n) for n in bn.nodes()}
+    children_cache  = {v: list(bn.get_children(v)) for v in hidden_vars}
+    affected_cache  = {v: [v] + children_cache[v] for v in hidden_vars}
+    evidence_states = [State(var, val) for var, val in patient.items()]
+    sampler         = BayesianModelSampling(bn)
+
+    # Geometrically spaced temperature ladder: chain 0 = cold (τ=1), chain k = hot
+    temps = np.geomspace(1.0, max_temp, n_chains)
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def full_log_joint(h_dict, t_state):
+        """log P(H, E, target=t_state) — full joint over all CPDs."""
+        full = {**h_dict, **patient, target: t_state}
+        lp = 0.0
+        for cpd in cpd_cache.values():
+            p = cpd.get_value(**{v: full[v] for v in cpd.variables})
+            if p == 0.0:
+                return float('-inf')
+            lp += math.log(p)
+        return lp
+
+    def log_sum_joints(lj_dict):
+        """log P(H, E) = log Σ_t P(H, E, t) via log-sum-exp."""
+        vals = [v for v in lj_dict.values() if v != float('-inf')]
+        if not vals:
+            return float('-inf')
+        m = max(vals)
+        return m + math.log(sum(math.exp(v - m) for v in vals))
+
+    def local_log_delta(var, old_val, new_val, h_dict, t_state):
+        """
+        O(d·k) local update: recompute only the CPDs in the Markov blanket
+        of the flipped variable rather than the full joint.
+        """
+        full_old = {**h_dict, **patient, target: t_state}
+        full_new = {**full_old, var: new_val}
+        delta = 0.0
+        for node in affected_cache[var]:
+            cpd   = cpd_cache[node]
+            cvars = cpd.variables
+            p_old = cpd.get_value(**{v: full_old[v] for v in cvars})
+            p_new = cpd.get_value(**{v: full_new[v] for v in cvars})
+            if p_new == 0.0:
+                return float('-inf')
+            if p_old == 0.0:
+                return float('inf')   # triggers full recompute in caller
+            delta += math.log(p_new) - math.log(p_old)
+        return delta
+
+    def get_seed():
+        """
+        Proportional-weight seeding: sample starting point weighted by
+        likelihood rather than always taking the mode, diversifying chains.
+        """
+        while True:
+            seed_df = sampler.likelihood_weighted_sample(
+                size=100, evidence=evidence_states, show_progress=False
+            )
+            valid = seed_df[seed_df['_weight'] > 0]
+            if not valid.empty:
+                w = valid['_weight'].values.astype(float)
+                w /= w.sum()
+                row = valid.iloc[np.random.choice(len(valid), p=w)]
+                return {v: row[v] for v in hidden_vars}
+
+    # ── Initialise all chains from diverse seeds ──────────────────────────────
+    chains     = [get_seed() for _ in range(n_chains)]
+    chain_ljs  = [
+        {t: full_log_joint(h, t) for t in target_states}
+        for h in chains
+    ]
+    chain_logp = [log_sum_joints(lj) for lj in chain_ljs]
+
+    n_pairs       = n_chains - 1
+    swap_attempts = np.zeros(n_pairs, dtype=int)
+    swap_accepts  = np.zeros(n_pairs, dtype=int)
+
+    # ── Main loop ─────────────────────────────────────────────────────────────
+    total_iters      = burn_in + n_samples * thinning
     accepted_samples = []
-    
-    for i in range(total_iterations):
-        # Propose a new reality by flipping ONE random hidden variable
-        var_to_flip = random.choice(hidden_vars)
-        possible_states = bn.get_cpds(var_to_flip).state_names[var_to_flip]
-        current_state_val = current_h[var_to_flip]
-        
-        new_state_val = random.choice([s for s in possible_states if s != current_state_val])
-        
-        proposed_h = current_h.copy()
-        proposed_h[var_to_flip] = new_state_val
-        
-        # Evaluate proposed reality
-        proposed_log_p = calculate_unnormalized_posterior(bn, proposed_h, patient, target)
-        
-        # Metropolis-Hastings Acceptance Criterion: log(alpha) = log_P(new) - log_P(old)
-        log_alpha = proposed_log_p - current_log_p
-        
-        accept = False
-        if log_alpha >= 0:
-            accept = True
-        elif proposed_log_p != float('-inf'):
-            if math.log(random.uniform(0, 1)) < log_alpha:
-                accept = True
-                
-        if accept:
-            current_h = proposed_h
-            current_log_p = proposed_log_p
-            
-        # Save independent samples
+
+    for i in range(total_iters):
+
+        # ── Step 1: MH update for every chain at its own temperature ──────────
+        # Each chain proposes a single-variable flip and accepts via a
+        # tempered ratio: α = min(1, [P(H',E) / P(H,E)]^(1/τ))
+        # Hot chains (high τ) accept more freely, exploring broadly.
+        # Cold chain (τ=1) targets the true posterior.
+        for c in range(n_chains):
+            var     = random.choice(hidden_vars)
+            cur_val = chain[var] if (chain := chains[c]) else None
+            cur_val = chains[c][var]
+            others  = [s for s in cpd_cache[var].state_names[var] if s != cur_val]
+            if not others:
+                continue
+            new_val = random.choice(others)
+
+            # Local delta for each target state (fast path)
+            proposed_lj = {}
+            recompute   = False
+            for t in target_states:
+                if chain_ljs[c][t] == float('-inf'):
+                    recompute = True
+                    break
+                delta = local_log_delta(var, cur_val, new_val, chains[c], t)
+                if delta == float('inf'):
+                    recompute = True
+                    break
+                proposed_lj[t] = chain_ljs[c][t] + delta
+
+            if recompute:
+                tmp         = {**chains[c], var: new_val}
+                proposed_lj = {t: full_log_joint(tmp, t) for t in target_states}
+
+            proposed_log_p = log_sum_joints(proposed_lj)
+
+            # Tempered acceptance: divide log-ratio by τ
+            # τ=1  → standard MH (cold, conservative)
+            # τ>1  → flattened acceptance (hot, exploratory)
+            log_alpha = (proposed_log_p - chain_logp[c]) / temps[c]
+
+            if log_alpha >= 0 or (
+                proposed_log_p != float('-inf') and
+                math.log(random.random()) < log_alpha
+            ):
+                chains[c][var]  = new_val
+                chain_ljs[c]    = proposed_lj
+                chain_logp[c]   = proposed_log_p
+
+        # ── Step 2: Parallel tempering swap between one adjacent pair ─────────
+        # Propose swapping the configurations of chains c1 and c2.
+        # The MH ratio for this swap is:
+        #   log α = (1/τ_c1 - 1/τ_c2) × (log P(H_c2,E) - log P(H_c1,E))
+        # Hot-chain configurations that pass the cold chain's threshold
+        # get injected into the cold chain, allowing mode crossing.
+        if i % 10 == 0 and n_chains > 1:
+            c1 = random.randint(0, n_pairs - 1)
+            c2 = c1 + 1
+            swap_attempts[c1] += 1
+
+            log_alpha_swap = (
+                (1.0 / temps[c1] - 1.0 / temps[c2]) *
+                (chain_logp[c2] - chain_logp[c1])
+            )
+
+            if log_alpha_swap >= 0 or math.log(random.random()) < log_alpha_swap:
+                chains[c1],     chains[c2]     = chains[c2],     chains[c1]
+                chain_ljs[c1],  chain_ljs[c2]  = chain_ljs[c2],  chain_ljs[c1]
+                chain_logp[c1], chain_logp[c2] = chain_logp[c2], chain_logp[c1]
+                swap_accepts[c1] += 1
+
+        # ── Step 3: Collect from cold chain only (τ=1, index 0) ───────────────
         if i >= burn_in and (i - burn_in) % thinning == 0:
-            accepted_samples.append(current_h.copy())
-            
-    # 3. EVALUATE THE DECISION BOUNDARY
-    inference = VariableElimination(bn)
-    count_same_decision = 0
+            accepted_samples.append(chains[0].copy())
+
+    # ── Report swap health ────────────────────────────────────────────────────
+    for p_idx in range(n_pairs):
+        rate = (swap_accepts[p_idx] / swap_attempts[p_idx]
+                if swap_attempts[p_idx] > 0 else 0.0)
+        status = '✓' if 0.2 <= rate <= 0.5 else '✗ adjust max_temp'
+        print(f"  Swap τ={temps[p_idx]:.1f}↔τ={temps[p_idx+1]:.1f}: "
+              f"{rate:.3f}  {status}")
+
+    # ── Evaluate decision boundary on cold chain samples ─────────────────────
+    count_same    = 0
     decision_cache = {}
-    
+
     for sample_h in accepted_samples:
-        patient_id = tuple(sample_h.items())
-        if patient_id in decision_cache:
-            makes_same = decision_cache[patient_id]
-        else:
-            # Combine evidence and the MCMC hidden sample
-            full_evidence = {**patient, **sample_h}
-            
-            # Use the O(1) Markov Blanket evaluator
-            p_target = get_exact_target_posterior_O1(bn, target, target_value, full_evidence)
-            makes_same = p_target >= threshold
-            
-            decision_cache[patient_id] = makes_same
-            
-        if makes_same:
-            count_same_decision += 1
-            
-    return count_same_decision / len(accepted_samples)
+        key = tuple(sorted(sample_h.items()))
+        if key not in decision_cache:
+            full_ev = {**patient, **sample_h}
+            p       = get_exact_target_posterior_O1(
+                          bn, target, target_value, full_ev)
+            decision_cache[key] = (p >= threshold)
+        if decision_cache[key]:
+            count_same += 1
+
+    return count_same / len(accepted_samples)

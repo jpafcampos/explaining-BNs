@@ -86,7 +86,6 @@ def run_for_memory(func, *args, **kwargs):
 
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv"):
     bif_files = glob.glob(os.path.join(bif_directory, "*.bif"))
-    print(f"Found {len(bif_files)} BIF files in {bif_directory}")
     results = []
     
     H_RATIOS = [0.1, 0.3, 0.5, 0.70, 0.90] # Hidden variable ratios to test
@@ -164,7 +163,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
                         fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                        n_samples=11000, burn_in=1000, thinning=10
+                        n_samples=52000, burn_in=2000, thinning=50
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)
@@ -182,7 +181,40 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
                 print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb:.2f} MB")
                 
                 absolute_error = abs(exact_sdp - mcmc_mean)
+
+                # ========================================================
+                # PARALLEL TEMPERING MCMC EVALUATION
+                # ========================================================
+
+                pt_mcmc_estimates = []
+                pt_mcmc_times = []
+
+                print(f"       -> Running Parallel Tempering MCMC SDP (Trials: {MCMC_TRIALS})...")              
                 
+                # Pass 1: Pure Time (across all trials)
+                for trial in range(MCMC_TRIALS):
+                    est_sdp, t_time, _ = run_for_time(
+                        pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
+                        n_samples=52000, burn_in=2000, thinning=50, n_chains=4, max_temp=40.0
+                    )
+                    pt_mcmc_estimates.append(est_sdp)
+                    pt_mcmc_times.append(t_time)
+
+                pt_mcmc_mean = np.mean(pt_mcmc_estimates)
+                pt_mcmc_avg_time = np.mean(pt_mcmc_times)
+                pt_mcmc_variance = np.var(pt_mcmc_estimates)
+
+                # Pass 2: Peak Memory
+                pt_mcmc_mem_mb = run_for_memory(
+                    pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
+                    n_samples=1000, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
+                )
+
+                print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb:.2f} MB")
+
+                absolute_error_pt = abs(exact_sdp - pt_mcmc_mean)
+                
+            
                 # Record everything to the dataset
                 results.append({
                     'Network': os.path.basename(file),
@@ -197,7 +229,11 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
                     'MCMC_Mean_SDP': mcmc_mean,
                     'MCMC_Variance': mcmc_variance,
                     'MCMC_Avg_Time_sec': mcmc_avg_time,
-                    'Absolute_Error': absolute_error
+                    'Absolute_Error': absolute_error,
+                    'PT_MCMC_Mean_SDP': pt_mcmc_mean,
+                    'PT_MCMC_Variance': pt_mcmc_variance,
+                    'PT_MCMC_Avg_Time_sec': pt_mcmc_avg_time,
+                    'PT_Absolute_Error': absolute_error_pt
                 })
                 
                 # Save progressively
@@ -211,11 +247,18 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('--toy', action='store_true', help='Run the toy experiment with small BNs')
     parser.add_argument('--output', type=str, default='results/targeted_sdp_random_bns.csv')
-    parser.add_argument('--bif-dir', type=str, default='./generated_bif_files')
+    
     args = parser.parse_args()
 
     # Ensure the output directory exists
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    if parser.parse_args().toy:
+        print("Running toy experiment with small BNs...")
+        run_targeted_sdp_experiment(bif_directory='./toy_experiment', output_csv='results/toy_targeted_sdp_small_bns.csv')
+        exit(0)
 
-    run_targeted_sdp_experiment(args.bif_dir, output_csv=args.output)
+    else:
+        print("Running full experiment with all BNs...")
+        run_targeted_sdp_experiment(bif_directory='./generated_bif_files', output_csv=args.output)

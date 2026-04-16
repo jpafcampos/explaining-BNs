@@ -2,6 +2,7 @@
 #SBATCH --job-name=toy_experiment
 #SBATCH --output=results/logs/experiment_%j.out
 #SBATCH --error=results/logs/experiment_%j.err
+#SBATCH --time=02:00:00 
 #SBATCH --ntasks=1
 
 source ~/miniforge3/bin/activate bn-medical

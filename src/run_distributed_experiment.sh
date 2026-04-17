@@ -9,7 +9,7 @@
 source ~/miniforge3/bin/activate bn-medical
 mkdir -p /projects/b36ag/explaining-BNs/results/logs
 
-python /projects/b36ag/explaining-BNs/src/my_experiment_script.py \
+python src/synthetic_experiment_parallel.py \
     --bif-dir ./generated_bif_files/ \
     --output results/final_results.csv \
     --n-workers 36

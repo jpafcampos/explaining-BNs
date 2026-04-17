@@ -300,7 +300,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0]
     #TARGET_BUCKETS = [0.5, 0.9]
-    MCMC_TRIALS = 2
+    MCMC_TRIALS = 10
 
     # Build args list for each file
     args_list = [

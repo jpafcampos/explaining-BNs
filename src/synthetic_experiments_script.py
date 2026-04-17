@@ -38,27 +38,60 @@ def parse_bn_filename(filename):
 
 def select_optimal_target_node(bn):
     """
-    Selects a target node deeply embedded in the network (highest degree).
-    Highly connected nodes provide a smooth, responsive probability gradient 
-    for the Hill Climber, making extreme SDP values (0.90+) reachable.
+    Selects a binary target node that is well-embedded as a CHILD in the
+    network — i.e. has parents whose states can shift its posterior.
+
+    A node with no parents has a fixed prior: evidence can never update it,
+    the decision boundary never moves, and interesting SDP values are
+    unreachable. We therefore require at least one parent and rank by
+    n_parents first, n_children second.
     """
-    best_node = None
-    max_degree = -1
-    
+    best_node   = None
+    best_score  = (-1, -1)   # (n_parents, n_children)
+
     for node in bn.nodes():
-        # Ensure it's a binary node
-        if len(bn.get_cpds(node).state_names[node]) != 2:
+        cpd = bn.get_cpds(node)
+
+        # Must be binary
+        if len(cpd.state_names[node]) != 2:
             continue
-            
-        degree = len(bn.get_parents(node)) + len(bn.get_children(node))
-        if degree > max_degree:
-            max_degree = degree
-            best_node = node
-            
-    # Fallback if no binary nodes exist (rare)
+
+        n_parents  = len(bn.get_parents(node))
+        n_children = len(list(bn.get_children(node)))
+
+        # Hard requirement: must have at least one parent so that evidence
+        # can influence its posterior through the network
+        if n_parents == 0:
+            continue
+
+        score = (n_parents, n_children)
+        if score > best_score:
+            best_score = score
+            best_node  = node
+
+    # Fallback: if every binary node is a root (unusual), relax the
+    # parent requirement and just pick highest total degree
     if best_node is None:
-        return random.choice(list(bn.nodes()))
-        
+        print("Warning: no binary node with parents found — "
+              "falling back to highest-degree binary node.")
+        for node in bn.nodes():
+            if len(bn.get_cpds(node).state_names[node]) != 2:
+                continue
+            n_parents  = len(bn.get_parents(node))
+            n_children = len(list(bn.get_children(node)))
+            score = (n_parents + n_children, n_parents)
+            if score > best_score:
+                best_score = score
+                best_node  = node
+
+    if best_node is None:
+        best_node = random.choice(list(bn.nodes()))
+        print(f"Warning: using random fallback target: {best_node}")
+
+    n_pa = len(bn.get_parents(best_node))
+    n_ch = len(list(bn.get_children(best_node)))
+    print(f"Selected target: {best_node}  "
+          f"(parents={n_pa}, children={n_ch})")
     return best_node
 
 
@@ -84,14 +117,18 @@ def run_for_memory(func, *args, **kwargs):
     tracemalloc.stop()
     return peak_mem / (1024 * 1024) # Return MB
 
-def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv"):
-    bif_files = glob.glob(os.path.join(bif_directory, "*.bif"))
+def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", job_idx=0, n_jobs=1):
+    bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
+    # Interleave: job 0 gets files 0, 50, 100...
+    #             job 1 gets files 1, 51, 101... etc.
+    bif_files = bif_files[job_idx::n_jobs]
+    print(f"Job {job_idx} processing {len(bif_files)} files...")
     results = []
     
     H_RATIOS = [0.1, 0.3, 0.5, 0.70, 0.90] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0]
-    MCMC_TRIALS = 20
+    MCMC_TRIALS = 10
     
     for file in bif_files:
         n_nodes, density, rigidity = parse_bn_filename(file)
@@ -163,7 +200,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
                         fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                        n_samples=52000, burn_in=2000, thinning=50
+                        n_samples=1000, burn_in=2000, thinning=50
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)
@@ -175,7 +212,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
                 # Pass 2: Peak Memory
                 mcmc_mem_mb = run_for_memory(
                     fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                    n_samples=1000, burn_in=50, thinning=5
+                    n_samples=100, burn_in=50, thinning=5
                 )
                 
                 print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb:.2f} MB")
@@ -195,7 +232,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
                         pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                        n_samples=52000, burn_in=2000, thinning=50, n_chains=4, max_temp=40.0
+                        n_samples=1000, burn_in=2000, thinning=50, n_chains=4, max_temp=40.0
                     )
                     pt_mcmc_estimates.append(est_sdp)
                     pt_mcmc_times.append(t_time)
@@ -207,7 +244,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
                 # Pass 2: Peak Memory
                 pt_mcmc_mem_mb = run_for_memory(
                     pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                    n_samples=1000, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
+                    n_samples=100, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
                 )
 
                 print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb:.2f} MB")
@@ -407,6 +444,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--toy', action='store_true', help='Run the toy experiment with small BNs')
     parser.add_argument('--output', type=str, default='results/targeted_sdp_random_bns.csv')
+    parser.add_argument('--job-idx', type=int, default=0)
+    parser.add_argument('--n-jobs', type=int, default=1)
     
     args = parser.parse_args()
 
@@ -419,4 +458,4 @@ if __name__ == "__main__":
 
     else:
         print("Running full experiment with all BNs...")
-        run_targeted_sdp_experiment(bif_directory='./generated_bif_files', output_csv=args.output)
+        run_targeted_sdp_experiment(bif_directory='./generated_bif_files', output_csv=args.output, job_idx=args.job_idx, n_jobs=args.n_jobs)

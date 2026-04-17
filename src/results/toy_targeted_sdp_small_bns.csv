@@ -1,0 +1,2 @@
+Network,N_Nodes,Density,Rigidity,Target_Bucket,Target_Node,Target_Value,Exact_SDP,Exact_Time_sec,MCMC_Mean_SDP,MCMC_Variance,MCMC_Avg_Time_sec,Absolute_Error,PT_MCMC_Mean_SDP,PT_MCMC_Variance,PT_MCMC_Avg_Time_sec,PT_Absolute_Error
+bn_n30_w2_rigid_extreme.bif,30,2,rigid_extreme,0.7,X5,1,0.7424060164675463,0.0073702335357666016,1.0,0.0,0.6194983720779419,0.25759398353245366,0.5,0.25,2.399588704109192,0.24240601646754634

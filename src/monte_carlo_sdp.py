@@ -920,8 +920,7 @@ def pt_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
         rate = (swap_accepts[p_idx] / swap_attempts[p_idx]
                 if swap_attempts[p_idx] > 0 else 0.0)
         status = '✓' if 0.2 <= rate <= 0.5 else '✗ adjust max_temp'
-        print(f"  Swap τ={temps[p_idx]:.1f}↔τ={temps[p_idx+1]:.1f}: "
-              f"{rate:.3f}  {status}")
+        #print(f"  Swap τ={temps[p_idx]:.1f}↔τ={temps[p_idx+1]:.1f}: " f"{rate:.3f}  {status}")
 
     # ── Evaluate decision boundary on cold chain samples ─────────────────────
     count_same    = 0

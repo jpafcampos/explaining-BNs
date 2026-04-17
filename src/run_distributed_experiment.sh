@@ -4,7 +4,7 @@
 #SBATCH --error=results/logs/parallel_experiment_%j.err
 #SBATCH --time=06:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=18
+#SBATCH --cpus-per-task=8
 
 source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs
@@ -12,4 +12,4 @@ mkdir -p results/logs
 python synthetic_experiment_parallel.py \
     --bif-dir ./generated_bif_files/ \
     --output results/final_results.csv \
-    --n-workers 18
+    --n-workers 8

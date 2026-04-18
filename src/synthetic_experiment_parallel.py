@@ -528,13 +528,24 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     ]
 
     all_results = []
+    #with Pool(processes=n_workers) as pool:
+    #    for file_results in pool.imap_unordered(process_single_file, args_list):
+    #        all_results.extend(file_results)
+    #        # Save progressively after each file completes
+    #        #pd.DataFrame(all_results).to_csv(output_csv, index=False)
+
     with Pool(processes=n_workers) as pool:
         for file_results in pool.imap_unordered(process_single_file, args_list):
-            all_results.extend(file_results)
-            # Save progressively after each file completes
-            #pd.DataFrame(all_results).to_csv(output_csv, index=False)
+            files_done += 1
+            if file_results:
+                all_results.extend(file_results)
+                pd.DataFrame(all_results).to_csv(output_csv, index=False)
+                print(f"[{files_done}/{len(bif_files)}] Checkpoint saved — {len(all_results)} total rows")
+            else:
+                print(f"[{files_done}/{len(bif_files)}] No results for this file")
 
-    pd.DataFrame(all_results).to_csv(output_csv, index=False)
+
+    #pd.DataFrame(all_results).to_csv(output_csv, index=False)
     print(f"\nExperiment Complete! Results saved to {output_csv}")
     return pd.DataFrame(all_results)
 

@@ -344,10 +344,13 @@ def find_exact_experimental_patients_slurm(bn, target_node, target_value, decisi
 def process_single_file(args):
     """Process one BIF file and return results as a list of dicts."""
  
-    file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, MCMC_TRIALS = args
+    file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, MCMC_TRIALS = args
     results = []
 
     n_nodes, density, rigidity = parse_bn_filename(file)
+    if n_nodes not in SIZES_TO_RUN:
+        return [] 
+
     print(f"\n========================================")
     print(f"Loading: {os.path.basename(file)}")
     
@@ -382,7 +385,7 @@ def process_single_file(args):
         #    bn, target, target_value, DECISION_THRESHOLD, evidence_vars, TARGET_BUCKETS
         #)
         harvested_data = find_exact_experimental_patients_slurm(bn, target, target_value, DECISION_THRESHOLD,
-                                                                n_evidence, buckets=TARGET_BUCKETS, batch_size=10_000, mem_limit_gb=32.0)
+                                                                n_evidence, buckets=TARGET_BUCKETS, batch_size=8_000, mem_limit_gb=32.0)
         
         # Now process whatever it managed to find
         for target_sdp, result in harvested_data.items():
@@ -512,9 +515,11 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     #TARGET_BUCKETS = [0.5, 0.9]
     MCMC_TRIALS = 10
 
+    SIZES_TO_RUN = [20, 50, 100, 200]
+
     # Build args list for each file
     args_list = [
-        (file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, MCMC_TRIALS)
+        (file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, MCMC_TRIALS)
         for file in bif_files
     ]
 

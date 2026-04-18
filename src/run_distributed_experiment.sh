@@ -2,7 +2,7 @@
 #SBATCH --job-name=sdp__parallel_experiment
 #SBATCH --output=results/logs/parallel_experiment_%j.out
 #SBATCH --error=results/logs/parallel_experiment_%j.err
-#SBATCH --time=06:00:00
+#SBATCH --time=15:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=128G

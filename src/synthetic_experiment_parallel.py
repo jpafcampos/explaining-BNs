@@ -513,10 +513,10 @@ def process_single_file(args):
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", n_workers=4):
     bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
     
-    H_RATIOS = [0.1, 0.25, 0.5, 0.75, 0.9]
+    H_RATIOS = [0.5]
     #H_RATIOS = [0.3]
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0]
+    TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.90, 1.0]
     #TARGET_BUCKETS = [0.5, 0.9]
     MCMC_TRIALS = 10
 

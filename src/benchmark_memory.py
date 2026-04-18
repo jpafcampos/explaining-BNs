@@ -103,4 +103,4 @@ def benchmark_hidden_vars(bif_file, max_hidden=20):
 
 if __name__ == "__main__":
 
-    benchmark_hidden_vars("./generated_bif_files/bn_n200_w12_uncertain_strong.bif", max_hidden=190)
+    benchmark_hidden_vars("./generated_bif_files/bn_n20_w12_uncertain_strong.bif", max_hidden=190)

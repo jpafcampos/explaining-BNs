@@ -263,6 +263,7 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
             # 1. Generate random patient
             temp_patient = {}
             evidence_vars = random.sample(available_nodes, min(n_evidence, len(available_nodes)))
+            hidden_vars = [n for n in all_nodes if n not in evidence_vars and n != target_node]
             #print(f"  Evidence vars for this patient: {evidence_vars}")
             for var in evidence_vars:
                 states = bn.get_cpds(var).state_names[var]

@@ -6,6 +6,7 @@ from pgmpy.readwrite import BIFReader
 from same_decision_probability_calculation import *
 
 import random
+import time 
 
 def select_optimal_target_node(bn):
     """
@@ -85,12 +86,17 @@ def benchmark_hidden_vars(bif_file, max_hidden=20):
 
         try:
             partitions = get_partitions(bn, hidden_vars, target, patient)
-            result = fast_broadcast_sdp(bn, target, target_value, patient, 0.5, partitions)
             
+            start = time.perf_counter()
+            result = fast_broadcast_sdp(bn, target, target_value, patient, 0.5, partitions)
+            elapsed = time.perf_counter() - start
+
             current, peak = tracemalloc.get_traced_memory()
             tracemalloc.stop()
-            
-            print(f"Hidden vars: {n_hidden:3d} | Peak memory: {peak / 1024 / 1024:.2f} MB | OK")
+
+            print(f"Hidden vars: {n_hidden:3d} | "
+                  f"Peak memory: {peak / 1024 / 1024:.2f} MB | "
+                  f"Time: {elapsed:.4f} sec | OK")
 
         except MemoryError:
             tracemalloc.stop()

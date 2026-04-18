@@ -10,6 +10,8 @@
 source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs
 
+export PYTHONUNBUFFERED=1
+
 python synthetic_experiment_parallel.py \
     --bif-dir ./generated_bif_files/ \
     --output results/final_results.csv \

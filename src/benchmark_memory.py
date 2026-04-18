@@ -168,5 +168,5 @@ def benchmark_hidden_vars_until_max(bif_file, max_hidden=20):
 
 if __name__ == "__main__":
 
-    benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=190)
+    benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=100)
     #benchmark_hidden_vars_until_max("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", max_hidden=38)

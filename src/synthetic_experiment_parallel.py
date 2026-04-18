@@ -379,7 +379,7 @@ def process_single_file(args):
         n_hidden = max(1, int(len(available_nodes) * H_RATIO))
 
         # can not process more than 100 hidden variables
-        if n_nodes > 200 and n_hidden > 100:
+        if n_nodes == 200 and n_hidden > 100:
             continue
 
         n_evidence = len(available_nodes) - n_hidden

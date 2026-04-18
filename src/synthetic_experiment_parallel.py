@@ -37,6 +37,52 @@ def parse_bn_filename(filename):
     type_CPT = '_'.join(parts[2:])
     return n_nodes, density, type_CPT
 
+def estimate_exact_inference_memory(bn):
+    """
+    Simulates Variable Elimination using the Min-Degree heuristic to find the 
+    maximum clique size (Treewidth + 1). Returns the estimated RAM required in GB.
+    """
+    # 1. Create undirected skeleton
+    G = bn.to_undirected()
+    
+    # 2. Moralize the graph (marry all parents)
+    for node in bn.nodes():
+        parents = list(bn.get_parents(node))
+        for i in range(len(parents)):
+            for j in range(i+1, len(parents)):
+                G.add_edge(parents[i], parents[j])
+                
+    # 3. Simulate elimination to find the largest tensor (clique)
+    max_clique_size = 0
+    nodes = list(G.nodes())
+    
+    while nodes:
+        # Find node with minimum degree
+        degrees = dict(G.degree(nodes))
+        min_node = min(degrees, key=degrees.get)
+        
+        # Calculate the size of the tensor formed by this node and its neighbors
+        neighbors = list(G.neighbors(min_node))
+        clique_size = len(neighbors) + 1 # +1 for the node itself
+        
+        if clique_size > max_clique_size:
+            max_clique_size = clique_size
+            
+        # Connect all neighbors to each other (fill-in edges)
+        for i in range(len(neighbors)):
+            for j in range(i+1, len(neighbors)):
+                G.add_edge(neighbors[i], neighbors[j])
+                
+        # Remove the node
+        G.remove_node(min_node)
+        nodes.remove(min_node)
+        
+    # Calculate Memory: 2^W states * 8 bytes per float
+    estimated_bytes = (2 ** max_clique_size) * 8
+    estimated_gb = estimated_bytes / (1024 ** 3)
+    
+    return max_clique_size, estimated_gb
+
 def select_optimal_target_node_old(bn):
     """
     Selects a target node deeply embedded in the network (highest degree).
@@ -153,6 +199,18 @@ def process_single_file(args):
     
     bn = BIFReader(file).get_model()
     all_nodes = list(bn.nodes())
+
+    # --- SAFETY VALVE: Check Memory Limits Before Harvesting ---
+    max_tensor, est_gb = estimate_exact_inference_memory(bn)
+    print(f"  -> Max Tensor Size: {max_tensor} variables")
+    print(f"  -> Estimated Peak RAM: {est_gb:.2f} GB")
+    
+    # If the network requires more than ~16GB per worker, skip it!
+    # (Leaving room for Python overhead and the 8 parallel workers sharing 64GB)
+    if est_gb > 32.0: 
+        print(f"  [!] DANGER: Network exceeds memory safety limits. Skipping entirely.")
+        return [] # Return empty results so the worker survives and moves to the next file
+    # -----------------------------------------------------------
     
     target = select_optimal_target_node(bn)
     target_states = bn.get_cpds(target).state_names[target]

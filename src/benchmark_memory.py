@@ -123,49 +123,6 @@ def benchmark_hidden_vars(bif_file, n_trials=20, n_hidden=80):
         print(f"Memory  — min: {min(memories):.2f}MB | max: {max(memories):.2f}MB | avg: {sum(memories)/len(memories):.2f}MB")
         print(f"Hidden edges — this tells us if low memory correlates with sparse hidden subgraphs")
 
-def benchmark_hidden_vars_until_max(bif_file, max_hidden=20):
-    bn = BIFReader(bif_file).get_model()
-    all_nodes = list(bn.nodes())
-    target = select_optimal_target_node(bn)
-    target_states = bn.get_cpds(target).state_names[target]
-    target_value = target_states[1] if len(target_states) > 1 else target_states[0]
-    available_nodes = [n for n in all_nodes if n != target]
-
-    for n_hidden in range(1, min(max_hidden, len(available_nodes))):
-        hidden_vars = available_nodes[:n_hidden]
-        # THIS IS STUPID AND IS CREATING MASSIVE PARTITIONS
-        patient = {n: bn.get_cpds(n).state_names[n][0] 
-                   for n in available_nodes if n not in hidden_vars}
-
-        hidden_edges = bn.subgraph(hidden_vars).number_of_edges()  # add this
-
-        gc.collect()
-        tracemalloc.start()
-
-        try:
-            partitions = get_partitions(bn, hidden_vars, target, patient)
-            
-            start = time.perf_counter()
-            result = fast_broadcast_sdp(bn, target, target_value, patient, 0.5, partitions)
-            elapsed = time.perf_counter() - start
-
-            current, peak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-
-            print(f"Hidden vars: {n_hidden:3d} | "
-                  f"Hidden edges: {hidden_edges:3d} | "
-                  f"Peak memory: {peak / 1024 / 1024:.2f} MB | "
-                  f"Time: {elapsed:.4f} sec | OK")
-
-        except MemoryError:
-            tracemalloc.stop()
-            print(f"Hidden vars: {n_hidden:3d} | OUT OF MEMORY")
-            break
-        except Exception as e:
-            tracemalloc.stop()
-            print(f"Hidden vars: {n_hidden:3d} | ERROR: {e}")
-            break
-
 if __name__ == "__main__":
 
     benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)

@@ -451,6 +451,7 @@ def process_single_file(args):
             # EXACT SDP EVALUATION
             # ========================================================
             partitions = get_partitions(bn, hidden_vars, target, patient)
+            print(f"       -> Biggest partition size: {max(len(p) for p in partitions)} hidden variables")
             print(f"       -> Running Exact SDP...")
             
             # Pass 1: Time

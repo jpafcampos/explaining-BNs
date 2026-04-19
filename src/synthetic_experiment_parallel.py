@@ -453,10 +453,12 @@ def process_single_file(args):
             )
             
             # Pass 2: Memory
+            gc.collect() # Clean up before the memory test
             exact_mem_mb = run_for_memory(
                 fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
             )
-            
+            gc.collect() # Clean up after the memory test
+
             if exact_success:
                 print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb:.2f} MB")
             else:
@@ -484,10 +486,12 @@ def process_single_file(args):
             mcmc_variance = np.var(mcmc_estimates)
 
             # Pass 2: Peak Memory
+            gc.collect() # Clean up before the memory test
             mcmc_mem_mb = run_for_memory(
                 fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
                 n_samples=10, burn_in=50, thinning=5
             )
+            gc.collect() # Clean up after the memory test
             
             print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb:.2f} MB")
             
@@ -516,11 +520,12 @@ def process_single_file(args):
             pt_mcmc_variance = np.var(pt_mcmc_estimates)
 
             # Pass 2: Peak Memory
+            gc.collect() # Clean up before the memory test
             pt_mcmc_mem_mb = run_for_memory(
                 pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
                 n_samples=10, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
             )
-
+            gc.collect() # Clean up after the memory test
             print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb:.2f} MB")
 
             absolute_error_pt = abs(exact_sdp - pt_mcmc_mean)

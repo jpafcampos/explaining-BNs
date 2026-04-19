@@ -367,7 +367,12 @@ def find_exact_experimental_patients_slurm(bn, target_node, target_value, decisi
 
 def process_single_file(args):
     """Process one BIF file and return results as a list of dicts."""
- 
+     # Tell joblib/pgmpy to stay single-threaded inside this worker
+    os.environ["LOKY_MAX_CPU_COUNT"] = "1"
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["NUMEXPR_NUM_THREADS"] = "1"
+    
     file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, DENSITIES_TO_RUN, MCMC_TRIALS = args
     results = []
 

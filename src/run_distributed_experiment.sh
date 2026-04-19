@@ -11,6 +11,9 @@ source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs
 
 export PYTHONUNBUFFERED=1
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
 
 python synthetic_experiment_parallel.py \
     --bif-dir ./generated_bif_files/ \

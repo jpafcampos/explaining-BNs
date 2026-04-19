@@ -369,6 +369,7 @@ def find_exact_experimental_patients_slurm(bn, target_node, target_value, decisi
         
     return unfilled_buckets
 
+import psutil
 def process_single_file(args):
     """Process one BIF file and return results as a list of dicts."""
      # Tell joblib/pgmpy to stay single-threaded inside this worker
@@ -379,6 +380,9 @@ def process_single_file(args):
 
     file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, DENSITIES_TO_RUN, MCMC_TRIALS = args
     results = []
+    process = psutil.Process(os.getpid())
+    mem_before = process.memory_info().rss / (1024 ** 3)
+    print(f"[PID {os.getpid()}] START {os.path.basename(file)} | RSS: {mem_before:.2f} GB", flush=True)
 
     n_nodes, density, rigidity = parse_bn_filename(file)
     if n_nodes not in SIZES_TO_RUN:
@@ -544,6 +548,8 @@ def process_single_file(args):
                 'PT_Absolute_Error': absolute_error_pt
             })
     
+    mem_after = process.memory_info().rss / (1024 ** 3)
+    print(f"[PID {os.getpid()}] END {os.path.basename(file)} | RSS: {mem_after:.2f} GB | Delta: {mem_after - mem_before:.2f} GB", flush=True)
     
     return results
 

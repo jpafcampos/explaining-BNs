@@ -5,7 +5,7 @@
 #SBATCH --time=7:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=64G
+#SBATCH --mem=32G
 
 source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs

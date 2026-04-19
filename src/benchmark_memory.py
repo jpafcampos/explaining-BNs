@@ -267,9 +267,8 @@ def benchmark_hidden_vars_sdp_vs_mcmc(bif_file, max_hidden=20, mcmc_trials=1):
             row["mcmc_avg_estimate"] = np.mean(mcmc_estimates)
             row["mcmc_success"] = True
 
-            print(f"{"":>14} Biggest partition: {max_partition:3d} | "
-                  f"MCMC  — Avg Time: {np.mean(mcmc_times):.4f}s | "
-                  f"Memory: {mcmc_peak / 1024 / 1024:.2f} MB | OK")
+            print(f"{"":>14} Biggest partition: {max_partition:3d} | MCMC  — Time: {np.mean(mcmc_times):.4f}s | "
+                  f"Memory: {mcmc_peak / 1024 / 1024:.2f} MB | Estimate: {np.mean(mcmc_estimates):.4f} | OK")
 
         except MemoryError:
             tracemalloc.stop()

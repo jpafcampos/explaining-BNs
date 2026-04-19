@@ -282,6 +282,7 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
                 
             # 3. Calculate Exact SDP
             partitions = get_partitions(bn, hidden_vars, target_node, temp_patient)
+            print(f"       -> Biggest partition size during harvester: {max(len(p) for p in partitions)} hidden variables")
             #print(partitions)
             try:
                 exact_sdp = fast_broadcast_sdp(bn, target_node, target_value, temp_patient, decision_threshold, partitions)

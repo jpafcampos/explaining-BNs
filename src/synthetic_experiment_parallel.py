@@ -564,6 +564,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     #        # Save progressively after each file completes
     #        #pd.DataFrame(all_results).to_csv(output_csv, index=False)
 
+    files_done = 0
     with Pool(processes=n_workers) as pool:
         for file_results in pool.imap_unordered(process_single_file, args_list):
             files_done += 1

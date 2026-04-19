@@ -277,7 +277,7 @@ def benchmark_hidden_vars_sdp_vs_mcmc(bif_file, max_hidden=20, mcmc_trials=1):
             print(f"Hidden vars: {n_hidden:3d} | Biggest partition: {max_partition:3d} | MCMC  — OUT OF MEMORY")
         except Exception as e:
             tracemalloc.stop()
-            print(f"{"":>14} Biggest partition: {max_partition:3d} | MCMC  — ERROR: {e}")
+            print(f"Hidden vars: {n_hidden:3d} | Biggest partition: {max_partition:3d} | MCMC  — ERROR: {e}")
 
         # ========================================================
         # SAVE & CONTINUE

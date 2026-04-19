@@ -429,9 +429,10 @@ def process_single_file(args):
         #harvested_data = harvest_patients_for_all_buckets(
         #    bn, target, target_value, DECISION_THRESHOLD, evidence_vars, TARGET_BUCKETS
         #)
+        gc.collect() # Clean up before the harvest, which can be memory-intensive
         harvested_data = find_exact_experimental_patients_slurm(bn, target, target_value, DECISION_THRESHOLD,
                                                                 n_evidence, buckets=TARGET_BUCKETS, batch_size=8_000, mem_limit_gb=32.0)
-        
+        gc.collect() # Clean up after the harvest, which can be memory-intensive
         # Now process whatever it managed to find
         for target_sdp, result in harvested_data.items():
             if result is None:
@@ -568,7 +569,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     #TARGET_BUCKETS = [0.5, 0.9]
     MCMC_TRIALS = 2
 
-    SIZES_TO_RUN = [50]
+    SIZES_TO_RUN = [20]
     DENSITIES_TO_RUN = [2]
     #SIZES_TO_RUN = [200]
     # Build args list for each file

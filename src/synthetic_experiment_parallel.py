@@ -569,7 +569,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     #TARGET_BUCKETS = [0.5, 0.9]
     MCMC_TRIALS = 2
 
-    SIZES_TO_RUN = [20]
+    SIZES_TO_RUN = [50]
     DENSITIES_TO_RUN = [2]
     #SIZES_TO_RUN = [200]
     # Build args list for each file

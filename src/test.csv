@@ -1,0 +1,2 @@
+Network,N_Nodes,Density,Rigidity,Target_Bucket,Target_Node,Target_Value,Exact_SDP,Exact_Time_sec,MCMC_Mean_SDP,MCMC_Variance,MCMC_Avg_Time_sec,Absolute_Error,PT_MCMC_Mean_SDP,PT_MCMC_Variance,PT_MCMC_Avg_Time_sec,PT_Absolute_Error
+bn_n100_w6_concentrated_bias_high.bif,100,6,concentrated_bias_high,1.0,X62,1,1.0,0.04186058044433594,1.0,0.0,4.340663313865662,0.0,1.0,0.0,18.512274265289307,0.0

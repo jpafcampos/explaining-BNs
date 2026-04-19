@@ -175,17 +175,41 @@ def run_for_time(func, *args, **kwargs):
     except Exception as e:
         return None, np.nan, False # Failed
 
+import gc
+import resource
 def run_for_memory(func, *args, **kwargs):
-    """Runs with tracemalloc to record peak memory. Ignores execution time."""
+# 1. Force a clean slate. Wipe unreferenced memory from previous trials.
+    gc.collect()
+    
+    # 2. Record the OS-level High-Water Mark BEFORE the function
+    os_baseline_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    
     tracemalloc.start()
+    
     try:
         func(*args, **kwargs)
-    except Exception:
-        pass # We just want to see how high memory got before it crashed/finished
+    except MemoryError:
+        # We explicitly EXPECT this to happen on massive networks.
+        pass 
+    except Exception as e:
+        # DO NOT swallow other errors! If NumPy throws a dimension error, 
+        # or if there is a logic bug, we need to see it in the Slurm .out file.
+        print(f"\n[!] Memory Tracker Warning: {func.__name__} failed with {type(e).__name__}: {e}")
         
-    _, peak_mem = tracemalloc.get_traced_memory()
+    # 3. Get Python-level memory allocation
+    _, python_peak_bytes = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    return peak_mem / (1024 * 1024) # Return MB
+    
+    # 4. Record the OS-level High-Water Mark AFTER the function
+    os_peak_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    
+    # Convert everything to Megabytes
+    python_peak_mb = python_peak_bytes / (1024 * 1024)
+    os_delta_mb = (os_peak_kb - os_baseline_kb) / 1024.0
+    
+    # Return the maximum of either the Python tracker or the OS tracker.
+    # This guarantees we don't miss hidden NumPy C-level allocations.
+    return max(python_peak_mb, os_delta_mb)
 
 def estimate_exact_inference_memory_accurate(bn, target, evidence_dict):
     """
@@ -344,12 +368,15 @@ def find_exact_experimental_patients_slurm(bn, target_node, target_value, decisi
 def process_single_file(args):
     """Process one BIF file and return results as a list of dicts."""
  
-    file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, MCMC_TRIALS = args
+    file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, DENSITIES_TO_RUN, MCMC_TRIALS = args
     results = []
 
     n_nodes, density, rigidity = parse_bn_filename(file)
     if n_nodes not in SIZES_TO_RUN:
         return [] 
+    
+    if density not in DENSITIES_TO_RUN:
+        return []
 
     print(f"\n========================================")
     print(f"Loading: {os.path.basename(file)}")
@@ -446,7 +473,7 @@ def process_single_file(args):
             # Pass 2: Peak Memory
             mcmc_mem_mb = run_for_memory(
                 fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                n_samples=100, burn_in=50, thinning=5
+                n_samples=10, burn_in=50, thinning=5
             )
             
             print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb:.2f} MB")
@@ -478,7 +505,7 @@ def process_single_file(args):
             # Pass 2: Peak Memory
             pt_mcmc_mem_mb = run_for_memory(
                 pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                n_samples=100, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
+                n_samples=10, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
             )
 
             print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb:.2f} MB")
@@ -492,6 +519,7 @@ def process_single_file(args):
                 'N_Nodes': n_nodes,
                 'Density': density,
                 'Rigidity': rigidity,
+                'Hidden_Ratio': H_RATIO,
                 'Target_Bucket': target_sdp,
                 'Target_Node': target,
                 'Target_Value': target_value,
@@ -513,7 +541,7 @@ def process_single_file(args):
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", n_workers=4):
     bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
     
-    H_RATIOS = [0.5]
+    H_RATIOS = [0.1, 0.25, 0.5, 0.75, 0.90] # Hidden variable ratios to test
     #H_RATIOS = [0.3]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.90, 1.0]
@@ -521,10 +549,11 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     MCMC_TRIALS = 10
 
     SIZES_TO_RUN = [20, 50, 100, 200]
+    DENSITIES_TO_RUN = [2, 6]
     #SIZES_TO_RUN = [200]
     # Build args list for each file
     args_list = [
-        (file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, MCMC_TRIALS)
+        (file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, DENSITIES_TO_RUN, MCMC_TRIALS)
         for file in bif_files
     ]
 
@@ -558,7 +587,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--bif-dir', type=str, default='./generated_bif_files/')
     parser.add_argument('--output', type=str, default='results/parallel_output.csv')
-    parser.add_argument('--n-workers', type=int, default=4)
+    parser.add_argument('--n-workers', type=int, default=1)
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)

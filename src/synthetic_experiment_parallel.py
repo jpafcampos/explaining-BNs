@@ -510,7 +510,7 @@ def process_single_file(args):
             for trial in range(MCMC_TRIALS):
                 est_sdp, t_time, _ = run_for_time(
                     pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                    n_samples=1000, burn_in=2000, thinning=50, n_chains=4, max_temp=40.0
+                    n_samples=1000, burn_in=2000, thinning=50, n_chains=1, max_temp=40.0
                 )
                 pt_mcmc_estimates.append(est_sdp)
                 pt_mcmc_times.append(t_time)
@@ -568,7 +568,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     #TARGET_BUCKETS = [0.5, 0.9]
     MCMC_TRIALS = 2
 
-    SIZES_TO_RUN = [20, 50]
+    SIZES_TO_RUN = [50]
     DENSITIES_TO_RUN = [2]
     #SIZES_TO_RUN = [200]
     # Build args list for each file

@@ -4,8 +4,8 @@
 #SBATCH --error=results/logs/parallel_experiment_%j.err
 #SBATCH --time=7:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=16G
 
 source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs
@@ -18,4 +18,4 @@ export NUMEXPR_NUM_THREADS=1
 python synthetic_experiment_parallel.py \
     --bif-dir ./generated_bif_files/ \
     --output results/final_results_$SLURM_JOB_ID.csv \
-    --n-workers 4
+    --n-workers 1

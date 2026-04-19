@@ -15,6 +15,7 @@ import numpy as np
 import math
 from same_decision_probability_calculation import *
 from utils import *
+import gc
 
 def harvest_patients_for_all_buckets(bn, target_node, target_value, decision_threshold, evidence_vars, target_buckets, tolerance=0.05, max_restarts=100, max_steps_per_restart=800):
     """
@@ -276,6 +277,7 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
                     continue # Reject and generate a new random patient
             except (ValueError, MemoryError):
                 print(f"    [!] EXACT INFERENCE IMPOSSIBLE: Sub-network exceeded hardware limits.")
+                gc.collect() # Clean up after the explosion
                 return unfilled_buckets
                 
             # 3. Calculate Exact SDP
@@ -286,6 +288,7 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
                 #print(exact_sdp)
             except (ValueError, MemoryError):
                 print(f"    [!] EXACT SDP IMPOSSIBLE: Tensor exploded during calculation.")
+                gc.collect() # Clean up after the explosion
                 return unfilled_buckets # Bail out safely
                 
             # 4. Check if it fits into any empty bucket!

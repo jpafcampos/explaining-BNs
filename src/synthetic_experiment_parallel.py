@@ -378,6 +378,10 @@ def process_single_file(args):
     os.environ["MKL_NUM_THREADS"] = "1"
     os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
+    def log_mem(label):
+        rss = process.memory_info().rss / (1024 ** 3)
+        print(f"[PID {os.getpid()}] {label} | RSS: {rss:.2f} GB", flush=True)
+
     file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, DENSITIES_TO_RUN, MCMC_TRIALS = args
     results = []
     process = psutil.Process(os.getpid())
@@ -395,6 +399,7 @@ def process_single_file(args):
     print(f"Loading: {os.path.basename(file)}")
     
     bn = BIFReader(file).get_model()
+    log_mem(f"After loading BN: {os.path.basename(file)}")
     all_nodes = list(bn.nodes())
 
     ## --- SAFETY VALVE: Check Memory Limits Before Harvesting ---
@@ -452,12 +457,14 @@ def process_single_file(args):
             exact_sdp, exact_time, exact_success = run_for_time(
                 fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
             )
+            log_mem(f"After Exact SDP Time Test: {os.path.basename(file)}")
             
             # Pass 2: Memory
             gc.collect() # Clean up before the memory test
             exact_mem_mb = run_for_memory(
                 fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
             )
+            log_mem(f"After Exact SDP Memory Test: {os.path.basename(file)}")
             gc.collect() # Clean up after the memory test
 
             if exact_success:
@@ -481,7 +488,9 @@ def process_single_file(args):
                 )
                 mcmc_estimates.append(est_sdp)
                 mcmc_times.append(t_time)
+                log_mem(f"After MCMC Trial {trial+1}/{MCMC_TRIALS} Time Test: {os.path.basename(file)}")
                 
+            log_mem(f"After MCMC Time Test: {os.path.basename(file)}")
             mcmc_mean = np.mean(mcmc_estimates)
             mcmc_avg_time = np.mean(mcmc_times)
             mcmc_variance = np.var(mcmc_estimates)
@@ -492,6 +501,7 @@ def process_single_file(args):
                 fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
                 n_samples=10, burn_in=50, thinning=5
             )
+            log_mem(f"After MCMC Memory Test: {os.path.basename(file)}")
             gc.collect() # Clean up after the memory test
             
             print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb:.2f} MB")
@@ -515,7 +525,9 @@ def process_single_file(args):
                 )
                 pt_mcmc_estimates.append(est_sdp)
                 pt_mcmc_times.append(t_time)
-
+                log_mem(f"After PT-MCMC Trial {trial+1}/{MCMC_TRIALS} Time Test: {os.path.basename(file)}")
+            
+            log_mem(f"After PT-MCMC Time Test: {os.path.basename(file)}")
             pt_mcmc_mean = np.mean(pt_mcmc_estimates)
             pt_mcmc_avg_time = np.mean(pt_mcmc_times)
             pt_mcmc_variance = np.var(pt_mcmc_estimates)
@@ -526,6 +538,7 @@ def process_single_file(args):
                 pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
                 n_samples=10, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
             )
+            log_mem(f"After PT-MCMC Memory Test: {os.path.basename(file)}")
             gc.collect() # Clean up after the memory test
             print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb:.2f} MB")
 

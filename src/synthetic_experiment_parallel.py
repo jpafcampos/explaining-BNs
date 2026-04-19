@@ -1,3 +1,4 @@
+import os
 os.environ["LOKY_MAX_CPU_COUNT"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -26,7 +27,6 @@ import math
 from same_decision_probability_calculation import *
 from utils import *
 from monte_carlo_sdp import *
-import os
 import glob
 import time
 import tracemalloc

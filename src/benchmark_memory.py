@@ -267,12 +267,14 @@ def benchmark_hidden_vars_sdp_vs_mcmc(bif_file, max_hidden=20, mcmc_trials=1):
             row["mcmc_avg_estimate"] = np.mean(mcmc_estimates)
             row["mcmc_success"] = True
 
-            print(f"{"":>14} Biggest partition: {max_partition:3d} | MCMC  — Time: {np.mean(mcmc_times):.4f}s | "
-                  f"Memory: {mcmc_peak / 1024 / 1024:.2f} MB | Estimate: {np.mean(mcmc_estimates):.4f} | OK")
+            print(f"Hidden vars: {n_hidden:3d} | "
+                  f"Size of biggest partition: {max(len(p) for p in partitions):3d} | "
+                  f"Peak memory: {mcmc_peak / 1024 / 1024:.2f} MB | "
+                  f"Time: {np.mean(mcmc_times):.4f} sec | OK")
 
         except MemoryError:
             tracemalloc.stop()
-            print(f"{"":>14} Biggest partition: {max_partition:3d} | MCMC  — OUT OF MEMORY")
+            print(f"Hidden vars: {n_hidden:3d} | Biggest partition: {max_partition:3d} | MCMC  — OUT OF MEMORY")
         except Exception as e:
             tracemalloc.stop()
             print(f"{"":>14} Biggest partition: {max_partition:3d} | MCMC  — ERROR: {e}")

@@ -228,12 +228,14 @@ def benchmark_hidden_vars_sdp_vs_mcmc(bif_file, max_hidden=20, mcmc_trials=1):
             tracemalloc.stop()
 
             row["exact_time_sec"] = exact_time
+            row["exact_sdp_result"] = exact_result
             row["exact_peak_memory_mb"] = exact_peak / 1024 / 1024
             row["exact_success"] = True
 
             print(f"Hidden vars: {n_hidden:3d} | "
                   f"Biggest partition: {max_partition:3d} | "
                   f"Exact — Time: {exact_time:.4f}s | "
+                  f"Exact Result: {exact_result:.4f} | "
                   f"Memory: {exact_peak / 1024 / 1024:.2f} MB | OK")
 
         except MemoryError:
@@ -266,6 +268,7 @@ def benchmark_hidden_vars_sdp_vs_mcmc(bif_file, max_hidden=20, mcmc_trials=1):
             row["mcmc_peak_memory_mb"] = mcmc_peak / 1024 / 1024
             row["mcmc_avg_estimate"] = np.mean(mcmc_estimates)
             row["mcmc_success"] = True
+            row["mcmc_error"] = abs(np.mean(mcmc_estimates) - exact_result) if row["exact_success"] else None
 
             print(f"Hidden vars: {n_hidden:3d} | "
                   f"Size of biggest partition: {max(len(p) for p in partitions):3d} | "
@@ -292,8 +295,183 @@ def benchmark_hidden_vars_sdp_vs_mcmc(bif_file, max_hidden=20, mcmc_trials=1):
 
     return results
 
+
+def build_growing_partition_benchmark(bn, target, evidence_vars_pool, patient_states, max_steps=30):
+    """
+    Progressively adds hidden variables to force the biggest partition to grow by exactly 1.
+    
+    Starting with all available_nodes as evidence and 0 hidden variables,
+    at each step we move one evidence variable to the hidden set such that
+    it joins the current biggest partition.
+    
+    Returns a list of (hidden_vars, evidence_patient) tuples to benchmark.
+    """
+    all_nodes = set(bn.nodes())
+    available_nodes = [n for n in all_nodes if n != target]
+    
+    # Start with ALL available as evidence (0 hidden variables)
+    evidence = {v: patient_states[v] for v in available_nodes}
+    hidden = []
+    
+    configurations = []
+    
+    for step in range(max_steps):
+        partitions = get_partitions(bn, hidden, target, evidence)
+        
+        if not partitions:
+            # No hidden variables yet — pick any node connected to target
+            # via active paths given current evidence
+            candidates = list(evidence.keys())
+        else:
+            # Find the current biggest partition
+            biggest_partition = max(partitions, key=len)
+            biggest_size = len(biggest_partition)
+            
+            # We want to find an evidence variable that, when moved to hidden,
+            # will be d-connected to biggest_partition (joining it)
+            candidates = []
+            for candidate in list(evidence.keys()):
+                # Trial: move this candidate to hidden, see what happens
+                trial_hidden = hidden + [candidate]
+                trial_evidence = {k: v for k, v in evidence.items() if k != candidate}
+                
+                trial_partitions = get_partitions(bn, trial_hidden, target, trial_evidence)
+                if not trial_partitions:
+                    continue
+                
+                new_biggest = max(trial_partitions, key=len)
+                new_biggest_size = len(new_biggest)
+                
+                # We want the biggest partition to grow by exactly 1
+                if new_biggest_size == biggest_size + 1:
+                    candidates.append(candidate)
+        
+        if not candidates:
+            print(f"Step {step}: no candidate variable grows the biggest partition. Stopping.")
+            break
+        
+        # Pick the first valid candidate
+        chosen = candidates[0]
+        hidden.append(chosen)
+        del evidence[chosen]
+        
+        new_partitions = get_partitions(bn, hidden, target, evidence)
+        new_biggest_size = max(len(p) for p in new_partitions) if new_partitions else 0
+        
+        print(f"Step {step+1:3d}: added '{chosen}' → "
+              f"n_hidden={len(hidden)}, biggest_partition={new_biggest_size}")
+        
+        configurations.append({
+            'step': step + 1,
+            'n_hidden': len(hidden),
+            'biggest_partition_size': new_biggest_size,
+            'hidden_vars': list(hidden),
+            'patient': dict(evidence),
+        })
+    
+    return configurations
+
+
+def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
+    """
+    Runs the exact SDP and MCMC benchmark on configurations where the 
+    biggest partition grows by exactly 1 at each step.
+    """
+    import tracemalloc
+    import gc
+    import time
+    
+    bn = BIFReader(bif_file).get_model()
+    all_nodes = list(bn.nodes())
+    target = select_optimal_target_node(bn)
+    target_states = bn.get_cpds(target).state_names[target]
+    target_value = target_states[1] if len(target_states) > 1 else target_states[0]
+    available_nodes = [n for n in all_nodes if n != target]
+    
+    # Fix a patient state for all evidence variables upfront
+    patient_states = {
+        n: bn.get_cpds(n).state_names[n][0] 
+        for n in available_nodes
+    }
+    
+    configurations = build_growing_partition_benchmark(
+        bn, target, available_nodes, patient_states, max_steps=max_steps
+    )
+    
+    results = []
+    
+    for config in configurations:
+        hidden_vars = config['hidden_vars']
+        patient = config['patient']
+        partitions = get_partitions(bn, hidden_vars, target, patient)
+        max_partition = max(len(p) for p in partitions)
+        
+        row = {
+            'step': config['step'],
+            'n_hidden': config['n_hidden'],
+            'max_partition_size': max_partition,
+            'exact_time_sec': None,
+            'exact_peak_memory_mb': None,
+            'exact_success': False,
+            'mcmc_avg_time_sec': None,
+            'mcmc_peak_memory_mb': None,
+            'mcmc_avg_estimate': None,
+            'mcmc_success': False,
+        }
+        
+        # Exact SDP
+        gc.collect()
+        tracemalloc.start()
+        try:
+            start = time.perf_counter()
+            real_sdp = fast_broadcast_sdp(bn, target, target_value, patient, 0.5, partitions)
+            exact_time = time.perf_counter() - start
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            
+            row['exact_time_sec'] = exact_time
+            row['exact_peak_memory_mb'] = peak / 1024 / 1024
+            row['exact_success'] = True
+            row['exact_sdp_result'] = real_sdp
+            
+            print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
+                  f"Exact: {exact_time:.4f}s / {peak/1024/1024:.2f}MB")
+        except Exception as e:
+            tracemalloc.stop()
+            print(f"Step {config['step']:3d} | partition={max_partition:3d} | Exact FAILED: {e}")
+        
+        # MCMC
+        gc.collect()
+        tracemalloc.start()
+        try:
+            mcmc_times = []
+            mcmc_estimates = []
+            for _ in range(mcmc_trials):
+                start = time.perf_counter()
+                est = fast_mcmc_sdp_estimation(bn, target, target_value, patient, 0.5,
+                                              n_samples=1000, burn_in=200, thinning=10)
+                mcmc_times.append(time.perf_counter() - start)
+                mcmc_estimates.append(est)
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            
+            row['mcmc_avg_time_sec'] = np.mean(mcmc_times)
+            row['mcmc_peak_memory_mb'] = peak / 1024 / 1024
+            row['mcmc_avg_estimate'] = np.mean(mcmc_estimates)
+            row['mcmc_error'] = abs(np.mean(mcmc_estimates) - real_sdp) if row['exact_success'] else None
+            row['mcmc_success'] = True
+        except Exception as e:
+            tracemalloc.stop()
+            print(f"Step {config['step']:3d} | MCMC FAILED: {e}")
+        
+        results.append(row)
+        pd.DataFrame(results).to_csv("results/growing_partition_benchmark.csv", index=False)
+    
+    return results
+
 if __name__ == "__main__":
 
     #benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)
     #results = benchmark_hidden_vars_until_max("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_hidden=40)
-    results = benchmark_hidden_vars_sdp_vs_mcmc("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_hidden=40, mcmc_trials=1)
+    #results = benchmark_hidden_vars_sdp_vs_mcmc("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_hidden=10, mcmc_trials=1) 
+    results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=45, mcmc_trials=2)

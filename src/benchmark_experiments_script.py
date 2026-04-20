@@ -22,7 +22,6 @@ import time
 
 from monte_carlo_sdp import *
 from pgmpy.utils import get_example_model
-from ucimlrepo import fetch_ucirepo
 import psutil
 import tracemalloc
 import gc
@@ -278,39 +277,6 @@ if __name__ == "__main__":
     pathfinder_model = get_example_model('pathfinder')
 
     
-    # ── VOTING ──────────────────────────────────────────────────────────────────
-    voting = fetch_ucirepo(id=105)
-    df_voting = pd.concat([voting.data.features, voting.data.targets], axis=1)
-    df_voting.columns = [c.strip() for c in df_voting.columns]
-
-    # Replace '?' missing values — Naive Bayes needs complete data
-    df_voting = df_voting.replace('?', pd.NA).dropna()
-
-    # All values must be strings/categories for pgmpy
-    df_voting = df_voting.astype(str)
-
-    target_voting = 'Class'   # 'democrat' / 'republican'
-
-    voting_model = NaiveBayes()
-    voting_model.fit(df_voting, target_voting,
-                    estimator=MaximumLikelihoodEstimator)
-
-    # ── CHESS ────────────────────────────────────────────────────────────────────
-    chess = fetch_ucirepo(id=22)
-    df_chess = pd.concat([chess.data.features, chess.data.targets], axis=1)
-    df_chess = df_chess.astype(str)
-
-    target_chess = 'skach' 
-
-    chess_model = NaiveBayes()
-    chess_model.fit(df_chess, target_chess,
-                    estimator=MaximumLikelihoodEstimator)
-    voting_model = BayesianNetwork(voting_model.edges())
-    chess_model = BayesianNetwork(chess_model.edges())
-
-    # fit
-    voting_model.fit(df_voting, estimator=MaximumLikelihoodEstimator)
-    chess_model.fit(df_chess, estimator=MaximumLikelihoodEstimator)
 
     child_model.name = 'child'
     insurance_model.name = 'insurance'
@@ -319,8 +285,6 @@ if __name__ == "__main__":
     hailfinder_model.name = 'hailfinder'
     win95pts_model.name = 'win95pts'
     barley_model.name = 'barley'
-    voting_model.name = 'voting'
-    chess_model.name = 'chess'
     andes_model.name = 'andes'
     link_model.name = 'link'
     pathfinder_model.name = 'pathfinder'
@@ -328,7 +292,7 @@ if __name__ == "__main__":
     # Ensure everymodel has a unique name
     models = [child_model, insurance_model, alarm_model, 
               hepar_model, hailfinder_model, win95pts_model, 
-              barley_model, voting_model, chess_model, 
+              barley_model, 
               andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
@@ -336,7 +300,7 @@ if __name__ == "__main__":
     assert len(set(model_names)) == len(models), "Model names must be unique!"
 
     # ensure all targets are present in the respective models
-    for model in [child_model, alarm_model, barley_model, insurance_model, hailfinder_model, hepar_model, win95pts_model, voting_model, chess_model, andes_model, link_model, pathfinder_model]:
+    for model in [child_model, alarm_model, barley_model, insurance_model, hailfinder_model, hepar_model, win95pts_model, andes_model, link_model, pathfinder_model]:
         print(f"Checking target node for model '{model.name}'...")
         target = get_target(model)
         if target not in model.nodes():

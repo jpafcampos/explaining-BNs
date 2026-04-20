@@ -106,7 +106,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
     
     results = []
     raw_results = []
-    H_RATIOS = [0.25, 0.5, 0.75, 0.9] 
+    H_RATIOS = [0.25, 0.50, 0.75, 0.9] 
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.30, 0.50, 0.70, 0.9, 1.0]
     MCMC_TRIALS = 10 
@@ -135,7 +135,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
             print(f"and {n_evidence} evidence variables")
            
             harvested_data = find_exact_experimental_patients_random(bn, target, target_value, DECISION_THRESHOLD,
-                                                            n_evidence, buckets=TARGET_BUCKETS)
+                                                            n_evidence, buckets=TARGET_BUCKETS, batch_size=500, max_batches=1, max_partition_size=28)
             
             # Now process whatever it managed to find
             for target_sdp, result in harvested_data.items():
@@ -263,6 +263,8 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
 
 if __name__ == "__main__":
 
+
+
     # Model Loading
     print("Loading models...")
     alarm_model = get_example_model('alarm')
@@ -352,13 +354,20 @@ if __name__ == "__main__":
     for model in models:
         print(f" - {model.name}")
 
+    # Sort models by number of nodes (ascending)
+    models.sort(key=lambda m: m.number_of_nodes())
+
+    print("\nModel order for experiments (sorted by number of nodes):")
+    for model in models:
+        print(f" - {model.name} ({model.number_of_nodes()} nodes)")
+
     
-    toy_models = [child_model, alarm_model]
+    toy_models = models[:2]
 
     # Run the experiment
-    results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
+    #results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
     
-    #results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full.csv", models_to_run=models)
+    results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full.csv", models_to_run=models)
 
 
 

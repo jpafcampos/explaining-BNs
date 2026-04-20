@@ -264,6 +264,7 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
         
         for _ in range(batch_size):
             # 1. Generate random patient
+            #print(f"  Generating random patient with {n_evidence} evidence variables, {_+1} / {batch_size} in this batch...")
             temp_patient = {}
             evidence_vars = random.sample(available_nodes, min(n_evidence, len(available_nodes)))
             hidden_vars = [n for n in all_nodes if n not in evidence_vars and n != target_node]

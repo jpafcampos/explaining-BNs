@@ -474,4 +474,4 @@ if __name__ == "__main__":
     #benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)
     #results = benchmark_hidden_vars_until_max("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_hidden=40)
     #results = benchmark_hidden_vars_sdp_vs_mcmc("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_hidden=10, mcmc_trials=1) 
-    results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=45, mcmc_trials=2)
+    results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=45, mcmc_trials=10)

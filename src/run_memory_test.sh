@@ -2,7 +2,7 @@
 #SBATCH --job-name=benchmark
 #SBATCH --output=results/logs/benchmark.out
 #SBATCH --error=results/logs/benchmark.err
-#SBATCH --time=00:30:00
+#SBATCH --time=01:30:00
 #SBATCH --ntasks=1
 #SBATCH --mem=128G
 

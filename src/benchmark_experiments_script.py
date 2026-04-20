@@ -352,18 +352,13 @@ if __name__ == "__main__":
     for model in models:
         print(f" - {model.name}")
 
-        
-    models_to_run = [child_model, insurance_model, alarm_model, 
-                     hepar_model, hailfinder_model, win95pts_model, 
-                     barley_model, voting_model, chess_model, andes_model, 
-                     link_model, pathfinder_model]
     
     toy_models = [child_model, alarm_model]
 
     # Run the experiment
     results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
     
-    #results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full.csv", models_to_run=models_to_run)
+    #results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full.csv", models_to_run=models)
 
 
 

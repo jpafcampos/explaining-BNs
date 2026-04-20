@@ -273,7 +273,7 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
                 temp_patient[var] = random.choice(states)
             
             partitions = get_partitions(bn, hidden_vars, target_node, temp_patient)
-            print(f"       -> Biggest partition size during harvester: {max(len(p) for p in partitions)} hidden variables")
+            #print(f"       -> Biggest partition size during harvester: {max(len(p) for p in partitions)} hidden variables")
             #print(partitions)
             # Biggest partion can not be over 28 variables
             if max(len(p) for p in partitions) > max_partition_size:

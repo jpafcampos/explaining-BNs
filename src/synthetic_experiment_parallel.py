@@ -159,39 +159,51 @@ def run_for_time(func, *args, **kwargs):
 
 import gc
 import resource
+import threading
 def run_for_memory(func, *args, **kwargs):
-# 1. Force a clean slate. Wipe unreferenced memory from previous trials.
+    """
+    Measures peak memory using BOTH tracemalloc (Python-level) and
+    thread-sampled RSS (OS-level, catches numpy C allocations).
+    Returns the max of both.
+    """
+    process = psutil.Process(os.getpid())
+
     gc.collect()
-    
-    # 2. Record the OS-level High-Water Mark BEFORE the function
-    os_baseline_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    
+    baseline_rss = process.memory_info().rss
+    peak_rss = [baseline_rss]
+    stop_event = threading.Event()
+
+    def sampler():
+        while not stop_event.is_set():
+            try:
+                current = process.memory_info().rss
+                if current > peak_rss[0]:
+                    peak_rss[0] = current
+            except Exception:
+                pass
+            time.sleep(0.001)  # 1ms poll
+
+    sampler_thread = threading.Thread(target=sampler, daemon=True)
+    sampler_thread.start()
+
     tracemalloc.start()
-    
     try:
         func(*args, **kwargs)
     except MemoryError:
-        # We explicitly EXPECT this to happen on massive networks.
-        pass 
+        pass
     except Exception as e:
-        # DO NOT swallow other errors! If NumPy throws a dimension error, 
-        # or if there is a logic bug, we need to see it in the Slurm .out file.
         print(f"\n[!] Memory Tracker Warning: {func.__name__} failed with {type(e).__name__}: {e}")
-        
-    # 3. Get Python-level memory allocation
+    finally:
+        stop_event.set()
+        sampler_thread.join(timeout=2.0)
+
     _, python_peak_bytes = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    
-    # 4. Record the OS-level High-Water Mark AFTER the function
-    os_peak_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    
-    # Convert everything to Megabytes
+
     python_peak_mb = python_peak_bytes / (1024 * 1024)
-    os_delta_mb = (os_peak_kb - os_baseline_kb) / 1024.0
-    
-    # Return the maximum of either the Python tracker or the OS tracker.
-    # This guarantees we don't miss hidden NumPy C-level allocations.
-    return max(python_peak_mb, os_delta_mb)
+    rss_delta_mb = (peak_rss[0] - baseline_rss) / (1024 * 1024)
+
+    return max(python_peak_mb, rss_delta_mb)
 
 
 import psutil
@@ -374,13 +386,16 @@ def process_single_file(args):
                 'Target_Value': target_value,
                 'Exact_SDP': exact_sdp,
                 'Exact_Time_sec': exact_time,
+                'Exact_Peak_Memory_MB': exact_mem_mb,
                 'MCMC_Mean_SDP': mcmc_mean,
                 'MCMC_Variance': mcmc_variance,
                 'MCMC_Avg_Time_sec': mcmc_avg_time,
+                'MCMC_Peak_Memory_MB': mcmc_mem_mb,
                 'Absolute_Error': absolute_error,
                 'PT_MCMC_Mean_SDP': pt_mcmc_mean,
                 'PT_MCMC_Variance': pt_mcmc_variance,
                 'PT_MCMC_Avg_Time_sec': pt_mcmc_avg_time,
+                'PT_Peak_Memory_MB': pt_mcmc_mem_mb,
                 'PT_Absolute_Error': absolute_error_pt
             })
     

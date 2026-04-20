@@ -100,7 +100,7 @@ def run_for_memory(func, *args, **kwargs):
     python_peak_mb = python_peak_bytes / (1024 * 1024)
     rss_delta_mb = (peak_rss[0] - baseline_rss) / (1024 * 1024)
 
-    return max(python_peak_mb, rss_delta_mb)
+    return (python_peak_mb, rss_delta_mb)
 
 def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_to_run=None):
     
@@ -150,6 +150,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 # EXACT SDP EVALUATION
                 # ========================================================
                 partitions = get_partitions(bn, hidden_vars, target, patient)
+                max_partition_size = max(len(p) for p in partitions)
                 print(f"       -> Running Exact SDP...")
                 
                 # Pass 1: Time
@@ -158,14 +159,14 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 )
                 
                 # Pass 2: Memory
-                exact_mem_mb = run_for_memory(
+                exact_mem_mb_python, exact_mem_mb_rss = run_for_memory(
                     fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
                 )
                 
                 if exact_success:
-                    print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb:.2f} MB")
+                    print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb_python:.2f} MB")
                 else:
-                    print(f"          [FAILED]: Crashed at {exact_mem_mb:.2f} MB")
+                    print(f"          [FAILED]: Crashed at {exact_mem_mb_python:.2f} MB")
 
                 # ========================================================
                 # MCMC EVALUATION
@@ -189,12 +190,12 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 mcmc_variance = np.var(mcmc_estimates)
 
                 # Pass 2: Peak Memory
-                mcmc_mem_mb = run_for_memory(
+                mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
                     fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
                     n_samples=100, burn_in=50, thinning=5
                 )
                 
-                print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb:.2f} MB")
+                print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb_python:.2f} MB")
                 
                 absolute_error = abs(exact_sdp - mcmc_mean)
 
@@ -236,13 +237,19 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                     'Network': bn.name,
                     'N_Nodes': n_nodes,
                     'Target_Bucket': target_sdp,
+                    'H_Ratio': H_RATIO,
                     'Target_Node': target,
                     'Target_Value': target_value,
                     'Exact_SDP': exact_sdp,
                     'Exact_Time_sec': exact_time,
+                    'Exact_Mem_MB_Python': exact_mem_mb_python,
+                    'Exact_Mem_MB_RSS': exact_mem_mb_rss,
+                    'Max_Partition_Size': max_partition_size,
                     'MCMC_Mean_SDP': mcmc_mean,
                     'MCMC_Variance': mcmc_variance,
                     'MCMC_Avg_Time_sec': mcmc_avg_time,
+                    'MCMC_Mem_MB_Python': mcmc_mem_mb_python,
+                    'MCMC_Mem_MB_RSS': mcmc_mem_mb_rss,
                     'Absolute_Error': absolute_error,
                 })
                 
@@ -326,7 +333,7 @@ if __name__ == "__main__":
     model_names = [model.name for model in models]
 
     assert len(set(model_names)) == len(models), "Model names must be unique!"
-    
+
     # ensure all targets are present in the respective models
     for model in [child_model, alarm_model, barley_model, insurance_model, hailfinder_model, hepar_model, win95pts_model, voting_model, chess_model, andes_model, link_model, pathfinder_model]:
         print(f"Checking target node for model '{model.name}'...")
@@ -354,8 +361,9 @@ if __name__ == "__main__":
     toy_models = [child_model, alarm_model]
 
     # Run the experiment
-    results_df = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_to_run=toy_models)
-
+    results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
+    
+    #results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full.csv", models_to_run=models_to_run)
 
 
 

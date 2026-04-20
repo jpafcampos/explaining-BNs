@@ -12,7 +12,7 @@ from pgmpy.utils import get_example_model
 from pgmpy.estimators import ScoreCache
 from pgmpy.inference.CausalInference import CausalInference
 import networkx as nx
-import bnlearn as bn
+
 import itertools
 import math
 import random

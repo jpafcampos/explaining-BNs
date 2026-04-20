@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=benchmark
-#SBATCH --output=results/logs/benchmark.out
-#SBATCH --error=results/logs/benchmark.err
+#SBATCH --job-name=memory_test
+#SBATCH --output=memory_test.out
+#SBATCH --error=memory_test.err
 #SBATCH --time=01:30:00
 #SBATCH --ntasks=1
 #SBATCH --mem=128G
@@ -10,4 +10,4 @@ source ~/miniforge3/bin/activate bn-medical
 
 export PYTHONUNBUFFERED=1
 
-python benchmark_memory.py
+python memory_test.py

@@ -238,7 +238,9 @@ def find_exact_experimental_patients(bn, target_node, target_value, decision_thr
 '''
 Complete randomized version
 '''
-def find_exact_experimental_patients_random(bn, target_node, target_value, decision_threshold, n_evidence, buckets=[0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], tolerance=0.05, batch_size=8000, max_batches=2):
+def find_exact_experimental_patients_random(bn, target_node, target_value, decision_threshold, 
+                                            n_evidence, buckets=[0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], 
+                                            tolerance=0.05, batch_size=8000, max_batches=2, max_partition_size=28):
     """
     Changes the set of evidence variables for each random patient, instead of keeping them fixed.
     """
@@ -270,6 +272,13 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
                 states = bn.get_cpds(var).state_names[var]
                 temp_patient[var] = random.choice(states)
             
+            partitions = get_partitions(bn, hidden_vars, target_node, temp_patient)
+            print(f"       -> Biggest partition size during harvester: {max(len(p) for p in partitions)} hidden variables")
+            #print(partitions)
+            # Biggest partion can not be over 28 variables
+            if max(len(p) for p in partitions) > max_partition_size:
+                continue # Skip this patient, it's too big for our hardware to handle
+
             # 2. Check base decision (Must be >= threshold)
             try:
                 base_dist = base_inference.query(variables=[target_node], evidence=temp_patient, show_progress=False)
@@ -281,12 +290,8 @@ def find_exact_experimental_patients_random(bn, target_node, target_value, decis
                 return unfilled_buckets
                 
             # 3. Calculate Exact SDP
-            partitions = get_partitions(bn, hidden_vars, target_node, temp_patient)
-            print(f"       -> Biggest partition size during harvester: {max(len(p) for p in partitions)} hidden variables")
-            #print(partitions)
             try:
                 exact_sdp = fast_broadcast_sdp(bn, target_node, target_value, temp_patient, decision_threshold, partitions)
-                #print(exact_sdp)
             except (ValueError, MemoryError):
                 print(f"    [!] EXACT SDP IMPOSSIBLE: Tensor exploded during calculation.")
                 gc.collect() # Clean up after the explosion

@@ -126,174 +126,6 @@ def benchmark_hidden_vars(bif_file, n_trials=20, n_hidden=80):
 
 import pandas as pd
 
-def benchmark_hidden_vars_until_max(bif_file, max_hidden=20):
-    results = []
-    bn = BIFReader(bif_file).get_model()
-    all_nodes = list(bn.nodes())
-    target = select_optimal_target_node(bn)
-    target_states = bn.get_cpds(target).state_names[target]
-    target_value = target_states[1] if len(target_states) > 1 else target_states[0]
-    available_nodes = [n for n in all_nodes if n != target]
-
-    for n_hidden in range(1, min(max_hidden, len(available_nodes))):
-        hidden_vars = available_nodes[:n_hidden]
-        patient = {n: bn.get_cpds(n).state_names[n][0] 
-                   for n in available_nodes if n not in hidden_vars}
-
-        gc.collect()
-        tracemalloc.start()
-
-        try:
-            partitions = get_partitions(bn, hidden_vars, target, patient)
-            
-            start = time.perf_counter()
-            result = fast_broadcast_sdp(bn, target, target_value, patient, 0.5, partitions)
-            elapsed = time.perf_counter() - start
-
-            current, peak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-
-            print(f"Hidden vars: {n_hidden:3d} | "
-                  f"Size of biggest partition: {max(len(p) for p in partitions):3d} | "
-                  f"Peak memory: {peak / 1024 / 1024:.2f} MB | "
-                  f"Time: {elapsed:.4f} sec | OK")
-            
-            # create results to be saved as csv
-            results.append({
-                "n_hidden": n_hidden,
-                "hidden_edges": bn.subgraph(hidden_vars).number_of_edges(),
-                "max_partition_size": max(len(p) for p in partitions),
-                "time_sec": elapsed,
-                "peak_memory_mb": peak / 1024 / 1024
-            })
-
-            #save results to csv after each iteration
-            df = pd.DataFrame(results)
-            df.to_csv("results/benchmark_memory_results.csv", index=False)
-
-        except MemoryError:
-            tracemalloc.stop()
-            print(f"Hidden vars: {n_hidden:3d} | OUT OF MEMORY")
-            break
-        except Exception as e:
-            tracemalloc.stop()
-            print(f"Hidden vars: {n_hidden:3d} | ERROR: {e}")
-            break
-
-    return results
-
-def benchmark_hidden_vars_sdp_vs_mcmc(bif_file, max_hidden=20, mcmc_trials=1):
-    results = []
-    bn = BIFReader(bif_file).get_model()
-    all_nodes = list(bn.nodes())
-    target = select_optimal_target_node(bn)
-    target_states = bn.get_cpds(target).state_names[target]
-    target_value = target_states[1] if len(target_states) > 1 else target_states[0]
-    available_nodes = [n for n in all_nodes if n != target]
-
-    for n_hidden in range(1, min(max_hidden, len(available_nodes))):
-        hidden_vars = available_nodes[:n_hidden]
-        patient = {n: bn.get_cpds(n).state_names[n][0] 
-                   for n in available_nodes if n not in hidden_vars}
-
-        partitions = get_partitions(bn, hidden_vars, target, patient)
-        max_partition = max(len(p) for p in partitions)
-        hidden_edges = bn.subgraph(hidden_vars).number_of_edges()
-
-        row = {
-            "n_hidden": n_hidden,
-            "hidden_edges": hidden_edges,
-            "max_partition_size": max_partition,
-            # Exact SDP fields
-            "exact_time_sec": None,
-            "exact_peak_memory_mb": None,
-            "exact_success": False,
-            # MCMC fields
-            "mcmc_avg_time_sec": None,
-            "mcmc_peak_memory_mb": None,
-            "mcmc_avg_estimate": None,
-            "mcmc_success": False,
-        }
-
-        # ========================================================
-        # EXACT SDP
-        # ========================================================
-        gc.collect()
-        tracemalloc.start()
-        try:
-            start = time.perf_counter()
-            exact_result = fast_broadcast_sdp(bn, target, target_value, patient, 0.5, partitions)
-            exact_time = time.perf_counter() - start
-            _, exact_peak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-
-            row["exact_time_sec"] = exact_time
-            row["exact_sdp_result"] = exact_result
-            row["exact_peak_memory_mb"] = exact_peak / 1024 / 1024
-            row["exact_success"] = True
-
-            print(f"Hidden vars: {n_hidden:3d} | "
-                  f"Biggest partition: {max_partition:3d} | "
-                  f"Exact — Time: {exact_time:.4f}s | "
-                  f"Exact Result: {exact_result:.4f} | "
-                  f"Memory: {exact_peak / 1024 / 1024:.2f} MB | OK")
-
-        except MemoryError:
-            tracemalloc.stop()
-            print(f"Hidden vars: {n_hidden:3d} | Biggest partition: {max_partition:3d} | Exact — OUT OF MEMORY")
-        except Exception as e:
-            tracemalloc.stop()
-            print(f"Hidden vars: {n_hidden:3d} | Biggest partition: {max_partition:3d} | Exact — ERROR: {e}")
-
-        # ========================================================
-        # MCMC
-        # ========================================================
-        gc.collect()
-        mcmc_times = []
-        mcmc_estimates = []
-
-        tracemalloc.start()
-        try:
-            for trial in range(mcmc_trials):
-                start = time.perf_counter()
-                est = fast_mcmc_sdp_estimation(bn, target, target_value, patient, 0.5,
-                                               n_samples=1000, burn_in=200, thinning=10)
-                mcmc_times.append(time.perf_counter() - start)
-                mcmc_estimates.append(est)
-
-            _, mcmc_peak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-
-            row["mcmc_avg_time_sec"] = np.mean(mcmc_times)
-            row["mcmc_peak_memory_mb"] = mcmc_peak / 1024 / 1024
-            row["mcmc_avg_estimate"] = np.mean(mcmc_estimates)
-            row["mcmc_success"] = True
-            row["mcmc_error"] = abs(np.mean(mcmc_estimates) - exact_result) if row["exact_success"] else None
-
-            print(f"Hidden vars: {n_hidden:3d} | "
-                  f"Size of biggest partition: {max(len(p) for p in partitions):3d} | "
-                  f"Peak memory: {mcmc_peak / 1024 / 1024:.2f} MB | "
-                  f"Time: {np.mean(mcmc_times):.4f} sec | OK")
-
-        except MemoryError:
-            tracemalloc.stop()
-            print(f"Hidden vars: {n_hidden:3d} | Biggest partition: {max_partition:3d} | MCMC  — OUT OF MEMORY")
-        except Exception as e:
-            tracemalloc.stop()
-            print(f"Hidden vars: {n_hidden:3d} | Biggest partition: {max_partition:3d} | MCMC  — ERROR: {e}")
-
-        # ========================================================
-        # SAVE & CONTINUE
-        # ========================================================
-        results.append(row)
-        pd.DataFrame(results).to_csv("results/benchmark_memory_results.csv", index=False)
-
-        # Stop if exact SDP already failed — no point continuing
-        if not row["exact_success"]:
-            print("Exact SDP failed — stopping benchmark.")
-            break
-
-    return results
 
 
 def build_growing_partition_benchmark(bn, target, evidence_vars_pool, patient_states, max_steps=30):
@@ -371,6 +203,84 @@ def build_growing_partition_benchmark(bn, target, evidence_vars_pool, patient_st
     
     return configurations
 
+import threading
+import psutil
+import os
+import tracemalloc
+import linecache
+import gc
+import time
+
+def profile_sdp_allocations(bn, target, target_value, patient, threshold, partitions, top_n=15):
+    """
+    Properly profiles fast_broadcast_sdp by sampling memory during execution
+    to catch transient numpy tensor allocations that get freed before return.
+    """
+    process = psutil.Process(os.getpid())
+
+    gc.collect()
+    tracemalloc.start(25)
+    baseline_rss = process.memory_info().rss
+    baseline_traced = tracemalloc.get_traced_memory()[0]
+
+    peak_rss = [baseline_rss]
+    peak_traced = [0]
+    peak_snapshot = [None]
+    stop_event = threading.Event()
+
+    def sampler():
+        """Samples memory every 1ms, captures snapshot when new peak found."""
+        while not stop_event.is_set():
+            try:
+                current_rss = process.memory_info().rss
+                if current_rss > peak_rss[0]:
+                    peak_rss[0] = current_rss
+
+                _, peak = tracemalloc.get_traced_memory()
+                if peak > peak_traced[0]:
+                    peak_traced[0] = peak
+                    peak_snapshot[0] = tracemalloc.take_snapshot()
+            except Exception:
+                pass
+            time.sleep(0.001)
+
+    sampler_thread = threading.Thread(target=sampler, daemon=True)
+    sampler_thread.start()
+
+    try:
+        result = fast_broadcast_sdp(bn, target, target_value, patient, threshold, partitions)
+    finally:
+        stop_event.set()
+        sampler_thread.join(timeout=2.0)
+
+    final_peak = tracemalloc.get_traced_memory()[1]
+    tracemalloc.stop()
+
+    peak_tracked_mb = max(peak_traced[0], final_peak) / 1024 / 1024
+    peak_rss_mb = (peak_rss[0] - baseline_rss) / 1024 / 1024
+
+    print(f"\n{'='*60}")
+    print(f"MEMORY PROFILE — partition={max(len(p) for p in partitions)}")
+    print(f"{'='*60}")
+    print(f"Peak tracemalloc (Python+numpy):  {peak_tracked_mb:.2f} MB")
+    print(f"Peak RSS delta (OS-level):        {peak_rss_mb:.2f} MB")
+    print(f"Snapshots captured at new peaks:  {'yes' if peak_snapshot[0] else 'no'}")
+
+    if peak_snapshot[0] is not None:
+        stats = peak_snapshot[0].filter_traces([
+            tracemalloc.Filter(inclusive=True, filename_pattern="*same_decision*"),
+        ]).statistics('lineno')
+
+        print(f"\nTop {top_n} allocations AT PEAK inside fast_broadcast_sdp:")
+        for i, stat in enumerate(stats[:top_n]):
+            if stat.size < 1024:
+                continue
+            frame = stat.traceback[0]
+            line = linecache.getline(frame.filename, frame.lineno).strip()
+            print(f"  #{i+1:2d} {stat.size / 1024 / 1024:7.3f} MB — "
+                  f"line {frame.lineno}: {line[:80]}")
+
+    return result, peak_tracked_mb, peak_rss_mb
 
 def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
     """
@@ -421,24 +331,23 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
         
         # Exact SDP
         gc.collect()
-        tracemalloc.start()
         try:
             start = time.perf_counter()
-            real_sdp = fast_broadcast_sdp(bn, target, target_value, patient, 0.5, partitions)
+            real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
+                bn, target, target_value, patient, 0.5, partitions
+            )
             exact_time = time.perf_counter() - start
-            _, peak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-            
+
             row['exact_time_sec'] = exact_time
-            row['exact_peak_memory_mb'] = peak / 1024 / 1024
+            row['exact_peak_memory_mb'] = peak_traced_mb
+            row['exact_peak_rss_mb'] = peak_rss_mb
             row['exact_success'] = True
             row['exact_sdp_result'] = real_sdp
-            
+
             print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                  f"Exact: {exact_time:.4f}s / {peak/1024/1024:.2f}MB")
+                f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
         except Exception as e:
-            tracemalloc.stop()
-            print(f"Step {config['step']:3d} | partition={max_partition:3d} | Exact FAILED: {e}")
+            print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
         
         # MCMC
         gc.collect()
@@ -454,6 +363,9 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
                 mcmc_estimates.append(est)
             _, peak = tracemalloc.get_traced_memory()
             tracemalloc.stop()
+
+            print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
+                  f"MCMC Time/Memory: {np.mean(mcmc_times):.4f}s / {peak/1024/1024:.2f}MB | Estimate: {np.mean(mcmc_estimates):.4f}")
             
             row['mcmc_avg_time_sec'] = np.mean(mcmc_times)
             row['mcmc_peak_memory_mb'] = peak / 1024 / 1024
@@ -469,9 +381,9 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
     
     return results
 
+
+
 if __name__ == "__main__":
 
     #benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)
-    #results = benchmark_hidden_vars_until_max("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_hidden=40)
-    #results = benchmark_hidden_vars_sdp_vs_mcmc("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_hidden=10, mcmc_trials=1) 
-    results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=45, mcmc_trials=10)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=20, mcmc_trials=2)

@@ -1,0 +1,305 @@
+Selected target: X2  (parents=2, children=5)
+Step   1: added 'X33' → n_hidden=1, biggest_partition=1
+Step   2: added 'X32' → n_hidden=2, biggest_partition=2
+Step   3: added 'X24' → n_hidden=3, biggest_partition=3
+Step   4: added 'X23' → n_hidden=4, biggest_partition=4
+Step   5: added 'X22' → n_hidden=5, biggest_partition=5
+Step   6: added 'X25' → n_hidden=6, biggest_partition=6
+Step   7: added 'X20' → n_hidden=7, biggest_partition=7
+Step   8: added 'X26' → n_hidden=8, biggest_partition=8
+Step   9: added 'X29' → n_hidden=9, biggest_partition=9
+Step  10: added 'X30' → n_hidden=10, biggest_partition=10
+Step  11: added 'X19' → n_hidden=11, biggest_partition=11
+Step  12: added 'X16' → n_hidden=12, biggest_partition=12
+Step  13: added 'X17' → n_hidden=13, biggest_partition=13
+Step  14: added 'X18' → n_hidden=14, biggest_partition=14
+Step  15: added 'X34' → n_hidden=15, biggest_partition=15
+Step  16: added 'X35' → n_hidden=16, biggest_partition=16
+Step  17: added 'X37' → n_hidden=17, biggest_partition=17
+Step  18: added 'X28' → n_hidden=18, biggest_partition=18
+Step  19: added 'X15' → n_hidden=19, biggest_partition=19
+Step  20: added 'X36' → n_hidden=20, biggest_partition=20
+
+============================================================
+MEMORY PROFILE — partition=1
+============================================================
+Peak tracemalloc (Python+numpy):  0.26 MB
+Peak RSS delta (OS-level):        0.36 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+Step   1 | partition=  1 | Time: 0.1696s | Traced: 0.26MB | RSS: 0.36MB
+Step   1 | partition=  1 | MCMC Time/Memory: 2.1084s / 0.98MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=2
+============================================================
+Peak tracemalloc (Python+numpy):  0.21 MB
+Peak RSS delta (OS-level):        0.18 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+Step   2 | partition=  2 | Time: 0.1215s | Traced: 0.21MB | RSS: 0.18MB
+Step   2 | partition=  2 | MCMC Time/Memory: 2.5004s / 0.67MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=3
+============================================================
+Peak tracemalloc (Python+numpy):  0.21 MB
+Peak RSS delta (OS-level):        0.16 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+Step   3 | partition=  3 | Time: 0.1751s | Traced: 0.21MB | RSS: 0.16MB
+Step   3 | partition=  3 | MCMC Time/Memory: 2.2033s / 0.67MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=4
+============================================================
+Peak tracemalloc (Python+numpy):  0.21 MB
+Peak RSS delta (OS-level):        0.19 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+Step   4 | partition=  4 | Time: 0.1276s | Traced: 0.21MB | RSS: 0.19MB
+Step   4 | partition=  4 | MCMC Time/Memory: 1.9361s / 0.67MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=5
+============================================================
+Peak tracemalloc (Python+numpy):  0.21 MB
+Peak RSS delta (OS-level):        0.00 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   0.001 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   0.001 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   0.001 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+Step   5 | partition=  5 | Time: 0.1239s | Traced: 0.21MB | RSS: 0.00MB
+Step   5 | partition=  5 | MCMC Time/Memory: 1.9059s / 0.66MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=6
+============================================================
+Peak tracemalloc (Python+numpy):  0.20 MB
+Peak RSS delta (OS-level):        0.00 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+Step   6 | partition=  6 | Time: 0.1260s | Traced: 0.20MB | RSS: 0.00MB
+Step   6 | partition=  6 | MCMC Time/Memory: 1.9516s / 0.80MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=7
+============================================================
+Peak tracemalloc (Python+numpy):  0.20 MB
+Peak RSS delta (OS-level):        0.00 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+Step   7 | partition=  7 | Time: 0.1264s | Traced: 0.20MB | RSS: 0.00MB
+Step   7 | partition=  7 | MCMC Time/Memory: 1.9415s / 0.78MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=8
+============================================================
+Peak tracemalloc (Python+numpy):  0.20 MB
+Peak RSS delta (OS-level):        0.07 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+Step   8 | partition=  8 | Time: 0.1350s | Traced: 0.20MB | RSS: 0.07MB
+Step   8 | partition=  8 | MCMC Time/Memory: 2.0452s / 0.85MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=9
+============================================================
+Peak tracemalloc (Python+numpy):  0.19 MB
+Peak RSS delta (OS-level):        0.00 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   0.016 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   0.016 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   0.016 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+Step   9 | partition=  9 | Time: 0.1269s | Traced: 0.19MB | RSS: 0.00MB
+Step   9 | partition=  9 | MCMC Time/Memory: 1.9344s / 0.94MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=10
+============================================================
+Peak tracemalloc (Python+numpy):  0.27 MB
+Peak RSS delta (OS-level):        0.00 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   0.031 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   0.031 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   0.031 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+Step  10 | partition= 10 | Time: 0.1371s | Traced: 0.27MB | RSS: 0.00MB
+Step  10 | partition= 10 | MCMC Time/Memory: 1.9965s / 1.10MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=11
+============================================================
+Peak tracemalloc (Python+numpy):  0.41 MB
+Peak RSS delta (OS-level):        0.04 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   0.063 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   0.063 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   0.063 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+Step  11 | partition= 11 | Time: 0.1450s | Traced: 0.41MB | RSS: 0.04MB
+Step  11 | partition= 11 | MCMC Time/Memory: 1.9855s / 1.51MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=12
+============================================================
+Peak tracemalloc (Python+numpy):  0.68 MB
+Peak RSS delta (OS-level):        0.22 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   0.064 MB — line 487: w_tensor = np.log(p_d_tensor / p_not_d_tensor)
+  # 2   0.063 MB — line 468: joint_prob = joint_prob * aligned_vals
+  # 3   0.032 MB — line 484: p_not_d_tensor = np.maximum(joint_not_d / sum_not_d, 1e-12)
+  # 4   0.032 MB — line 483: p_d_tensor = np.maximum(joint_d / sum_d, 1e-12)
+Step  12 | partition= 12 | Time: 0.1542s | Traced: 0.68MB | RSS: 0.22MB
+Step  12 | partition= 12 | MCMC Time/Memory: 2.1158s / 1.66MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=13
+============================================================
+Peak tracemalloc (Python+numpy):  1.25 MB
+Peak RSS delta (OS-level):        0.82 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   0.250 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   0.250 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   0.250 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+  # 4   0.126 MB — line 468: joint_prob = joint_prob * aligned_vals
+  # 5   0.063 MB — line 487: w_tensor = np.log(p_d_tensor / p_not_d_tensor)
+  # 6   0.063 MB — line 484: p_not_d_tensor = np.maximum(joint_not_d / sum_not_d, 1e-12)
+  # 7   0.063 MB — line 483: p_d_tensor = np.maximum(joint_d / sum_d, 1e-12)
+Step  13 | partition= 13 | Time: 0.2577s | Traced: 1.25MB | RSS: 0.82MB
+Step  13 | partition= 13 | MCMC Time/Memory: 2.1312s / 1.76MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=14
+============================================================
+Peak tracemalloc (Python+numpy):  2.37 MB
+Peak RSS delta (OS-level):        1.48 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   0.500 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 2   0.500 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+  # 3   0.251 MB — line 468: joint_prob = joint_prob * aligned_vals
+  # 4   0.126 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 5   0.125 MB — line 487: w_tensor = np.log(p_d_tensor / p_not_d_tensor)
+  # 6   0.125 MB — line 484: p_not_d_tensor = np.maximum(joint_not_d / sum_not_d, 1e-12)
+  # 7   0.125 MB — line 483: p_d_tensor = np.maximum(joint_d / sum_d, 1e-12)
+Step  14 | partition= 14 | Time: 0.2830s | Traced: 2.37MB | RSS: 1.48MB
+Step  14 | partition= 14 | MCMC Time/Memory: 2.0998s / 1.84MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=15
+============================================================
+Peak tracemalloc (Python+numpy):  4.61 MB
+Peak RSS delta (OS-level):        12.58 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   1.000 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   1.000 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   1.000 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+Step  15 | partition= 15 | Time: 0.5967s | Traced: 4.61MB | RSS: 12.58MB
+Step  15 | partition= 15 | MCMC Time/Memory: 2.1772s / 1.93MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=16
+============================================================
+Peak tracemalloc (Python+numpy):  9.12 MB
+Peak RSS delta (OS-level):        31.38 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   2.000 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   2.000 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   2.000 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+Step  16 | partition= 16 | Time: 0.9878s | Traced: 9.12MB | RSS: 31.38MB
+Step  16 | partition= 16 | MCMC Time/Memory: 2.1568s / 2.00MB | Estimate: 1.0000
+
+============================================================
+MEMORY PROFILE — partition=17
+============================================================
+Peak tracemalloc (Python+numpy):  18.08 MB
+Peak RSS delta (OS-level):        104.96 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   4.000 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   4.000 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   4.000 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+  # 4   2.001 MB — line 468: joint_prob = joint_prob * aligned_vals
+  # 5   1.000 MB — line 487: w_tensor = np.log(p_d_tensor / p_not_d_tensor)
+  # 6   1.000 MB — line 484: p_not_d_tensor = np.maximum(joint_not_d / sum_not_d, 1e-12)
+  # 7   1.000 MB — line 483: p_d_tensor = np.maximum(joint_d / sum_d, 1e-12)
+Step  17 | partition= 17 | Time: 3.3239s | Traced: 18.08MB | RSS: 104.96MB
+Step  17 | partition= 17 | MCMC Time/Memory: 2.2217s / 2.07MB | Estimate: 0.9030
+
+============================================================
+MEMORY PROFILE — partition=18
+============================================================
+Peak tracemalloc (Python+numpy):  36.09 MB
+Peak RSS delta (OS-level):        221.86 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1   8.000 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2   8.000 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3   8.000 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+  # 4   4.001 MB — line 468: joint_prob = joint_prob * aligned_vals
+  # 5   2.000 MB — line 487: w_tensor = np.log(p_d_tensor / p_not_d_tensor)
+  # 6   2.000 MB — line 484: p_not_d_tensor = np.maximum(joint_not_d / sum_not_d, 1e-12)
+  # 7   2.000 MB — line 483: p_d_tensor = np.maximum(joint_d / sum_d, 1e-12)
+Step  18 | partition= 18 | Time: 5.9994s | Traced: 36.09MB | RSS: 221.86MB
+Step  18 | partition= 18 | MCMC Time/Memory: 2.0966s / 2.14MB | Estimate: 0.9165
+
+============================================================
+MEMORY PROFILE — partition=19
+============================================================
+Peak tracemalloc (Python+numpy):  72.11 MB
+Peak RSS delta (OS-level):        454.92 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1  16.000 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2  16.000 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3  16.000 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+  # 4   8.001 MB — line 468: joint_prob = joint_prob * aligned_vals
+  # 5   4.000 MB — line 487: w_tensor = np.log(p_d_tensor / p_not_d_tensor)
+  # 6   4.000 MB — line 484: p_not_d_tensor = np.maximum(joint_not_d / sum_not_d, 1e-12)
+  # 7   4.000 MB — line 483: p_d_tensor = np.maximum(joint_d / sum_d, 1e-12)
+Step  19 | partition= 19 | Time: 12.3775s | Traced: 72.11MB | RSS: 454.92MB
+Step  19 | partition= 19 | MCMC Time/Memory: 2.1168s / 2.20MB | Estimate: 0.9280
+
+============================================================
+MEMORY PROFILE — partition=20
+============================================================
+Peak tracemalloc (Python+numpy):  144.07 MB
+Peak RSS delta (OS-level):        765.54 MB
+Snapshots captured at new peaks:  yes
+
+Top 15 allocations AT PEAK inside fast_broadcast_sdp:
+  # 1  32.000 MB — line 494: 'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
+  # 2  32.000 MB — line 493: 'p_d_flat': p_d_tensor.flatten().tolist(),
+  # 3  32.000 MB — line 492: 'w_flat': w_tensor.flatten().tolist(),
+  # 4  16.001 MB — line 468: joint_prob = joint_prob * aligned_vals
+  # 5   8.000 MB — line 487: w_tensor = np.log(p_d_tensor / p_not_d_tensor)
+  # 6   8.000 MB — line 484: p_not_d_tensor = np.maximum(joint_not_d / sum_not_d, 1e-12)
+  # 7   8.000 MB — line 483: p_d_tensor = np.maximum(joint_d / sum_d, 1e-12)
+Step  20 | partition= 20 | Time: 23.8841s | Traced: 144.07MB | RSS: 765.54MB
+Step  20 | partition= 20 | MCMC Time/Memory: 2.0826s / 2.28MB | Estimate: 0.8815

@@ -87,28 +87,6 @@ def estimate_exact_inference_memory(bn):
     
     return max_clique_size, estimated_gb
 
-def select_optimal_target_node_old(bn):
-    """
-    Selects a target node deeply embedded in the network (highest degree).
-    """
-    best_node = None
-    max_degree = -1
-    
-    for node in bn.nodes():
-        # Ensure it's a binary node
-        if len(bn.get_cpds(node).state_names[node]) != 2:
-            continue
-            
-        degree = len(bn.get_parents(node)) + len(bn.get_children(node))
-        if degree > max_degree:
-            max_degree = degree
-            best_node = node
-            
-    # Fallback if no binary nodes exist (rare)
-    if best_node is None:
-        return random.choice(list(bn.nodes()))
-        
-    return best_node
 
 def select_optimal_target_node(bn):
     """
@@ -215,159 +193,6 @@ def run_for_memory(func, *args, **kwargs):
     # This guarantees we don't miss hidden NumPy C-level allocations.
     return max(python_peak_mb, os_delta_mb)
 
-def estimate_exact_inference_memory_accurate(bn, target, evidence_dict):
-    """
-    Simulates Variable Elimination accurately by accounting for Barren Node Pruning
-    and Tensor Slicing caused by observed evidence and target partitions.
-    """
-    evidence_vars = list(evidence_dict.keys())
-    relevant_nodes = evidence_vars + [target]
-    
-    # 1. Prune Barren Nodes (Get Ancestral Subgraph)
-    # We use pgmpy's built-in DiGraph extraction for the ancestral graph
-    ancestral_graph = bn.get_ancestral_graph(relevant_nodes)
-    
-    # 2. Moralize the pruned graph (Marry all parents)
-    # We MUST do this before removing evidence to capture v-structure dependencies
-    G = nx.Graph(ancestral_graph.edges()) # Convert to undirected
-    G.add_nodes_from(ancestral_graph.nodes())
-    
-    for node in ancestral_graph.nodes():
-        # Get parents in the directed ancestral graph
-        parents = list(ancestral_graph.predecessors(node))
-        for i in range(len(parents)):
-            for j in range(i+1, len(parents)):
-                 G.add_edge(parents[i], parents[j])
-                 
-    # 3. Apply Tensor Slicing (Remove Observed Variables)
-    # Because they are known constants, they do not add dimensions to the VE tensors.
-    # Removing them breaks paths and drastically lowers the effective treewidth!
-    nodes_to_remove = set(evidence_vars) | {target}
-    for node in nodes_to_remove:
-        if node in G:
-            G.remove_node(node)
-            
-    # 4. Simulate Min-Degree Elimination on the remaining Hidden Variables
-    max_clique_size = 0
-    nodes = list(G.nodes())
-    
-    while nodes:
-        # Find node with minimum degree
-        degrees = dict(G.degree(nodes))
-        min_node = min(degrees, key=degrees.get)
-        
-        # Calculate the tensor size (Current Node + its uneliminated neighbors)
-        neighbors = list(G.neighbors(min_node))
-        clique_size = len(neighbors) + 1 
-        
-        if clique_size > max_clique_size:
-            max_clique_size = clique_size
-            
-        # Connect all neighbors to each other (fill-in edges)
-        for i in range(len(neighbors)):
-            for j in range(i+1, len(neighbors)):
-                G.add_edge(neighbors[i], neighbors[j])
-                
-        # Remove the node
-        G.remove_node(min_node)
-        nodes.remove(min_node)
-        
-    # If all variables were observed/pruned, memory is practically zero
-    if max_clique_size == 0:
-        return 0, 0.0
-
-    # Calculate Memory: 2^W states * 8 bytes per float
-    estimated_bytes = (2 ** max_clique_size) * 8
-    estimated_gb = estimated_bytes / (1024 ** 3)
-    
-    return max_clique_size, estimated_gb
-
-def find_exact_experimental_patients_slurm(bn, target_node, target_value, decision_threshold, n_evidence, buckets=[0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], tolerance=0.05, batch_size=8000, max_batches=2, mem_limit_gb=8.0):
-    """
-    Brute-force searches for patients by generating massive random batches.
-    Includes a real-time pre-flight memory check to prevent Slurm OOM kills.
-    """
-    all_nodes = list(bn.nodes())
-    available_nodes = [n for n in all_nodes if n != target_node]
-    
-    unfilled_buckets = {b: None for b in buckets}
-    batch_count = 0
-    oom_skips = 0  # Track how many patients we had to skip due to RAM limits
-    
-    while any(v is None for v in unfilled_buckets.values()) and batch_count < max_batches:
-        batch_count += 1
-        print(f"Generating batch {batch_count}/{max_batches} of {batch_size} random realities...")
-        
-        for _ in range(batch_size):
-            # 1. Pick random evidence variables and states
-            evidence_vars = random.sample(available_nodes, n_evidence)
-            hidden_vars = [n for n in available_nodes if n not in evidence_vars]
-            
-            temp_patient = {}
-            for var in evidence_vars:
-                states = bn.get_cpds(var).state_names[var]
-                temp_patient[var] = random.choice(states)
-            
-            # ==========================================
-            # 2. THE SLURM SAFETY VALVE
-            # Check the exact constrained memory of this specific patient
-            # ==========================================
-            max_tensor, est_gb = estimate_exact_inference_memory_accurate(bn, target_node, temp_patient)
-            
-            if est_gb > mem_limit_gb:
-                oom_skips += 1
-                # If the network is so dense that 10 random patients in a row exceed 8GB, 
-                # we are wasting CPU time. Bail out of the network entirely.
-                if oom_skips >= 10:
-                    print(f"    [!] HARVEST ABORTED: Network fundamentally exceeds {mem_limit_gb}GB limit.")
-                    return unfilled_buckets 
-                continue # Skip this patient and try another random configuration
-            else:
-                oom_skips = 0 # Reset counter if we find a safe configuration!
-            # ==========================================
-
-            # 3. Create a fast, pruned sub-model for the base decision
-            relevant_nodes = list(evidence_vars) + [target_node]
-            ancestral_structure = bn.get_ancestral_graph(relevant_nodes)
-            sub_model = BayesianNetwork(ancestral_structure.edges())
-            sub_model.add_nodes_from(ancestral_structure.nodes())
-            for node in sub_model.nodes():
-                sub_model.add_cpds(bn.get_cpds(node))
-            base_inference = VariableElimination(sub_model)
-            
-            # 4. Check base decision (Must be >= threshold)
-            try:
-                base_dist = base_inference.query(variables=[target_node], evidence=temp_patient, show_progress=False)
-                if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
-                    continue 
-            except Exception:
-                continue
-                
-            # 5. Calculate Exact SDP (We know it is RAM-safe now!)
-            partitions = get_partitions(bn, hidden_vars, target_node, temp_patient)
-            try:
-                exact_sdp = fast_broadcast_sdp(bn, target_node, target_value, temp_patient, decision_threshold, partitions)
-            except Exception:
-                continue
-                
-            # 6. Check if it fits into any empty bucket
-            empty_targets = [b for b, v in unfilled_buckets.items() if v is None]
-            for b in empty_targets:
-                if abs(exact_sdp - b) <= tolerance:
-                    unfilled_buckets[b] = (temp_patient.copy(), exact_sdp)
-                    print(f"--> Filled bucket {b} with Exact SDP: {exact_sdp:.4f} (Peak RAM predicted: {est_gb:.4f} GB)")
-                    break
-                    
-            if not any(v is None for v in unfilled_buckets.values()):
-                break
-                
-    if any(v is None for v in unfilled_buckets.values()):
-        missing = [b for b, v in unfilled_buckets.items() if v is None]
-        print(f"Finished searching. Could not find patients for buckets: {missing}")
-    else:
-        print("All buckets filled successfully!")
-        
-    return unfilled_buckets
 
 import psutil
 def process_single_file(args):
@@ -402,15 +227,6 @@ def process_single_file(args):
     log_mem(f"After loading BN: {os.path.basename(file)}")
     all_nodes = list(bn.nodes())
 
-    ## --- SAFETY VALVE: Check Memory Limits Before Harvesting ---
-    #max_tensor, est_gb = estimate_exact_inference_memory(bn)
-    #print(f"  -> Max Tensor Size: {max_tensor} variables")
-    #print(f"  -> Estimated Peak RAM: {est_gb:.2f} GB")
-    #
-    #if est_gb > 32.0: 
-    #    print(f"  [!] DANGER: Network exceeds memory safety limits. Skipping entirely.")
-    #    return [] # Return empty results so the worker survives and moves to the next file
-    ## -----------------------------------------------------------
     
     target = select_optimal_target_node(bn)
     target_states = bn.get_cpds(target).state_names[target]
@@ -593,11 +409,6 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     ]
 
     all_results = []
-    #with Pool(processes=n_workers) as pool:
-    #    for file_results in pool.imap_unordered(process_single_file, args_list):
-    #        all_results.extend(file_results)
-    #        # Save progressively after each file completes
-    #        #pd.DataFrame(all_results).to_csv(output_csv, index=False)
 
     files_done = 0
     with Pool(processes=n_workers) as pool:

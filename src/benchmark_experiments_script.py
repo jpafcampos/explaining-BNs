@@ -27,6 +27,18 @@ import tracemalloc
 import gc
 import threading
 import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pgmpy")
+
+MAX_TENSOR_SIZE_64 = 33_554_432   # = 2^25, 64gb RAM
+MAX_TENSOR_SIZE_128 = 67_108_864   # = 2^26, 128gb RAM
+MAX_TENSOR_SIZE_40 = 16_777_216  # = 2^24, ~40gb RAM 
+
+MAX_TENSOR_ALLOWED = MAX_TENSOR_SIZE_40  # Set this to the desired memory wall for the experiment
+
+# =================================================================================
+# / -------------------------- HELPER FUNCTIONS --------------------------
+# =================================================================================
 
 def get_target(model):
     targets = {
@@ -115,6 +127,18 @@ def compute_max_tensor_size(bn, partitions):
         return 0
     return max(compute_tensor_size(bn, p) for p in partitions)
 
+def generate_random_patient(bn, target_node, n_evidence):
+    all_nodes = list(bn.nodes())
+    available_nodes = [n for n in all_nodes if n != target_node]
+    evidence_vars = random.sample(available_nodes, min(n_evidence, len(available_nodes)))
+    return {
+        var: random.choice(bn.get_cpds(var).state_names[var])
+        for var in evidence_vars
+    }
+
+# =================================================================================
+# /--------------------------- HARVESTER FUNCTION WITH MEMORY CHECK --------------------------
+# =================================================================================
 
 def memory_aware_random_harvester(bn, target_node, target_value, decision_threshold,
                                             n_evidence,
@@ -122,7 +146,7 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
                                             tolerance=0.05,
                                             batch_size=500,
                                             max_batches=1,
-                                            max_tensor_entries=500_000_000):
+                                            max_tensor_entries=MAX_TENSOR_ALLOWED):
     """
     -> Same logic as function find_exact_experimental_patients_random, 
     but with an explicit memory wall check
@@ -137,9 +161,6 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
     ----------
     max_tensor_entries : int
         Maximum number of entries allowed in any single tensor during SDP.
-        Peak memory is roughly max_tensor_entries * 8 bytes * ~6 copies.
-        500M ≈ 24 GB peak, safe for 64 GB budget.
-        1B  ≈ 48 GB peak, safe for 128 GB budget.
     
     Returns
     -------
@@ -257,69 +278,206 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
         'inference_failures': inference_failures,
     }
 
-def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_to_run=None):
+# =================================================================================
+#/--------------------------- FULL BENCHMARKING FUNCTION --------------------------
+# =================================================================================
+
+def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_to_run=None,
+                                 max_tensor_entries=MAX_TENSOR_ALLOWED):
+    """
+    Runs the full SDP benchmark across networks, H_RATIOs, and target buckets.
     
+    Records every (network, H_RATIO, bucket) combination with one of these statuses:
+      - OK: both exact SDP and MCMC ran successfully
+      - BUCKET_NOT_FOUND: harvester was tractable but couldn't match this SDP range
+      - SDP_INTRACTABLE_MCMC_ONLY: exact SDP hit the memory wall, MCMC still ran
+      - INTRACTABLE: rare case where even MCMC couldn't run
+    
+    Parameters
+    ----------
+    max_tensor_entries : int
+        Memory wall for exact SDP.
+    """
     results = []
-    raw_results = []
-    H_RATIOS = [0.25, 0.50, 0.75, 0.9] 
+    H_RATIOS = [0.25, 0.50, 0.75, 0.9]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.30, 0.50, 0.70, 0.9, 1.0]
-    MCMC_TRIALS = 10 
-    
+    MCMC_TRIALS = 10
+
+    # Fixed schema — every row has these columns
+    EMPTY_ROW = {
+        'Network': None, 'N_Nodes': None, 'Target_Bucket': None, 'H_Ratio': None,
+        'N_Hidden': None, 'Target_Node': None, 'Target_Value': None, 'Status': None,
+        'Wall_Hits': None, 'Attempts_OK': None, 'SDP_Failures': None,
+        'Exact_SDP': None, 'Exact_Time_sec': None,
+        'Exact_Mem_MB_Python': None, 'Exact_Mem_MB_RSS': None,
+        'Max_Partition_Size': None, 'Max_Tensor_Size': None,
+        'MCMC_Mean_SDP': None, 'MCMC_Variance': None, 'MCMC_Avg_Time_sec': None,
+        'MCMC_Mem_MB_Python': None, 'MCMC_Mem_MB_RSS': None,
+        'Absolute_Error': None,
+    }
+
     for bn in models_to_run:
         for H_RATIO in H_RATIOS:
 
             print(f"\n=== Starting experiments for BN: {bn.name} with H_RATIO: {H_RATIO} ===")
 
             n_nodes = bn.number_of_nodes()
-
             all_nodes = list(bn.nodes())
-            
             target = get_target(bn)
-
             target_states = bn.get_cpds(target).state_names[target]
             target_value = target_states[1] if len(target_states) > 1 else target_states[0]
             print(f"Target Node: {target}, Target Value: {target_value}")
-            
-            available_nodes = [n for n in all_nodes if n != target]
 
+            available_nodes = [n for n in all_nodes if n != target]
             n_hidden = max(1, int(len(available_nodes) * H_RATIO))
-             
-            print(f"using {n_hidden} H variables")
             n_evidence = len(available_nodes) - n_hidden
-            print(f"and {n_evidence} evidence variables")
-           
-            harvested_data = find_exact_experimental_patients_random(bn, target, target_value, DECISION_THRESHOLD,
-                                                            n_evidence, buckets=TARGET_BUCKETS, batch_size=500, max_batches=1, max_partition_size=28)
-            
-            # Now process whatever it managed to find
-            for target_sdp, result in harvested_data.items():
+            print(f"using {n_hidden} H variables and {n_evidence} evidence variables")
+
+            # --- Run the harvester ---
+            harvested = memory_aware_random_harvester(
+                bn, target, target_value, DECISION_THRESHOLD,
+                n_evidence,
+                buckets=TARGET_BUCKETS,
+                batch_size=500,
+                max_batches=1,
+                max_tensor_entries=max_tensor_entries,
+            )
+            harvested_data = harvested['buckets']
+            intractable = harvested['attempts_ok'] == 0 and harvested['wall_hits'] > 0
+
+            # ==========================================================
+            # CASE 1 — Exact SDP intractable: MCMC-only benchmark
+            # ==========================================================
+            if intractable:
+                print(f"\n[!] Network intractable for exact SDP at H_RATIO={H_RATIO}. "
+                      f"Running MCMC-only benchmark.")
+
+                patient = generate_random_patient(bn, target, n_evidence)
+                hidden_vars = [n for n in bn.nodes() if n not in patient and n != target]
+
+                mcmc_estimates = []
+                mcmc_times = []
+                mcmc_success = True
+
+                print(f"       -> Running MCMC SDP (Trials: {MCMC_TRIALS})...")
+                for trial in range(MCMC_TRIALS):
+                    est_sdp, t_time, ok = run_for_time(
+                        fast_mcmc_sdp_estimation, bn, target, target_value, patient,
+                        DECISION_THRESHOLD, n_samples=1000, burn_in=2000, thinning=50
+                    )
+                    if not ok:
+                        mcmc_success = False
+                        break
+                    mcmc_estimates.append(est_sdp)
+                    mcmc_times.append(t_time)
+
+                if mcmc_success and mcmc_estimates:
+                    mcmc_mean = np.mean(mcmc_estimates)
+                    mcmc_avg_time = np.mean(mcmc_times)
+                    mcmc_variance = np.var(mcmc_estimates)
+
+                    mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
+                        fast_mcmc_sdp_estimation, bn, target, target_value, patient,
+                        DECISION_THRESHOLD, n_samples=10, burn_in=0, thinning=5
+                    )
+
+                    print(f"          MCMC-only: {mcmc_mean:.4f} | Time: {mcmc_avg_time:.4f}s | "
+                          f"Memory: {mcmc_mem_mb_python:.2f} MB")
+                    status = 'SDP_INTRACTABLE_MCMC_ONLY'
+                else:
+                    print(f"          [!] MCMC also failed — fully intractable.")
+                    mcmc_mean = None
+                    mcmc_avg_time = None
+                    mcmc_variance = None
+                    mcmc_mem_mb_python = None
+                    mcmc_mem_mb_rss = None
+                    status = 'INTRACTABLE'
+
+                # One row per bucket — same MCMC result across buckets
+                for target_bucket in TARGET_BUCKETS:
+                    row = dict(EMPTY_ROW)
+                    row.update({
+                        'Network': bn.name,
+                        'N_Nodes': n_nodes,
+                        'Target_Bucket': target_bucket,
+                        'H_Ratio': H_RATIO,
+                        'N_Hidden': len(hidden_vars),
+                        'Target_Node': target,
+                        'Target_Value': target_value,
+                        'Status': status,
+                        'Wall_Hits': harvested['wall_hits'],
+                        'Attempts_OK': 0,
+                        'SDP_Failures': harvested['sdp_failures'],
+                        'MCMC_Mean_SDP': mcmc_mean,
+                        'MCMC_Variance': mcmc_variance,
+                        'MCMC_Avg_Time_sec': mcmc_avg_time,
+                        'MCMC_Mem_MB_Python': mcmc_mem_mb_python,
+                        'MCMC_Mem_MB_RSS': mcmc_mem_mb_rss,
+                    })
+                    results.append(row)
+
+                pd.DataFrame(results).to_csv(output_csv, index=False)
+                continue  # move to next H_RATIO
+
+            # ==========================================================
+            # CASE 2 — Normal path: process each bucket
+            # ==========================================================
+            for target_bucket in TARGET_BUCKETS:
+                result = harvested_data.get(target_bucket)
+
+                # Bucket not filled despite a tractable network
                 if result is None:
-                    continue # We didn't find a patient for this specific bucket in this network
-                    
+                    row = dict(EMPTY_ROW)
+                    row.update({
+                        'Network': bn.name,
+                        'N_Nodes': n_nodes,
+                        'Target_Bucket': target_bucket,
+                        'H_Ratio': H_RATIO,
+                        'N_Hidden': n_hidden,
+                        'Target_Node': target,
+                        'Target_Value': target_value,
+                        'Status': 'BUCKET_NOT_FOUND',
+                        'Wall_Hits': harvested['wall_hits'],
+                        'Attempts_OK': harvested['attempts_ok'],
+                        'SDP_Failures': harvested['sdp_failures'],
+                    })
+                    results.append(row)
+                    pd.DataFrame(results).to_csv(output_csv, index=False)
+                    continue
+
+                # Success path — full benchmark
                 patient, exact_sdp = result
                 hidden_vars = [n for n in bn.nodes() if n not in patient and n != target]
-                print(f"\n  -> Benchmarking found patient for bucket {target_sdp} (Exact: {exact_sdp:.4f})")
-                
+                partitions = get_partitions(bn, hidden_vars, target, patient)
+                max_partition_size = max(len(p) for p in partitions)
+                max_tensor_size = compute_max_tensor_size(bn, partitions)
+
+                print(f"\n  -> Benchmarking patient for bucket {target_bucket} "
+                      f"(Exact: {exact_sdp:.4f}, partition: {max_partition_size}, "
+                      f"tensor: {max_tensor_size:,})")
+
                 # ========================================================
                 # EXACT SDP EVALUATION
                 # ========================================================
-                partitions = get_partitions(bn, hidden_vars, target, patient)
-                max_partition_size = max(len(p) for p in partitions)
                 print(f"       -> Running Exact SDP...")
-                
+
                 # Pass 1: Time
                 exact_sdp, exact_time, exact_success = run_for_time(
-                    fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
+                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    DECISION_THRESHOLD, partitions
                 )
-                
+
                 # Pass 2: Memory
                 exact_mem_mb_python, exact_mem_mb_rss = run_for_memory(
-                    fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
+                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    DECISION_THRESHOLD, partitions
                 )
-                
+
                 if exact_success:
-                    print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb_python:.2f} MB")
+                    print(f"          Time: {exact_time:.4f} sec | "
+                          f"Mem Python: {exact_mem_mb_python:.2f} MB | "
+                          f"Mem RSS: {exact_mem_mb_rss:.2f} MB")
                 else:
                     print(f"          [FAILED]: Crashed at {exact_mem_mb_python:.2f} MB")
 
@@ -328,78 +486,52 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 # ========================================================
                 mcmc_estimates = []
                 mcmc_times = []
-                
                 print(f"       -> Running MCMC SDP (Trials: {MCMC_TRIALS})...")
-                
-                # Pass 1: Pure Time (across all trials)
+
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
-                        fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                        n_samples=1000, burn_in=2000, thinning=50
+                        fast_mcmc_sdp_estimation, bn, target, target_value, patient,
+                        DECISION_THRESHOLD, n_samples=1000, burn_in=2000, thinning=50
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)
-                    
+
                 mcmc_mean = np.mean(mcmc_estimates)
                 mcmc_avg_time = np.mean(mcmc_times)
                 mcmc_variance = np.var(mcmc_estimates)
 
-                # Pass 2: Peak Memory
                 mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
-                    fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                    n_samples=100, burn_in=50, thinning=5
+                    fast_mcmc_sdp_estimation, bn, target, target_value, patient,
+                    DECISION_THRESHOLD, n_samples=100, burn_in=50, thinning=5
                 )
-                
-                print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb_python:.2f} MB")
-                
-                absolute_error = abs(exact_sdp - mcmc_mean)
 
-                # ========================================================
-                # PARALLEL TEMPERING MCMC EVALUATION
-                # ========================================================
+                print(f"          Avg Time: {mcmc_avg_time:.4f} sec | "
+                      f"Estimated SDP: {mcmc_mean:.4f} |  "
+                      f"Mem Python: {mcmc_mem_mb_python:.2f} MB | "
+                      f"Mem RSS: {mcmc_mem_mb_rss:.2f} MB")
 
-                #pt_mcmc_estimates = []
-                #pt_mcmc_times = []
-#
-                #print(f"       -> Running Parallel Tempering MCMC SDP (Trials: {MCMC_TRIALS})...")              
-                #
-                ## Pass 1: Pure Time (across all trials)
-                #for trial in range(MCMC_TRIALS):
-                #    est_sdp, t_time, _ = run_for_time(
-                #        pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                #        n_samples=1000, burn_in=2000, thinning=50, n_chains=4, max_temp=40.0
-                #    )
-                #    pt_mcmc_estimates.append(est_sdp)
-                #    pt_mcmc_times.append(t_time)
-#
-                #pt_mcmc_mean = np.mean(pt_mcmc_estimates)
-                #pt_mcmc_avg_time = np.mean(pt_mcmc_times)
-                #pt_mcmc_variance = np.var(pt_mcmc_estimates)
-#
-                ## Pass 2: Peak Memory
-                #pt_mcmc_mem_mb = run_for_memory(
-                #    pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                #    n_samples=100, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
-                #)
-#
-                #print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb:.2f} MB")
-#
-                #absolute_error_pt = abs(exact_sdp - pt_mcmc_mean)
-                
-            
-                # Record everything to the dataset
-                results.append({
+                absolute_error = abs(exact_sdp - mcmc_mean) if exact_success else None
+
+                # Record the full result
+                row = dict(EMPTY_ROW)
+                row.update({
                     'Network': bn.name,
                     'N_Nodes': n_nodes,
-                    'Target_Bucket': target_sdp,
+                    'Target_Bucket': target_bucket,
                     'H_Ratio': H_RATIO,
+                    'N_Hidden': len(hidden_vars),
                     'Target_Node': target,
                     'Target_Value': target_value,
-                    'Exact_SDP': exact_sdp,
-                    'Exact_Time_sec': exact_time,
+                    'Status': 'OK' if exact_success else 'EXACT_CRASHED',
+                    'Wall_Hits': harvested['wall_hits'],
+                    'Attempts_OK': harvested['attempts_ok'],
+                    'SDP_Failures': harvested['sdp_failures'],
+                    'Exact_SDP': exact_sdp if exact_success else None,
+                    'Exact_Time_sec': exact_time if exact_success else None,
                     'Exact_Mem_MB_Python': exact_mem_mb_python,
                     'Exact_Mem_MB_RSS': exact_mem_mb_rss,
                     'Max_Partition_Size': max_partition_size,
+                    'Max_Tensor_Size': max_tensor_size,
                     'MCMC_Mean_SDP': mcmc_mean,
                     'MCMC_Variance': mcmc_variance,
                     'MCMC_Avg_Time_sec': mcmc_avg_time,
@@ -407,10 +539,8 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                     'MCMC_Mem_MB_RSS': mcmc_mem_mb_rss,
                     'Absolute_Error': absolute_error,
                 })
-                
-                # Save progressively
+                results.append(row)
                 pd.DataFrame(results).to_csv(output_csv, index=False)
-                pd.DataFrame(raw_results).to_csv("raw_" + output_csv, index=False)
 
     print(f"\nExperiment Complete! Results saved to {output_csv}")
     return pd.DataFrame(results)

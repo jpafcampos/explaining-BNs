@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=memory_test
-#SBATCH --output=memory_test.out
-#SBATCH --error=memory_test.err
-#SBATCH --time=01:30:00
+#SBATCH --output=results/logs/memory_test.out
+#SBATCH --error=results/logs/memory_test.err
+#SBATCH --time=01:00:00
 #SBATCH --ntasks=1
-#SBATCH --mem=128G
+#SBATCH --mem=40G
 
 source ~/miniforge3/bin/activate bn-medical
 

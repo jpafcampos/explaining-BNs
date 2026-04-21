@@ -100,6 +100,163 @@ def run_for_memory(func, *args, **kwargs):
 
     return (python_peak_mb, rss_delta_mb)
 
+from math import prod
+import gc
+import random
+from pgmpy.inference import VariableElimination
+
+
+def compute_tensor_size(bn, partition):
+    return prod(len(bn.get_cpds(v).state_names[v]) for v in partition)
+
+
+def compute_max_tensor_size(bn, partitions):
+    if not partitions:
+        return 0
+    return max(compute_tensor_size(bn, p) for p in partitions)
+
+
+def memory_aware_random_harvester(bn, target_node, target_value, decision_threshold,
+                                            n_evidence,
+                                            buckets=[0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                                            tolerance=0.05,
+                                            batch_size=500,
+                                            max_batches=1,
+                                            max_tensor_entries=500_000_000):
+    """
+    -> Same logic as function find_exact_experimental_patients_random, 
+    but with an explicit memory wall check
+    
+    Random-evidence harvester that fills target SDP buckets with example patients.
+    
+    Uses tensor size (product of hidden-variable cardinalities) as the memory
+    safety metric, so it works correctly on networks with mixed cardinalities
+    like Child (not just binary synthetic BNs).
+    
+    Parameters
+    ----------
+    max_tensor_entries : int
+        Maximum number of entries allowed in any single tensor during SDP.
+        Peak memory is roughly max_tensor_entries * 8 bytes * ~6 copies.
+        500M ≈ 24 GB peak, safe for 64 GB budget.
+        1B  ≈ 48 GB peak, safe for 128 GB budget.
+    
+    Returns
+    -------
+    dict with keys:
+        'buckets'       : {bucket_value: (patient_dict, exact_sdp) | None}
+        'wall_hits'     : int — patients rejected for exceeding the memory wall
+        'attempts_ok'   : int — patients that passed the wall and got evaluated
+        'sdp_failures'  : int — patients that passed the wall but crashed in SDP
+        'inference_failures' : int — patients whose base inference crashed
+    """
+    all_nodes = list(bn.nodes())
+    available_nodes = [n for n in all_nodes if n != target_node]
+
+    unfilled_buckets = {b: None for b in buckets}
+    wall_hits = 0
+    attempts_ok = 0
+    sdp_failures = 0
+    inference_failures = 0
+
+    print(f"\nHunting for patients... (Locking {n_evidence} variables as evidence)")
+    print(f"Memory wall: tensor size ≤ {max_tensor_entries:,} entries "
+          f"(~{max_tensor_entries * 8 / 1024**3:.1f} GB raw)")
+
+    base_inference = VariableElimination(bn)
+    batch_count = 0
+
+    while any(v is None for v in unfilled_buckets.values()) and batch_count < max_batches:
+        batch_count += 1
+        print(f"Generating batch {batch_count}/{max_batches} of {batch_size} random realities...")
+
+        for i in range(batch_size):
+            # 1. Generate a random patient with randomly-sampled evidence
+            evidence_vars = random.sample(available_nodes, min(n_evidence, len(available_nodes)))
+            hidden_vars = [n for n in all_nodes if n not in evidence_vars and n != target_node]
+
+            temp_patient = {
+                var: random.choice(bn.get_cpds(var).state_names[var])
+                for var in evidence_vars
+            }
+
+            # 2. Build partitions for this patient
+            partitions = get_partitions(bn, hidden_vars, target_node, temp_patient)
+
+            if not partitions:
+                continue  # nothing to compute
+
+            # 3. MEMORY SAFETY — reject if any tensor exceeds the wall
+            max_tensor = compute_max_tensor_size(bn, partitions)
+            if max_tensor > max_tensor_entries:
+                wall_hits += 1
+                continue
+
+            # 4. Check base decision meets the threshold
+            try:
+                base_dist = base_inference.query(
+                    variables=[target_node], evidence=temp_patient, show_progress=False
+                )
+                if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
+                    continue  # legitimate rejection, not a failure
+            except (ValueError, MemoryError) as e:
+                inference_failures += 1
+                print(f"    [!] Base inference failed ({type(e).__name__}): {e}")
+                gc.collect()
+                continue  # try another patient rather than bailing out
+
+            # 5. Calculate exact SDP
+            try:
+                exact_sdp = fast_broadcast_sdp(
+                    bn, target_node, target_value, temp_patient,
+                    decision_threshold, partitions
+                )
+            except (ValueError, MemoryError) as e:
+                sdp_failures += 1
+                print(f"    [!] SDP failed despite passing wall ({type(e).__name__}): {e}")
+                gc.collect()
+                continue  # try another patient
+
+            attempts_ok += 1
+
+            # 6. Try to fit this SDP into an empty bucket
+            empty_targets = [b for b, v in unfilled_buckets.items() if v is None]
+            for b in empty_targets:
+                if abs(exact_sdp - b) <= tolerance:
+                    unfilled_buckets[b] = (temp_patient.copy(), exact_sdp)
+                    print(f"--> Filled bucket {b} with Exact SDP: {exact_sdp:.4f} "
+                          f"(tensor size: {max_tensor:,})")
+                    break
+
+            # 7. Early exit if all buckets filled
+            if not any(v is None for v in unfilled_buckets.values()):
+                break
+
+    # Summary
+    missing = [b for b, v in unfilled_buckets.items() if v is None]
+    filled = len(buckets) - len(missing)
+
+    print(f"\nHarvest summary:")
+    print(f"  Buckets filled:      {filled}/{len(buckets)}")
+    if missing:
+        print(f"  Missing buckets:     {missing}")
+    print(f"  Wall hits:           {wall_hits} (tensor too big)")
+    print(f"  Attempts past wall:  {attempts_ok}")
+    print(f"  SDP failures:        {sdp_failures}")
+    print(f"  Inference failures:  {inference_failures}")
+
+    # Diagnose intractable cases
+    if filled == 0 and wall_hits > 0 and attempts_ok == 0:
+        print(f"  -> INTRACTABLE: every random patient exceeded the memory wall")
+
+    return {
+        'buckets': unfilled_buckets,
+        'wall_hits': wall_hits,
+        'attempts_ok': attempts_ok,
+        'sdp_failures': sdp_failures,
+        'inference_failures': inference_failures,
+    }
+
 def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_to_run=None):
     
     results = []

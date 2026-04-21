@@ -210,6 +210,15 @@ import tracemalloc
 import linecache
 import gc
 import time
+from math import prod
+
+def compute_tensor_size(bn, partition):
+    return prod(len(bn.get_cpds(v).state_names[v]) for v in partition)
+
+def compute_max_tensor_size(bn, partitions):
+    if not partitions:
+        return 0
+    return max(compute_tensor_size(bn, p) for p in partitions)
 
 def profile_sdp_allocations(bn, target, target_value, patient, threshold, partitions, top_n=15):
     """
@@ -315,11 +324,13 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
         patient = config['patient']
         partitions = get_partitions(bn, hidden_vars, target, patient)
         max_partition = max(len(p) for p in partitions)
+        max_partition_tensor_size = compute_max_tensor_size(bn, partitions)
         
         row = {
             'step': config['step'],
             'n_hidden': config['n_hidden'],
             'max_partition_size': max_partition,
+            'max_partition_tensor_size': max_partition_tensor_size,
             'exact_time_sec': None,
             'exact_peak_memory_mb': None,
             'exact_success': False,
@@ -345,6 +356,7 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
             row['exact_sdp_result'] = real_sdp
 
             print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
+                  f"Max partition tensor size: {max_partition_tensor_size} entries | "
                 f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
         except Exception as e:
             print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")

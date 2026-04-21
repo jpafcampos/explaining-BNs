@@ -490,7 +490,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
 
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
-                        fast_mcmc_sdp_estimation, bn, target, target_value, patient,
+                        fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
                         DECISION_THRESHOLD, n_samples=1000, burn_in=2000, thinning=50
                     )
                     mcmc_estimates.append(est_sdp)
@@ -501,7 +501,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 mcmc_variance = np.var(mcmc_estimates)
 
                 mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
-                    fast_mcmc_sdp_estimation, bn, target, target_value, patient,
+                    fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
                     DECISION_THRESHOLD, n_samples=100, burn_in=50, thinning=5
                 )
 

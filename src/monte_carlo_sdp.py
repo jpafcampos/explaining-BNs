@@ -488,55 +488,6 @@ from pgmpy.sampling import BayesianModelSampling
 from pgmpy.inference import VariableElimination
 from pgmpy.factors.discrete import State
 
-def monte_carlo_sdp_estimation(bn, target, target_value, patient, threshold, n_samples=1000):
-    '''
-    Uses the likelihood sampler from pgmpy to draw samples from the distribution. Has shown to be biased.
-    '''
-    sampler = BayesianModelSampling(bn)
-    
-    # 1. pgmpy requires evidence to be a list of State objects
-    evidence_states = [State(var, state) for var, state in patient.items()]
-    
-    # 2. Draw the weighted samples
-    print(f"Drawing {n_samples} samples...")
-    samples = sampler.likelihood_weighted_sample(size=n_samples, 
-                                                 evidence=evidence_states, 
-                                                 show_progress=False)
-
-    inference = VariableElimination(bn)
-    
-    weighted_same_decision = 0.0
-    total_weight = 0.0
-    
-    print("Evaluating decision boundary for samples...")
-    num_agreements = 0
-    for _, sample in samples.iterrows():
-        # 3. Extract the likelihood weight
-        weight = sample['_weight']
-        total_weight += weight
-        
-        # 4. Remove '_weight' so pgmpy doesn't crash during the query
-        sample_evidence = {k: v for k, v in sample.to_dict().items() if k != '_weight'}
-        # remove target variable from evidence
-        if target in sample_evidence:
-            del sample_evidence[target]
-
-        # 5. O(1) exact inference (very fast because all nodes are observed!)
-        prob_dist = inference.query(variables=[target], evidence=sample_evidence, show_progress=False)
-        
-        # 6. Add the weight if the decision threshold is met
-        if prob_dist.get_value(**{target: target_value}) >= threshold:
-            weighted_same_decision += weight
-            num_agreements += 1
-            
-    # 7. The final SDP is the weighted fraction of samples that kept the same decision
-    estimated_sdp = weighted_same_decision / total_weight
-    
-    # not weighted version (just for sanity check)
-    #estimated_sdp = num_agreements / len(samples)
-
-    return estimated_sdp
-
 
 
 '''
@@ -755,6 +706,220 @@ def fast_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
     for sample_h in accepted_samples:
         key = tuple(sorted(sample_h.items()))
         if key not in decision_cache:
+            full_ev = {**patient, **sample_h}
+            p = get_exact_target_posterior_O1(bn, target, target_value, full_ev)
+            decision_cache[key] = (p >= threshold)
+        if decision_cache[key]:
+            count_same += 1
+
+    return count_same / len(accepted_samples)
+
+
+import numpy as np
+import math
+import random
+
+
+
+def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
+                              n_samples=11000, burn_in=1000, thinning=10):
+    """
+    Estimates the Same-Decision Probability via Metropolis-Hastings MCMC.
+
+    Balance version: keeps the accuracy of the original while retaining most
+    of the NumPy-vectorised speedup.
+
+      1. LIKELIHOOD-WEIGHTED SEED (size=1) — chain starts inside the typical
+         set of P(H | E). Single draw is cheap and greatly reduces bias from
+         the starting position.
+      2. NumPy-indexed inner loop — all CPDs are pre-converted to integer-
+         indexed numpy arrays; MH proposals access them via tuple indexing
+         instead of pgmpy's string-keyed get_value.
+      3. FULL-JOINT FALLBACK — when the local delta encounters a zero-
+         probability configuration, fall back to full_log_joint (also
+         vectorised) instead of rejecting, preserving the original
+         statistical behaviour.
+    """
+
+    hidden_vars = [n for n in bn.nodes() if n not in patient and n != target]
+    target_states_list = bn.get_cpds(target).state_names[target]
+    n_target_states = len(target_states_list)
+    target_state_idx = list(range(n_target_states))
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 1) Build integer-indexed view of the network
+    # ──────────────────────────────────────────────────────────────────────
+    all_nodes = list(bn.nodes())
+    state_index = {}
+    for n in all_nodes:
+        cpd = bn.get_cpds(n)
+        state_index[n] = {s: i for i, s in enumerate(cpd.state_names[n])}
+
+    cpd_array = {}       # node -> numpy array shape (node_card, pa1_card, ...)
+    cpd_vars  = {}       # node -> list of variables in CPD order
+    for n in all_nodes:
+        cpd = bn.get_cpds(n)
+        cpd_array[n] = np.asarray(cpd.values)
+        cpd_vars[n]  = list(cpd.variables)
+
+    children_cache = {v: list(bn.get_children(v)) for v in hidden_vars}
+    affected_cache = {v: [v] + children_cache[v] for v in hidden_vars}
+
+    # Current integer state for patient (fixed)
+    current_idx = {v: state_index[v][val] for v, val in patient.items()}
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 2) Seed hidden vars from a single likelihood-weighted draw
+    # ──────────────────────────────────────────────────────────────────────
+    sampler = BayesianModelSampling(bn)
+    evidence_states = [State(var, val) for var, val in patient.items()]
+
+    valid_seed_found = False
+    attempts = 0
+    while not valid_seed_found and attempts < 10:
+        attempts += 1
+        try:
+            seed_df = sampler.likelihood_weighted_sample(
+                size=10, evidence=evidence_states, show_progress=False
+            )
+            valid_seeds = seed_df[seed_df['_weight'] > 0]
+            if not valid_seeds.empty:
+                weights = valid_seeds['_weight'].values.astype(float)
+                weights /= weights.sum()
+                seed_row = valid_seeds.iloc[np.random.choice(len(valid_seeds), p=weights)]
+                for v in hidden_vars:
+                    current_idx[v] = state_index[v][seed_row[v]]
+                valid_seed_found = True
+        except Exception:
+            pass
+
+    if not valid_seed_found:
+        # Fallback: random init
+        for v in hidden_vars:
+            current_idx[v] = random.randrange(cpd_array[v].shape[0])
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 3) Helper functions — vectorised
+    # ──────────────────────────────────────────────────────────────────────
+    def full_log_joint(state_idx_dict, t_idx):
+        """Log P(H, E, target=t_idx) — iterates all CPDs."""
+        lp = 0.0
+        for node in all_nodes:
+            idx = tuple(
+                t_idx if v == target else state_idx_dict[v]
+                for v in cpd_vars[node]
+            )
+            p = cpd_array[node][idx]
+            if p == 0.0:
+                return float('-inf')
+            lp += math.log(p)
+        return lp
+
+    def log_sum(values):
+        finite = [v for v in values if v != float('-inf')]
+        if not finite:
+            return float('-inf')
+        m = max(finite)
+        return m + math.log(sum(math.exp(v - m) for v in finite))
+
+    # Initialise running log joints at seed state
+    current_lj = [full_log_joint(current_idx, t) for t in target_state_idx]
+    current_log_p = log_sum(current_lj)
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 4) Metropolis-Hastings loop
+    # ──────────────────────────────────────────────────────────────────────
+    total_iters = burn_in + n_samples * thinning
+    accepted_samples = []
+
+    for i in range(total_iters):
+        var = random.choice(hidden_vars)
+        cur_val = current_idx[var]
+        cardinality = cpd_array[var].shape[0]
+        if cardinality < 2:
+            continue
+        # Propose a different state uniformly at random
+        new_val = random.randrange(cardinality - 1)
+        if new_val >= cur_val:
+            new_val += 1
+
+        # Attempt fast local-delta path; fall back to full recompute on
+        # zero-probability edge cases.
+        proposed_lj = [0.0] * n_target_states
+        recompute = False
+        for t_idx in target_state_idx:
+            if current_lj[t_idx] == float('-inf'):
+                recompute = True
+                break
+            delta = 0.0
+            failed = False
+            for node in affected_cache[var]:
+                order = cpd_vars[node]
+                p_old_args = tuple(
+                    t_idx if v == target else current_idx[v]
+                    for v in order
+                )
+                p_new_args = tuple(
+                    t_idx if v == target
+                    else (new_val if v == var else current_idx[v])
+                    for v in order
+                )
+                p_old = cpd_array[node][p_old_args]
+                p_new = cpd_array[node][p_new_args]
+                if p_new == 0.0:
+                    failed = True
+                    break
+                if p_old == 0.0:
+                    # Old state was zero-prob — need full pass to recover
+                    recompute = True
+                    break
+                delta += math.log(p_new) - math.log(p_old)
+
+            if recompute:
+                break
+            if failed:
+                # New state is zero-prob under some target assignment — reject
+                proposed_lj[t_idx] = float('-inf')
+                continue
+            proposed_lj[t_idx] = current_lj[t_idx] + delta
+
+        # Full-joint fallback
+        if recompute:
+            tmp_idx = dict(current_idx)
+            tmp_idx[var] = new_val
+            proposed_lj = [full_log_joint(tmp_idx, t) for t in target_state_idx]
+
+        proposed_log_p = log_sum(proposed_lj)
+
+        # MH acceptance
+        log_alpha = proposed_log_p - current_log_p
+        if log_alpha >= 0 or (
+            proposed_log_p != float('-inf')
+            and math.log(random.random()) < log_alpha
+        ):
+            current_idx[var] = new_val
+            current_lj = proposed_lj
+            current_log_p = proposed_log_p
+
+        # Record thinned post-burn samples
+        if i >= burn_in and (i - burn_in) % thinning == 0:
+            accepted_samples.append(tuple(current_idx[v] for v in hidden_vars))
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 5) Decision boundary evaluation
+    # ──────────────────────────────────────────────────────────────────────
+    inv_state = {v: {i: s for s, i in state_index[v].items()} for v in bn.nodes()}
+
+    count_same = 0
+    decision_cache = {}
+
+    for snapshot in accepted_samples:
+        key = snapshot
+        if key not in decision_cache:
+            sample_h = {
+                v: inv_state[v][snapshot[k]]
+                for k, v in enumerate(hidden_vars)
+            }
             full_ev = {**patient, **sample_h}
             p = get_exact_target_posterior_O1(bn, target, target_value, full_ev)
             decision_cache[key] = (p >= threshold)

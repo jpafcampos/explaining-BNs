@@ -340,7 +340,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=1000,
+                batch_size=200,
                 max_batches=2,
                 max_tensor_entries=max_tensor_entries,
             )

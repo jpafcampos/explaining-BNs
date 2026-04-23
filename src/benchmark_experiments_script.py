@@ -88,7 +88,8 @@ def run_for_memory(func, *args, **kwargs):
                     peak_rss[0] = current
             except Exception:
                 pass
-            time.sleep(0.001)  # 1ms poll
+            #time.sleep(0.001)
+            time.sleep(0.1) #CHANGED HERE TO REDUCE SAMPLING OVERHEAD 
 
     sampler_thread = threading.Thread(target=sampler, daemon=True)
     sampler_thread.start()
@@ -209,7 +210,7 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
 
             # 3. MEMORY SAFETY — reject if any tensor exceeds the wall
             max_tensor = compute_max_tensor_size(bn, partitions)
-            if max_tensor > max_tensor_entries:
+            if max_tensor >= max_tensor_entries:
                 wall_hits += 1
                 continue
 
@@ -582,6 +583,8 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
+    models_to_run = [win95pts_model, andes_model, link_model, pathfinder_model]
+    
     model_names = [model.name for model in models]
 
     assert len(set(model_names)) == len(models), "Model names must be unique!"
@@ -617,7 +620,7 @@ if __name__ == "__main__":
     # Run the experiment
     #results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
     
-    results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb.csv", models_to_run=models)
+    results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb_large_nets.csv", models_to_run=models_to_run)
 
 
 

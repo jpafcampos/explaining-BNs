@@ -301,7 +301,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
     results = []
     H_RATIOS = [0.25, 0.50, 0.75, 0.9]
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.30, 0.50, 0.70, 0.9, 1.0]
+    TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.9, 1.0]
     MCMC_TRIALS = 10
 
     # Fixed schema — every row has these columns
@@ -548,7 +548,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
 
 if __name__ == "__main__":
 
-
+    print(f"Starting Targeted SDP Benchmark Experiment using {MAX_TENSOR_ALLOWED} MB")
 
     # Model Loading
     print("Loading models...")

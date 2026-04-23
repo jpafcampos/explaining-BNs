@@ -776,7 +776,7 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
 
     valid_seed_found = False
     attempts = 0
-    while not valid_seed_found and attempts < 10:
+    while not valid_seed_found and attempts < 50:
         attempts += 1
         try:
             seed_df = sampler.likelihood_weighted_sample(

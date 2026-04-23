@@ -34,7 +34,7 @@ MAX_TENSOR_SIZE_64 = 33_554_432   # = 2^25, 64gb RAM
 MAX_TENSOR_SIZE_128 = 67_108_864   # = 2^26, 128gb RAM
 MAX_TENSOR_SIZE_40 = 16_777_216  # = 2^24, ~40gb RAM 
 
-MAX_TENSOR_ALLOWED = MAX_TENSOR_SIZE_40  # Set this to the desired memory wall for the experiment
+MAX_TENSOR_ALLOWED = MAX_TENSOR_SIZE_64  # Set this to the desired memory wall for the experiment
 
 # =================================================================================
 # / -------------------------- HELPER FUNCTIONS --------------------------
@@ -339,8 +339,8 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=500,
-                max_batches=1,
+                batch_size=1000,
+                max_batches=2,
                 max_tensor_entries=max_tensor_entries,
             )
             harvested_data = harvested['buckets']
@@ -364,7 +364,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, ok = run_for_time(
                         fast_mcmc_sdp_estimation, bn, target, target_value, patient,
-                        DECISION_THRESHOLD, n_samples=1000, burn_in=2000, thinning=50
+                        DECISION_THRESHOLD, n_samples=1000, burn_in=2500, thinning=50
                     )
                     if not ok:
                         mcmc_success = False
@@ -491,7 +491,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
                         fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-                        DECISION_THRESHOLD, n_samples=1000, burn_in=2000, thinning=50
+                        DECISION_THRESHOLD, n_samples=1000, burn_in=2500, thinning=60
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)
@@ -617,7 +617,7 @@ if __name__ == "__main__":
     # Run the experiment
     #results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
     
-    results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full.csv", models_to_run=models)
+    results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb.csv", models_to_run=models)
 
 
 

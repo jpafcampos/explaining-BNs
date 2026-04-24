@@ -371,7 +371,8 @@ def fast_broadcast_sdp_old_Wrong(model, D, d_value, evidence, threshold, partiti
     return dfs(0, log_O_d_e, 1.0, 1.0)
 
 def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
-    
+    print(f"    [SDP] called with {len(partitions)} partitions, "
+        f"max_size={max(len(p) for p in partitions) if partitions else 0}")
     #inference = VariableElimination(model)
     
     d_states = model.get_cpds(D).state_names[D]

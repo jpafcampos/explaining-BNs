@@ -65,7 +65,9 @@ def run_for_time(func, *args, **kwargs):
         result = func(*args, **kwargs)
         return result, (time.time() - start_time), True
     except Exception as e:
-        return None, np.nan, False # Failed
+        print(f"\n[!] run_for_time: {func.__name__} failed with "
+              f"{type(e).__name__}: {e}")
+        return None, (time.time() - start_time), False
     
 def run_for_memory(func, *args, **kwargs):
     """
@@ -836,5 +838,5 @@ if __name__ == "__main__":
     output_csv="targeted_sdp_benchmark_large_networks.csv",
     models_to_run=[win95pts_model, andes_model, link_model, pathfinder_model],
     max_tensor_entries=67_108_864,
-    n_patients=20
+    n_patients=10
 )

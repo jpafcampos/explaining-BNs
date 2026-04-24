@@ -583,7 +583,7 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [win95pts_model, andes_model, link_model, pathfinder_model]
+    models_to_run = [andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
 

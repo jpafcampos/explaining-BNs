@@ -34,7 +34,7 @@ MAX_TENSOR_SIZE_64 = 33_554_432   # = 2^25, 64gb RAM
 MAX_TENSOR_SIZE_128 = 67_108_864   # = 2^26, 128gb RAM
 MAX_TENSOR_SIZE_40 = 16_777_216  # = 2^24, ~40gb RAM 
 
-MAX_TENSOR_ALLOWED = MAX_TENSOR_SIZE_64  # Set this to the desired memory wall for the experiment
+MAX_TENSOR_ALLOWED = MAX_TENSOR_SIZE_128  # Set this to the desired memory wall for the experiment
 
 # =================================================================================
 # / -------------------------- HELPER FUNCTIONS --------------------------
@@ -300,7 +300,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
         Memory wall for exact SDP.
     """
     results = []
-    H_RATIOS = [0.10, 0.25, 0.50]
+    H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.9, 1.0]
     MCMC_TRIALS = 10
@@ -583,7 +583,9 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [win95pts_model, andes_model, link_model, pathfinder_model]
+    models_to_run = [child_model, insurance_model, alarm_model, 
+              hepar_model, hailfinder_model, win95pts_model, 
+              barley_model]
     
     model_names = [model.name for model in models]
 
@@ -609,6 +611,7 @@ if __name__ == "__main__":
 
     # Sort models by number of nodes (ascending)
     models.sort(key=lambda m: m.number_of_nodes())
+    models_to_run.sort(key=lambda m: m.number_of_nodes())
 
     print("\nModel order for experiments (sorted by number of nodes):")
     for model in models:
@@ -620,7 +623,7 @@ if __name__ == "__main__":
     # Run the experiment
     #results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
     
-    results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb_large_nets.csv", models_to_run=models_to_run)
+    results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb_medium_nets.csv", models_to_run=models_to_run)
 
 
 

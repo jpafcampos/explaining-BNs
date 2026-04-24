@@ -300,7 +300,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
         Memory wall for exact SDP.
     """
     results = []
-    H_RATIOS = [0.25, 0.50, 0.75, 0.9]
+    H_RATIOS = [0.10, 0.25, 0.50]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.9, 1.0]
     MCMC_TRIALS = 10
@@ -364,8 +364,8 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 print(f"       -> Running MCMC SDP (Trials: {MCMC_TRIALS})...")
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, ok = run_for_time(
-                        fast_mcmc_sdp_estimation, bn, target, target_value, patient,
-                        DECISION_THRESHOLD, n_samples=1000, burn_in=2500, thinning=50
+                        fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
+                        DECISION_THRESHOLD, n_samples=1000, burn_in=2500, thinning=50, use_lw_seed=False
                     )
                     if not ok:
                         mcmc_success = False
@@ -583,7 +583,7 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [andes_model, link_model, pathfinder_model]
+    models_to_run = [win95pts_model, andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
 

@@ -722,7 +722,8 @@ import random
 
 
 def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
-                              n_samples=11000, burn_in=1000, thinning=10):
+                              n_samples=11000, burn_in=1000, thinning=10,
+                              use_lw_seed=True):
     """
     Estimates the Same-Decision Probability via Metropolis-Hastings MCMC.
 
@@ -771,30 +772,34 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
     # ──────────────────────────────────────────────────────────────────────
     # 2) Seed hidden vars from a single likelihood-weighted draw
     # ──────────────────────────────────────────────────────────────────────
-    sampler = BayesianModelSampling(bn)
-    evidence_states = [State(var, val) for var, val in patient.items()]
 
-    valid_seed_found = False
-    attempts = 0
-    while not valid_seed_found and attempts < 50:
-        attempts += 1
-        try:
-            seed_df = sampler.likelihood_weighted_sample(
-                size=10, evidence=evidence_states, show_progress=False
-            )
-            valid_seeds = seed_df[seed_df['_weight'] > 0]
-            if not valid_seeds.empty:
-                weights = valid_seeds['_weight'].values.astype(float)
-                weights /= weights.sum()
-                seed_row = valid_seeds.iloc[np.random.choice(len(valid_seeds), p=weights)]
-                for v in hidden_vars:
-                    current_idx[v] = state_index[v][seed_row[v]]
-                valid_seed_found = True
-        except Exception:
-            pass
-
-    if not valid_seed_found:
-        # Fallback: random init
+    # Seed section
+    if use_lw_seed:
+        sampler = BayesianModelSampling(bn)
+        evidence_states = [State(var, val) for var, val in patient.items()]
+        valid_seed_found = False
+        attempts = 0
+        while not valid_seed_found and attempts < 10:
+            attempts += 1
+            try:
+                seed_df = sampler.likelihood_weighted_sample(
+                    size=10, evidence=evidence_states, show_progress=False
+                )
+                valid_seeds = seed_df[seed_df['_weight'] > 0]
+                if not valid_seeds.empty:
+                    weights = valid_seeds['_weight'].values.astype(float)
+                    weights /= weights.sum()
+                    seed_row = valid_seeds.iloc[np.random.choice(len(valid_seeds), p=weights)]
+                    for v in hidden_vars:
+                        current_idx[v] = state_index[v][seed_row[v]]
+                    valid_seed_found = True
+            except Exception:
+                pass
+        if not valid_seed_found:
+            for v in hidden_vars:
+                current_idx[v] = random.randrange(cpd_array[v].shape[0])
+    else:
+        # Skip LW seed entirely — random init + burn-in handles it
         for v in hidden_vars:
             current_idx[v] = random.randrange(cpd_array[v].shape[0])
 

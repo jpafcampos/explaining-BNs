@@ -265,26 +265,26 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     not_d_value = d_states[1] if d_index == 0 else d_states[0]
 
     # 1. Compute Initial Log-Odds
-    #relevant_nodes = list(evidence.keys()) + [D]
-    #ancestral_structure = model.get_ancestral_graph(relevant_nodes)
-    #
-    #sub_model = BayesianNetwork(ancestral_structure.edges())
-    #sub_model.add_nodes_from(ancestral_structure.nodes())
-    #
-    #for node in sub_model.nodes():
-    #    sub_model.add_cpds(model.get_cpds(node))
-    #    
-    #sub_inference = VariableElimination(sub_model)
-    #
-    #initial_dist = sub_inference.query(variables=[D], evidence=evidence, show_progress=False)
-    #p_d_e = initial_dist.get_value(**{D: d_value})
-    #p_not_d_e = initial_dist.get_value(**{D: not_d_value})
+    relevant_nodes = list(evidence.keys()) + [D]
+    ancestral_structure = model.get_ancestral_graph(relevant_nodes)
+    
+    sub_model = BayesianNetwork(ancestral_structure.edges())
+    sub_model.add_nodes_from(ancestral_structure.nodes())
+    
+    for node in sub_model.nodes():
+        sub_model.add_cpds(model.get_cpds(node))
+        
+    sub_inference = VariableElimination(sub_model)
+    
+    initial_dist = sub_inference.query(variables=[D], evidence=evidence, show_progress=False)
+    p_d_e = initial_dist.get_value(**{D: d_value})
+    p_not_d_e = initial_dist.get_value(**{D: not_d_value})
 
     # 1. Compute Initial Log-Odds, new version using Markov Blanket
 
-    p_d_e, p_not_d_e = get_initial_posterior(model, D, d_value, evidence)
+    #p_d_e, p_not_d_e = get_initial_posterior(model, D, d_value, evidence)
 
-    print(f"    [SDP] p_d_e={p_d_e}, p_not_d_e={p_not_d_e}")
+    #print(f"    [SDP] p_d_e={p_d_e}, p_not_d_e={p_not_d_e}")
 
     if p_not_d_e == 0:
         print(f"    [SDP] p_not_d_e==0, returning 1.0")

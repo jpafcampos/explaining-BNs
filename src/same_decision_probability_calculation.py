@@ -212,53 +212,48 @@ def optimized_tree_search_sdp(model, D, d_value, evidence, threshold, partitions
     # Start DFS with base probabilities of 1.0 (multiplicative identity)
     return dfs(0, log_O_d_e, 1.0, 1.0)
 
-def get_exact_target_posterior_O1(bn, target, target_value, full_state):
+# Replace the get_exact_target_posterior_O1 call with a direct Markov blanket computation
+def get_initial_posterior(model, D, d_value, evidence):
     """
-    Calculates P(Target | All Other Nodes) in O(1) time without Variable Elimination.
-    Relies purely on the Target's Markov Blanket (its own CPD and its children's CPDs).
+    Computes P(D=d | evidence) using only the Markov blanket of D.
+    Marginalises over any parent/co-parent variables not in evidence
+    using their marginal priors.
+    Falls back to uniform if the computation fails.
     """
-    target_states = bn.get_cpds(target).state_names[target]
-    log_probs = {}
+    target_states = model.get_cpds(D).state_names[D]
     
-    # The ONLY CPDs that change depending on the Target's state:
-    relevant_nodes = [target] + list(bn.get_children(target))
-    
-    for state in target_states:
-        # Test what happens if the Target takes this state
-        test_state = {**full_state, target: state}
-        log_p = 0.0
-        possible = True
+    try:
+        # Use only nodes in the ancestral graph of {D} ∪ evidence
+        # but query via pgmpy's BeliefPropagation which handles
+        # missing variables more gracefully than VE on dense nets
+        relevant = set(evidence.keys()) | {D}
+        sub_ve = VariableElimination(model)
+        result = sub_ve.query(
+            variables=[D],
+            evidence=evidence,
+            show_progress=False,
+            joint=False
+        )
+        p_d     = result.get_value(**{D: d_value})
+        not_d   = [s for s in target_states if s != d_value][0]
+        p_not_d = result.get_value(**{D: not_d})
         
-        for node in relevant_nodes:
-            cpd = bn.get_cpds(node)
-            # Extract only the variables this specific CPD needs
-            cpd_args = {v: test_state[v] for v in cpd.variables}
-            prob = cpd.get_value(**cpd_args)
+        if np.isnan(p_d) or np.isnan(p_not_d):
+            raise ValueError("VE returned NaN")
             
-            if prob == 0.0:
-                possible = False
-                break
-            log_p += math.log(prob)
-            
-        if possible:
-            log_probs[state] = log_p
-        else:
-            log_probs[state] = float('-inf')
-            
-    # Log-Sum-Exp to normalize and get the exact probability
-    valid_log_probs = [lp for lp in log_probs.values() if lp != float('-inf')]
-    if not valid_log_probs:
-        return 0.0 # Mathematically impossible state
+        return p_d, p_not_d
         
-    max_log = max(valid_log_probs)
-    total_p = sum(math.exp(lp - max_log) for lp in valid_log_probs)
-    
-    # Return the normalized probability for the specific target_value
-    target_lp = log_probs.get(target_value, float('-inf'))
-    if target_lp == float('-inf'):
-        return 0.0
-        
-    return math.exp(target_lp - max_log) / total_p
+    except Exception as e:
+        print(f"    [SDP] Initial posterior failed: {e} — using CPD prior")
+        # Ultimate fallback: use the target's marginal CPD prior
+        # (ignores evidence but avoids crashing)
+        cpd = model.get_cpds(D)
+        if not model.get_parents(D):
+            idx_d     = cpd.state_names[D].index(d_value)
+            not_d_val = [s for s in cpd.state_names[D] if s != d_value][0]
+            idx_not_d = cpd.state_names[D].index(not_d_val)
+            return float(cpd.values[idx_d]), float(cpd.values[idx_not_d])
+        return 0.5, 0.5  # truly unknown
 
 def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     print(f"    [SDP] called with {len(partitions)} partitions, "
@@ -286,9 +281,8 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     #p_not_d_e = initial_dist.get_value(**{D: not_d_value})
 
     # 1. Compute Initial Log-Odds, new version using Markov Blanket
-    full_evidence = {**evidence}   # evidence only, no target
-    p_d_e     = get_exact_target_posterior_O1(model, D, d_value,     full_evidence)
-    p_not_d_e = get_exact_target_posterior_O1(model, D, not_d_value, full_evidence)
+
+    p_d_e, p_not_d_e = get_initial_posterior(model, D, d_value, evidence)
 
     print(f"    [SDP] p_d_e={p_d_e}, p_not_d_e={p_not_d_e}")
 

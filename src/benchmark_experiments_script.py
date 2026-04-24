@@ -547,6 +547,216 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
     return pd.DataFrame(results)
 
 
+def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networks.csv",
+                                  models_to_run=None,
+                                  max_tensor_entries=67_108_864,
+                                  n_patients=10):
+    """
+    Experiment loop for large networks where bucket harvesting is impractical.
+    Generates n_patients random patients per (network, H_RATIO) combination,
+    computes exact SDP and MCMC, and records results in the same CSV format
+    as run_targeted_sdp_experiment.
+
+    Target_Bucket is filled with the nearest standard bucket value to the
+    actual exact SDP, so results are compatible with the main experiment CSV.
+    """
+    STANDARD_BUCKETS = [0.3, 0.5, 0.7, 0.9, 1.0]
+    H_RATIOS         = [0.10, 0.25, 0.50, 0.75, 0.9]
+    DECISION_THRESHOLD = 0.5
+    MCMC_TRIALS      = 10
+
+    results = []
+
+    EMPTY_ROW = {
+        'Network': None, 'N_Nodes': None, 'Target_Bucket': None, 'H_Ratio': None,
+        'N_Hidden': None, 'Target_Node': None, 'Target_Value': None, 'Status': None,
+        'Wall_Hits': None, 'Attempts_OK': None, 'SDP_Failures': None,
+        'Exact_SDP': None, 'Exact_Time_sec': None,
+        'Exact_Mem_MB_Python': None, 'Exact_Mem_MB_RSS': None,
+        'Max_Partition_Size': None, 'Max_Tensor_Size': None,
+        'MCMC_Mean_SDP': None, 'MCMC_Variance': None, 'MCMC_Avg_Time_sec': None,
+        'MCMC_Mem_MB_Python': None, 'MCMC_Mem_MB_RSS': None,
+        'Absolute_Error': None,
+    }
+
+    def nearest_bucket(sdp_value):
+        return min(STANDARD_BUCKETS, key=lambda b: abs(b - sdp_value))
+
+    for bn in models_to_run:
+        for H_RATIO in H_RATIOS:
+            print(f"\n=== Large network experiment: {bn.name} | H_RATIO={H_RATIO} ===")
+
+            n_nodes         = bn.number_of_nodes()
+            all_nodes       = list(bn.nodes())
+            target          = get_target(bn)
+            target_states   = bn.get_cpds(target).state_names[target]
+            target_value    = target_states[1] if len(target_states) > 1 else target_states[0]
+            available_nodes = [n for n in all_nodes if n != target]
+            n_hidden        = max(1, int(len(available_nodes) * H_RATIO))
+            n_evidence      = len(available_nodes) - n_hidden
+
+            print(f"Target: {target} = {target_value} | "
+                  f"H={n_hidden} hidden | E={n_evidence} evidence")
+
+            base_inference  = VariableElimination(bn)
+            patients_found  = 0
+            attempts        = 0
+            wall_hits       = 0
+            sdp_failures    = 0
+            inference_failures = 0
+            max_attempts    = n_patients * 100
+
+            while patients_found < n_patients and attempts < max_attempts:
+                attempts += 1
+
+                # 1. Random patient
+                evidence_vars = random.sample(available_nodes,
+                                              min(n_evidence, len(available_nodes)))
+                hidden_vars   = [n for n in all_nodes
+                                 if n not in evidence_vars and n != target]
+                patient       = {
+                    var: random.choice(bn.get_cpds(var).state_names[var])
+                    for var in evidence_vars
+                }
+
+                # 2. Memory wall check
+                partitions = get_partitions(bn, hidden_vars, target, patient)
+                if not partitions:
+                    continue
+                max_tensor = compute_max_tensor_size(bn, partitions)
+                if max_tensor >= max_tensor_entries:
+                    wall_hits += 1
+                    continue
+
+                # 3. Base decision must meet threshold
+                try:
+                    base_dist = base_inference.query(
+                        variables=[target], evidence=patient, show_progress=False
+                    )
+                    if base_dist.get_value(**{target: target_value}) < DECISION_THRESHOLD:
+                        continue
+                except (ValueError, MemoryError) as e:
+                    inference_failures += 1
+                    continue
+
+                # 4. Exact SDP — time pass
+                max_partition_size = max(len(p) for p in partitions)
+                exact_sdp, exact_time, exact_success = run_for_time(
+                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    DECISION_THRESHOLD, partitions
+                )
+                if not exact_success:
+                    sdp_failures += 1
+                    continue
+
+                patients_found += 1
+                bucket = nearest_bucket(exact_sdp)
+
+                print(f"  Patient {patients_found}/{n_patients} | "
+                      f"exact_sdp={exact_sdp:.4f} → bucket={bucket} | "
+                      f"partition={max_partition_size} | tensor={max_tensor:,} | "
+                      f"time={exact_time:.4f}s")
+
+                # 5. Exact SDP — memory pass (skip for large tensors)
+                if max_tensor > max_tensor_entries:
+                    exact_mem_mb_python, exact_mem_mb_rss = np.nan, np.nan
+                else:
+                    gc.collect()
+                    exact_mem_mb_python, exact_mem_mb_rss = run_for_memory(
+                        fast_broadcast_sdp, bn, target, target_value, patient,
+                        DECISION_THRESHOLD, partitions
+                    )
+
+                # 6. MCMC — no LW seed for large networks
+                print(f"       -> Running MCMC SDP (Trials: {MCMC_TRIALS})...")
+                mcmc_estimates = []
+                mcmc_times     = []
+                for trial in range(MCMC_TRIALS):
+                    est_sdp, t_time, _ = run_for_time(
+                        fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
+                        DECISION_THRESHOLD,
+                        n_samples=1000, burn_in=1000, thinning=10,
+                        use_lw_seed=False
+                    )
+                    mcmc_estimates.append(est_sdp)
+                    mcmc_times.append(t_time)
+
+                mcmc_mean     = np.mean(mcmc_estimates)
+                mcmc_avg_time = np.mean(mcmc_times)
+                mcmc_variance = np.var(mcmc_estimates)
+
+                gc.collect()
+                mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
+                    fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
+                    DECISION_THRESHOLD,
+                    n_samples=100, burn_in=50, thinning=5,
+                    use_lw_seed=False
+                )
+
+                absolute_error = abs(exact_sdp - mcmc_mean)
+                print(f"          mcmc={mcmc_mean:.4f} | "
+                      f"error={absolute_error:.4f} | "
+                      f"time={mcmc_avg_time:.4f}s")
+
+                # 7. Record result
+                row = dict(EMPTY_ROW)
+                row.update({
+                    'Network':             bn.name,
+                    'N_Nodes':             n_nodes,
+                    'Target_Bucket':       bucket,
+                    'H_Ratio':             H_RATIO,
+                    'N_Hidden':            len(hidden_vars),
+                    'Target_Node':         target,
+                    'Target_Value':        target_value,
+                    'Status':              'RANDOM_PATIENT',
+                    'Wall_Hits':           wall_hits,
+                    'Attempts_OK':         patients_found,
+                    'SDP_Failures':        sdp_failures,
+                    'Exact_SDP':           exact_sdp,
+                    'Exact_Time_sec':      exact_time,
+                    'Exact_Mem_MB_Python': exact_mem_mb_python,
+                    'Exact_Mem_MB_RSS':    exact_mem_mb_rss,
+                    'Max_Partition_Size':  max_partition_size,
+                    'Max_Tensor_Size':     max_tensor,
+                    'MCMC_Mean_SDP':       mcmc_mean,
+                    'MCMC_Variance':       mcmc_variance,
+                    'MCMC_Avg_Time_sec':   mcmc_avg_time,
+                    'MCMC_Mem_MB_Python':  mcmc_mem_mb_python,
+                    'MCMC_Mem_MB_RSS':     mcmc_mem_mb_rss,
+                    'Absolute_Error':      absolute_error,
+                })
+                results.append(row)
+                pd.DataFrame(results).to_csv(output_csv, index=False)
+
+            # End of (bn, H_RATIO) loop
+            if patients_found < n_patients:
+                print(f"\n  Warning: only found {patients_found}/{n_patients} valid "
+                      f"patients after {attempts} attempts "
+                      f"(wall_hits={wall_hits})")
+
+                # If no patients found at all, record a single intractable row
+                if patients_found == 0:
+                    for bucket in STANDARD_BUCKETS:
+                        row = dict(EMPTY_ROW)
+                        row.update({
+                            'Network':      bn.name,
+                            'N_Nodes':      n_nodes,
+                            'Target_Bucket': bucket,
+                            'H_Ratio':      H_RATIO,
+                            'N_Hidden':     n_hidden,
+                            'Target_Node':  target,
+                            'Target_Value': target_value,
+                            'Status':       'INTRACTABLE',
+                            'Wall_Hits':    wall_hits,
+                            'Attempts_OK':  0,
+                            'SDP_Failures': sdp_failures,
+                        })
+                        results.append(row)
+                    pd.DataFrame(results).to_csv(output_csv, index=False)
+
+    print(f"\nLarge network experiment complete! Results saved to {output_csv}")
+    return pd.DataFrame(results)
+
 if __name__ == "__main__":
 
     print(f"Starting Targeted SDP Benchmark Experiment using {MAX_TENSOR_ALLOWED} MB")
@@ -583,9 +793,7 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [child_model, insurance_model, alarm_model, 
-              hepar_model, hailfinder_model, win95pts_model, 
-              barley_model]
+    models_to_run = [win95pts_model, andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
 
@@ -623,8 +831,10 @@ if __name__ == "__main__":
     # Run the experiment
     #results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
     
-    results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb_medium_nets.csv", models_to_run=models_to_run)
-
-
-
-
+    #results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb_medium_nets.csv", models_to_run=models_to_run)
+    results_large = run_large_network_experiment(
+    output_csv="targeted_sdp_benchmark_large_networks.csv",
+    models_to_run=[win95pts_model, andes_model, link_model, pathfinder_model],
+    max_tensor_entries=67_108_864,
+    n_patients=20
+)

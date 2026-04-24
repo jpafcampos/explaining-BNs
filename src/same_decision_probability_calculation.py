@@ -395,9 +395,13 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     p_d_e = initial_dist.get_value(**{D: d_value})
     p_not_d_e = initial_dist.get_value(**{D: not_d_value})
 
+    print(f"    [SDP] p_d_e={p_d_e}, p_not_d_e={p_not_d_e}")
+
     if p_not_d_e == 0:
+        print(f"    [SDP] p_not_d_e==0, returning 1.0")
         return 1.0
     if p_d_e == 0:
+        print(f"    [SDP] p_d_e==0, returning 0.0")
         return 0.0
     
     log_O_d_e = math.log(p_d_e / p_not_d_e) if p_not_d_e > 0 else float('inf')
@@ -472,7 +476,9 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
                         
                 aligned_vals = np.transpose(expanded_vals, transpose_order)
                 joint_prob = joint_prob * aligned_vals
-                
+           
+            if np.any(np.isnan(joint_prob)):
+                print(f"    [SDP] NaN detected in joint_prob for partition {s_i_list}")
             return joint_prob
 
         # --- Evaluate all states simultaneously ---
@@ -504,6 +510,13 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
 
     # Sort partitions by max variance for optimal early pruning
     partitions_data.sort(key=lambda x: x['max_w'] - x['min_w'], reverse=True)
+
+    # ------ DEBUG
+    print(f"    [SDP] partitions_data built: {len(partitions_data)} entries")
+    for i, pd in enumerate(partitions_data):
+        print(f"      partition {i}: w_flat[:3]={pd['w_flat'][:3]}, "
+            f"max_w={pd['max_w']}, min_w={pd['min_w']}")
+    # ------ DEBUG
 
     # Precompute Suffix Sums
     n_parts = len(partitions_data)
@@ -543,7 +556,9 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
             
         return total_sdp
 
-    return dfs(0, log_O_d_e, 1.0, 1.0)
+    result = dfs(0, log_O_d_e, 1.0, 1.0)
+    print(f"    [SDP] dfs returned: {result}")
+    return result
 
 from pgmpy.models import NaiveBayes
 from pgmpy.estimators import MaximumLikelihoodEstimator

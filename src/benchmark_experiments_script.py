@@ -643,11 +643,11 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
 
                 # 4. Exact SDP — time pass
                 max_partition_size = max(len(p) for p in partitions)
-                # Debug — check what partitions look like
-                print(f"    DEBUG: partitions={partitions}, n_parts={len(partitions)}")
-                partitions_test = get_partitions(bn, hidden_vars, target, patient)
-                print(f"    DEBUG: hidden_vars={hidden_vars}")
-                print(f"    DEBUG: patient keys={list(patient.keys())[:5]}...")
+                ## Debug — check what partitions look like
+                #print(f"    DEBUG: partitions={partitions}, n_parts={len(partitions)}")
+                #partitions_test = get_partitions(bn, hidden_vars, target, patient)
+                #print(f"    DEBUG: hidden_vars={hidden_vars}")
+                #print(f"    DEBUG: patient keys={list(patient.keys())[:5]}...")
                 exact_sdp, exact_time, exact_success = run_for_time(
                     fast_broadcast_sdp, bn, target, target_value, patient,
                     DECISION_THRESHOLD, partitions

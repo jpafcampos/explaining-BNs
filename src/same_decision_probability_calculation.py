@@ -394,6 +394,11 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     initial_dist = sub_inference.query(variables=[D], evidence=evidence, show_progress=False)
     p_d_e = initial_dist.get_value(**{D: d_value})
     p_not_d_e = initial_dist.get_value(**{D: not_d_value})
+
+    if p_not_d_e == 0:
+        return 1.0
+    if p_d_e == 0:
+        return 0.0
     
     log_O_d_e = math.log(p_d_e / p_not_d_e) if p_not_d_e > 0 else float('inf')
     lambda_threshold = math.log(threshold / (1 - threshold))

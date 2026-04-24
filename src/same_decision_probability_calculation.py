@@ -212,163 +212,53 @@ def optimized_tree_search_sdp(model, D, d_value, evidence, threshold, partitions
     # Start DFS with base probabilities of 1.0 (multiplicative identity)
     return dfs(0, log_O_d_e, 1.0, 1.0)
 
-def fast_broadcast_sdp_old_Wrong(model, D, d_value, evidence, threshold, partitions):
-    inference = VariableElimination(model)
+def get_exact_target_posterior_O1(bn, target, target_value, full_state):
+    """
+    Calculates P(Target | All Other Nodes) in O(1) time without Variable Elimination.
+    Relies purely on the Target's Markov Blanket (its own CPD and its children's CPDs).
+    """
+    target_states = bn.get_cpds(target).state_names[target]
+    log_probs = {}
     
-    d_states = model.get_cpds(D).state_names[D]
-    d_index = d_states.index(d_value)
-    not_d_value = d_states[1] if d_index == 0 else d_states[0]
-
-    # 1. Compute Initial Log-Odds
-    initial_dist = inference.query(variables=[D], evidence=evidence, show_progress=False)
-    p_d_e = initial_dist.get_value(**{D: d_value})
-    p_not_d_e = initial_dist.get_value(**{D: not_d_value})
+    # The ONLY CPDs that change depending on the Target's state:
+    relevant_nodes = [target] + list(bn.get_children(target))
     
-    log_O_d_e = math.log(p_d_e / p_not_d_e) if p_not_d_e > 0 else float('inf')
-    lambda_threshold = math.log(threshold / (1 - threshold))
-    current_decision_positive = (log_O_d_e >= lambda_threshold)
-
-    partitions_data = []
-    
-    for s_i in partitions:
-        s_i_list = list(s_i)  # Lock the axis order for this partition
+    for state in target_states:
+        # Test what happens if the Target takes this state
+        test_state = {**full_state, target: state}
+        log_p = 0.0
+        possible = True
         
-        # Get all CPDs that belong to this partition (contain any var in s_i)
-        relevant_cpds = [cpd for cpd in model.get_cpds() if any(v in s_i_list for v in cpd.variables)]
-        
-        def get_joint_tensor(target_evidence):
-            # 1. Grab all original factors from the network
-            factors = [cpd.to_factor() for cpd in model.get_cpds()]
+        for node in relevant_nodes:
+            cpd = bn.get_cpds(node)
+            # Extract only the variables this specific CPD needs
+            cpd_args = {v: test_state[v] for v in cpd.variables}
+            prob = cpd.get_value(**cpd_args)
             
-            # 2. Reduce by target evidence (D and E)
-            for f in factors:
-                overlap = [(v, target_evidence[v]) for v in f.variables if v in target_evidence]
-                if overlap:
-                    f.reduce(overlap, inplace=True)
-                    
-            # 3. Identify all "foreign" variables 
-            vars_in_factors = set(v for f in factors for v in f.variables)
-            foreign_vars = vars_in_factors - set(s_i_list)
+            if prob == 0.0:
+                possible = False
+                break
+            log_p += math.log(prob)
             
-            # 4. eliminate foreign variables using Exact Sum-Product VE
-            for var in foreign_vars:
-                f_with = [f for f in factors if var in f.variables]
-                f_without = [f for f in factors if var not in f.variables]
-                
-                if f_with:
-                    # Use .copy() and the '*' operator to safely multiply factors 
-                    # without risking in-place NoneType returns.
-                    prod = f_with[0].copy()
-                    for f in f_with[1:]:
-                        prod = prod * f
-                    
-                    prod.marginalize([var], inplace=True)
-                    
-                    # Unconditionally append.
-                    f_without.append(prod)
-                        
-                factors = f_without
-                
-            # 5. Broadcast the remaining clean factors
-            joint_prob = 1.0
-            for factor in factors:
-                if not factor.variables:
-                    # Safely extract the scalar multiplier (np.sum perfectly handles 0-d arrays)
-                    joint_prob *= float(np.sum(factor.values))
-                    continue
-                    
-                f_vars = factor.variables
-                expanded_vals = factor.values
-                
-                # Expand missing dimensions
-                for _ in range(len(s_i_list) - len(f_vars)):
-                    expanded_vals = np.expand_dims(expanded_vals, -1)
-                    
-                # Align axes to the master s_i_list order
-                transpose_order = []
-                none_idx = len(f_vars)
-                for var in s_i_list:
-                    if var in f_vars:
-                        transpose_order.append(f_vars.index(var))
-                    else:
-                        transpose_order.append(none_idx)
-                        none_idx += 1
-                        
-                aligned_vals = np.transpose(expanded_vals, transpose_order)
-                joint_prob = joint_prob * aligned_vals
-                #print(f"Processed factor with variables {f_vars}, current joint shape: {joint_prob.shape}")
-            #print(joint_prob)
-            return joint_prob
-
-        # --- Evaluate all states simultaneously ---
-        joint_d = get_joint_tensor({**evidence, D: d_value})
-        joint_not_d = get_joint_tensor({**evidence, D: not_d_value})
-        
-        # Normalize to convert joint probabilities to conditional probabilities P(S_i | D, e)
-        sum_d = np.sum(joint_d)
-        sum_not_d = np.sum(joint_not_d)
-        
-        sum_d = sum_d if sum_d > 0 else 1.0
-        sum_not_d = sum_not_d if sum_not_d > 0 else 1.0
-        
-        p_d_tensor = np.maximum(joint_d / sum_d, 1e-12)
-        p_not_d_tensor = np.maximum(joint_not_d / sum_not_d, 1e-12)
-        
-        # Calculate Log-Odds Weights
-        w_tensor = np.log(p_d_tensor / p_not_d_tensor)
-        
-        # .flatten() unravels the N-dimensional tensor into a 1D list in the exact 
-        # same order that itertools.product would have generated.
-        partitions_data.append({
-            'w_flat': w_tensor.flatten().tolist(),
-            'p_d_flat': p_d_tensor.flatten().tolist(),
-            'p_not_d_flat': p_not_d_tensor.flatten().tolist(),
-            'max_w': np.max(w_tensor),
-            'min_w': np.min(w_tensor)
-        })
-
-    # Sort partitions by max variance for optimal early pruning
-    partitions_data.sort(key=lambda x: x['max_w'] - x['min_w'], reverse=True)
-
-    # Precompute Suffix Sums
-    n_parts = len(partitions_data)
-    suffix_max = [0.0] * (n_parts + 1)
-    suffix_min = [0.0] * (n_parts + 1)
-    for i in range(n_parts - 1, -1, -1):
-        suffix_max[i] = suffix_max[i+1] + partitions_data[i]['max_w']
-        suffix_min[i] = suffix_min[i+1] + partitions_data[i]['min_w']
-
-    # DFS Loop
-    def dfs(depth, current_log_odds, prob_cond_d, prob_cond_not_d):
-        upper_bound = current_log_odds + suffix_max[depth]
-        lower_bound = current_log_odds + suffix_min[depth]
-        
-        def get_prob_q():
-            return (p_d_e * prob_cond_d) + (p_not_d_e * prob_cond_not_d)
-
-        if current_decision_positive:
-            if lower_bound >= lambda_threshold: return get_prob_q()
-            if upper_bound < lambda_threshold: return 0.0
+        if possible:
+            log_probs[state] = log_p
         else:
-            if upper_bound < lambda_threshold: return get_prob_q()
-            if lower_bound >= lambda_threshold: return 0.0
-        
-        if depth == n_parts:
-            is_positive = current_log_odds >= lambda_threshold
-            if is_positive == current_decision_positive:
-                return get_prob_q()
-            return 0.0
+            log_probs[state] = float('-inf')
             
-        total_sdp = 0.0
-        part_data = partitions_data[depth]
+    # Log-Sum-Exp to normalize and get the exact probability
+    valid_log_probs = [lp for lp in log_probs.values() if lp != float('-inf')]
+    if not valid_log_probs:
+        return 0.0 # Mathematically impossible state
         
-        for w, p_d, p_not_d in zip(part_data['w_flat'], part_data['p_d_flat'], part_data['p_not_d_flat']):
-            if p_d < 1e-10 and p_not_d < 1e-10: continue
-            total_sdp += dfs(depth + 1, current_log_odds + w, prob_cond_d * p_d, prob_cond_not_d * p_not_d)
-            
-        return total_sdp
-
-    return dfs(0, log_O_d_e, 1.0, 1.0)
+    max_log = max(valid_log_probs)
+    total_p = sum(math.exp(lp - max_log) for lp in valid_log_probs)
+    
+    # Return the normalized probability for the specific target_value
+    target_lp = log_probs.get(target_value, float('-inf'))
+    if target_lp == float('-inf'):
+        return 0.0
+        
+    return math.exp(target_lp - max_log) / total_p
 
 def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     print(f"    [SDP] called with {len(partitions)} partitions, "
@@ -380,20 +270,25 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     not_d_value = d_states[1] if d_index == 0 else d_states[0]
 
     # 1. Compute Initial Log-Odds
-    relevant_nodes = list(evidence.keys()) + [D]
-    ancestral_structure = model.get_ancestral_graph(relevant_nodes)
-    
-    sub_model = BayesianNetwork(ancestral_structure.edges())
-    sub_model.add_nodes_from(ancestral_structure.nodes())
-    
-    for node in sub_model.nodes():
-        sub_model.add_cpds(model.get_cpds(node))
-        
-    sub_inference = VariableElimination(sub_model)
-    
-    initial_dist = sub_inference.query(variables=[D], evidence=evidence, show_progress=False)
-    p_d_e = initial_dist.get_value(**{D: d_value})
-    p_not_d_e = initial_dist.get_value(**{D: not_d_value})
+    #relevant_nodes = list(evidence.keys()) + [D]
+    #ancestral_structure = model.get_ancestral_graph(relevant_nodes)
+    #
+    #sub_model = BayesianNetwork(ancestral_structure.edges())
+    #sub_model.add_nodes_from(ancestral_structure.nodes())
+    #
+    #for node in sub_model.nodes():
+    #    sub_model.add_cpds(model.get_cpds(node))
+    #    
+    #sub_inference = VariableElimination(sub_model)
+    #
+    #initial_dist = sub_inference.query(variables=[D], evidence=evidence, show_progress=False)
+    #p_d_e = initial_dist.get_value(**{D: d_value})
+    #p_not_d_e = initial_dist.get_value(**{D: not_d_value})
+
+    # 1. Compute Initial Log-Odds, new version using Markov Blanket
+    full_evidence = {**evidence}   # evidence only, no target
+    p_d_e     = get_exact_target_posterior_O1(model, D, d_value,     full_evidence)
+    p_not_d_e = get_exact_target_posterior_O1(model, D, not_d_value, full_evidence)
 
     print(f"    [SDP] p_d_e={p_d_e}, p_not_d_e={p_not_d_e}")
 
@@ -512,10 +407,10 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     partitions_data.sort(key=lambda x: x['max_w'] - x['min_w'], reverse=True)
 
     # ------ DEBUG
-    print(f"    [SDP] partitions_data built: {len(partitions_data)} entries")
-    for i, pd in enumerate(partitions_data):
-        print(f"      partition {i}: w_flat[:3]={pd['w_flat'][:3]}, "
-            f"max_w={pd['max_w']}, min_w={pd['min_w']}")
+    #print(f"    [SDP] partitions_data built: {len(partitions_data)} entries")
+    #for i, pd in enumerate(partitions_data):
+    #    print(f"      partition {i}: w_flat[:3]={pd['w_flat'][:3]}, "
+    #        f"max_w={pd['max_w']}, min_w={pd['min_w']}")
     # ------ DEBUG
 
     # Precompute Suffix Sums

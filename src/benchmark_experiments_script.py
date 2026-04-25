@@ -800,7 +800,7 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [win95pts_model, andes_model, link_model, pathfinder_model]
+    models_to_run = [andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
 
@@ -841,7 +841,7 @@ if __name__ == "__main__":
     #results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb_medium_nets.csv", models_to_run=models_to_run)
     results_large = run_large_network_experiment(
     output_csv="targeted_sdp_benchmark_large_networks.csv",
-    models_to_run=[win95pts_model, andes_model, link_model, pathfinder_model],
-    max_tensor_entries=67_108_864,
+    models_to_run=[andes_model, link_model, pathfinder_model],
+    max_tensor_entries=MAX_TENSOR_SIZE_128,
     n_patients=10
 )

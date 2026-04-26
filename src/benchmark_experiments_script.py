@@ -367,7 +367,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, ok = run_for_time(
                         fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-                        DECISION_THRESHOLD, n_samples=1000, burn_in=2500, thinning=50, use_lw_seed=False
+                        DECISION_THRESHOLD, n_samples=1000, burn_in=5000, thinning=100, use_lw_seed=False
                     )
                     if not ok:
                         mcmc_success = False
@@ -381,7 +381,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                     mcmc_variance = np.var(mcmc_estimates)
 
                     mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
-                        fast_mcmc_sdp_estimation, bn, target, target_value, patient,
+                        fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
                         DECISION_THRESHOLD, n_samples=10, burn_in=0, thinning=5
                     )
 
@@ -494,7 +494,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
                         fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-                        DECISION_THRESHOLD, n_samples=1000, burn_in=2500, thinning=60
+                        DECISION_THRESHOLD, n_samples=1000, burn_in=5000, thinning=100, use_lw_seed = False
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)
@@ -505,7 +505,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
 
                 mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
                     fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-                    DECISION_THRESHOLD, n_samples=100, burn_in=50, thinning=5
+                    DECISION_THRESHOLD, n_samples=100, burn_in=50, thinning=5, use_lw_seed = False
                 )
 
                 print(f"          Avg Time: {mcmc_avg_time:.4f} sec | "
@@ -682,7 +682,7 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
                     est_sdp, t_time, _ = run_for_time(
                         fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
                         DECISION_THRESHOLD,
-                        n_samples=1000, burn_in=1000, thinning=10,
+                        n_samples=1000, burn_in=5000, thinning=100,
                         use_lw_seed=False
                     )
                     mcmc_estimates.append(est_sdp)
@@ -800,7 +800,9 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [andes_model, link_model, pathfinder_model]
+    models_to_run = [child_model, insurance_model, alarm_model, 
+              hepar_model, hailfinder_model, 
+              barley_model]
     
     model_names = [model.name for model in models]
 
@@ -836,12 +838,12 @@ if __name__ == "__main__":
     toy_models = models[:2]
 
     # Run the experiment
-    #results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=toy_models)
+    #results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=[child_model], max_tensor_entries=15_000_000)
     
-    #results_df_full = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_64gb_medium_nets.csv", models_to_run=models_to_run)
-    results_large = run_large_network_experiment(
-    output_csv="targeted_sdp_benchmark_large_networks.csv",
-    models_to_run=[andes_model, link_model, pathfinder_model],
-    max_tensor_entries=MAX_TENSOR_SIZE_128,
-    n_patients=10
-)
+    results_medium = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_medium_nets.csv", models_to_run=models_to_run)
+    #results_large = run_large_network_experiment(
+    #output_csv="targeted_sdp_benchmark_large_networks.csv",
+    #models_to_run=[andes_model, link_model, pathfinder_model],
+    #max_tensor_entries=MAX_TENSOR_SIZE_128,
+    #n_patients=10
+    #)

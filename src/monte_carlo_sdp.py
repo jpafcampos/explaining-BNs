@@ -723,12 +723,11 @@ import random
 
 def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
                               n_samples=11000, burn_in=1000, thinning=10,
-                              use_lw_seed=True):
+                              use_lw_seed=False):
     """
     Estimates the Same-Decision Probability via Metropolis-Hastings MCMC.
 
-    Balance version: keeps the accuracy of the original while retaining most
-    of the NumPy-vectorised speedup.
+    NumPy-vectorised speedup.
 
       1. LIKELIHOOD-WEIGHTED SEED (size=1) — chain starts inside the typical
          set of P(H | E). Single draw is cheap and greatly reduces bias from

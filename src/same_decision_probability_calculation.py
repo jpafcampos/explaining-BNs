@@ -256,8 +256,8 @@ def get_initial_posterior(model, D, d_value, evidence):
         return 0.5, 0.5  # truly unknown
 
 def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
-    print(f"    [SDP] called with {len(partitions)} partitions, "
-        f"max_size={max(len(p) for p in partitions) if partitions else 0}")
+    #print(f"    [SDP] called with {len(partitions)} partitions, "
+    #    f"max_size={max(len(p) for p in partitions) if partitions else 0}")
     #inference = VariableElimination(model)
     
     d_states = model.get_cpds(D).state_names[D]
@@ -287,10 +287,10 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     #print(f"    [SDP] p_d_e={p_d_e}, p_not_d_e={p_not_d_e}")
 
     if p_not_d_e == 0:
-        print(f"    [SDP] p_not_d_e==0, returning 1.0")
+        #print(f"    [SDP] p_not_d_e==0, returning 1.0")
         return 1.0
     if p_d_e == 0:
-        print(f"    [SDP] p_d_e==0, returning 0.0")
+        #print(f"    [SDP] p_d_e==0, returning 0.0")
         return 0.0
     
     log_O_d_e = math.log(p_d_e / p_not_d_e) if p_not_d_e > 0 else float('inf')
@@ -446,7 +446,7 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
         return total_sdp
 
     result = dfs(0, log_O_d_e, 1.0, 1.0)
-    print(f"    [SDP] dfs returned: {result}")
+    #print(f"    [SDP] dfs returned: {result}")
     return result
 
 from pgmpy.models import NaiveBayes

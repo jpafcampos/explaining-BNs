@@ -803,6 +803,9 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
             print(f"    [SEED] Ancestral seed failed ({e}) — random fallback")
             for v in hidden_vars:
                 current_idx[v] = random.randrange(cpd_array[v].shape[0])
+    else:
+        for v in hidden_vars:
+            current_idx[v] = random.randrange(cpd_array[v].shape[0])
 
     # ──────────────────────────────────────────────────────────────────────
     # 3) Helper functions — vectorised
@@ -1215,7 +1218,7 @@ def vectorized_pt_mcmc_sdp_estimation(bn, target, target_value, patient, thresho
                     if node in sample or node == target or node not in hidden_vars:
                         continue
                     cpd     = bn.get_cpds(node)
-                    parents = cpd.get_evidence()
+                    parents = cpd.variables[1:]
                     if not parents:
                         probs = cpd_array[node].flatten()
                     else:

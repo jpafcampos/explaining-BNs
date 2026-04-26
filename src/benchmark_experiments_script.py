@@ -304,7 +304,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
     results = []
     H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.9, 1.0]
+    TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
 
     # Fixed schema — every row has these columns
@@ -342,7 +342,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=200,
+                batch_size=400,
                 max_batches=2,
                 max_tensor_entries=max_tensor_entries,
             )

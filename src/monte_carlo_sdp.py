@@ -762,11 +762,13 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
         cpd_array[n] = np.asarray(cpd.values)
         cpd_vars[n]  = list(cpd.variables)
 
+    inv_state = {v: {i: s for s, i in state_index[v].items()} for v in bn.nodes()}
     children_cache = {v: list(bn.get_children(v)) for v in hidden_vars}
     affected_cache = {v: [v] + children_cache[v] for v in hidden_vars}
 
     # Current integer state for patient (fixed)
-    current_idx = {v: state_index[v][val] for v, val in patient.items()}
+    patient_idx = {v: state_index[v][val] for v, val in patient.items()}
+    current_idx = dict(patient_idx)
 
     # ──────────────────────────────────────────────────────────────────────
     # 2) Seed hidden vars from a single likelihood-weighted draw
@@ -774,33 +776,33 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
 
     # Seed section
     if use_lw_seed:
-        sampler = BayesianModelSampling(bn)
-        evidence_states = [State(var, val) for var, val in patient.items()]
-        valid_seed_found = False
-        attempts = 0
-        while not valid_seed_found and attempts < 10:
-            attempts += 1
-            try:
-                seed_df = sampler.likelihood_weighted_sample(
-                    size=10, evidence=evidence_states, show_progress=False
-                )
-                valid_seeds = seed_df[seed_df['_weight'] > 0]
-                if not valid_seeds.empty:
-                    weights = valid_seeds['_weight'].values.astype(float)
-                    weights /= weights.sum()
-                    seed_row = valid_seeds.iloc[np.random.choice(len(valid_seeds), p=weights)]
-                    for v in hidden_vars:
-                        current_idx[v] = state_index[v][seed_row[v]]
-                    valid_seed_found = True
-            except Exception:
-                pass
-        if not valid_seed_found:
+        try:
+            topo_order = list(nx.topological_sort(bn))
+            sample = dict(patient)
+            for node in topo_order:
+                if node in sample or node == target or node not in hidden_vars:
+                    continue
+                cpd     = bn.get_cpds(node)
+                parents = cpd.variables[1:] 
+                if not parents:
+                    probs = cpd_array[node].flatten()
+                else:
+                    parent_idx_tuple = tuple(
+                        state_index[p][sample[p]] if p in sample else 0
+                        for p in parents
+                    )
+                    probs = cpd_array[node][(slice(None),) + parent_idx_tuple]
+                probs = np.array(probs, dtype=float)
+                probs = np.maximum(probs, 0)
+                total = probs.sum()
+                probs = probs / total if total > 0 else np.ones(len(probs)) / len(probs)
+                sampled           = np.random.choice(len(probs), p=probs)
+                sample[node]      = inv_state[node][sampled]
+                current_idx[node] = sampled
+        except Exception as e:
+            print(f"    [SEED] Ancestral seed failed ({e}) — random fallback")
             for v in hidden_vars:
                 current_idx[v] = random.randrange(cpd_array[v].shape[0])
-    else:
-        # Skip LW seed entirely — random init + burn-in handles it
-        for v in hidden_vars:
-            current_idx[v] = random.randrange(cpd_array[v].shape[0])
 
     # ──────────────────────────────────────────────────────────────────────
     # 3) Helper functions — vectorised
@@ -912,7 +914,7 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
     # ──────────────────────────────────────────────────────────────────────
     # 5) Decision boundary evaluation
     # ──────────────────────────────────────────────────────────────────────
-    inv_state = {v: {i: s for s, i in state_index[v].items()} for v in bn.nodes()}
+    
 
     count_same = 0
     decision_cache = {}
@@ -1112,6 +1114,257 @@ def pt_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
             full_ev = {**patient, **sample_h}
             p       = get_exact_target_posterior_O1(
                           bn, target, target_value, full_ev)
+            decision_cache[key] = (p >= threshold)
+        if decision_cache[key]:
+            count_same += 1
+
+    return count_same / len(accepted_samples)
+
+
+import numpy as np
+import math
+import random
+import networkx as nx
+
+
+def vectorized_pt_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
+                            n_samples=11000, burn_in=1000, thinning=10,
+                            n_chains=4, max_temp=10.0,
+                            use_ancestral_seed=True):
+    """
+    Parallel-tempering MCMC for SDP estimation, NumPy-vectorised.
+
+    Optimisations over the original PT version:
+      1. Integer-indexed CPD tables — all hot-loop CPD accesses are
+         multi-dim numpy lookups instead of pgmpy string-keyed get_value.
+      2. Fast ancestral seed per chain — replaces the costly
+         BayesianModelSampling.likelihood_weighted_sample for each chain.
+      3. Local-delta proposals with full-joint fallback — same statistical
+         behaviour as the original; only the cost per inner step changes.
+      4. Decision boundary still evaluated via get_exact_target_posterior_O1
+         on cold chain samples.
+
+    Statistical structure (unchanged from original):
+      - Geometrically spaced temperature ladder, chain 0 cold (τ=1).
+      - Tempered MH per chain: log_alpha / τ.
+      - Adjacent-pair swap every 10 iterations.
+      - Sample collection from cold chain only.
+    """
+
+    hidden_vars        = [n for n in bn.nodes() if n not in patient and n != target]
+    target_states_list = bn.get_cpds(target).state_names[target]
+    n_target_states    = len(target_states_list)
+    target_state_idx   = list(range(n_target_states))
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 1) Integer-indexed view of the network (same as plain MCMC)
+    # ──────────────────────────────────────────────────────────────────────
+    all_nodes   = list(bn.nodes())
+    state_index = {}
+    for n in all_nodes:
+        cpd = bn.get_cpds(n)
+        state_index[n] = {s: i for i, s in enumerate(cpd.state_names[n])}
+
+    cpd_array = {}
+    cpd_vars  = {}
+    for n in all_nodes:
+        cpd = bn.get_cpds(n)
+        cpd_array[n] = np.asarray(cpd.values)
+        cpd_vars[n]  = list(cpd.variables)
+
+    children_cache = {v: list(bn.get_children(v)) for v in hidden_vars}
+    affected_cache = {v: [v] + children_cache[v] for v in hidden_vars}
+    inv_state      = {v: {i: s for s, i in state_index[v].items()} for v in bn.nodes()}
+
+    patient_idx = {v: state_index[v][val] for v, val in patient.items()}
+
+    # Geometric temperature ladder
+    temps = np.geomspace(1.0, max_temp, n_chains)
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 2) Per-chain helpers
+    # ──────────────────────────────────────────────────────────────────────
+    def full_log_joint(state_idx_dict, t_idx):
+        lp = 0.0
+        for node in all_nodes:
+            idx = tuple(
+                t_idx if v == target else state_idx_dict[v]
+                for v in cpd_vars[node]
+            )
+            p = cpd_array[node][idx]
+            if p == 0.0:
+                return float('-inf')
+            lp += math.log(p)
+        return lp
+
+    def log_sum(values):
+        finite = [v for v in values if v != float('-inf')]
+        if not finite:
+            return float('-inf')
+        m = max(finite)
+        return m + math.log(sum(math.exp(v - m) for v in finite))
+
+    def get_seed_idx():
+        """Fast ancestral seed — returns int-indexed dict for one chain."""
+        idx = dict(patient_idx)
+        if use_ancestral_seed:
+            try:
+                topo_order = list(nx.topological_sort(bn))
+                sample = dict(patient)
+                for node in topo_order:
+                    if node in sample or node == target or node not in hidden_vars:
+                        continue
+                    cpd     = bn.get_cpds(node)
+                    parents = cpd.get_evidence()
+                    if not parents:
+                        probs = cpd_array[node].flatten()
+                    else:
+                        parent_idx_tuple = tuple(
+                            state_index[p][sample[p]] if p in sample else 0
+                            for p in parents
+                        )
+                        probs = cpd_array[node][(slice(None),) + parent_idx_tuple]
+                    probs = np.asarray(probs, dtype=float)
+                    probs = np.maximum(probs, 0)
+                    total = probs.sum()
+                    probs = probs / total if total > 0 else np.ones(len(probs)) / len(probs)
+                    sampled = np.random.choice(len(probs), p=probs)
+                    sample[node] = inv_state[node][sampled]
+                    idx[node]    = sampled
+            except Exception:
+                for v in hidden_vars:
+                    idx[v] = random.randrange(cpd_array[v].shape[0])
+        else:
+            for v in hidden_vars:
+                idx[v] = random.randrange(cpd_array[v].shape[0])
+        return idx
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 3) Initialise all chains
+    # ──────────────────────────────────────────────────────────────────────
+    chains      = [get_seed_idx() for _ in range(n_chains)]
+    chain_ljs   = [
+        [full_log_joint(c, t) for t in target_state_idx]
+        for c in chains
+    ]
+    chain_logp  = [log_sum(lj) for lj in chain_ljs]
+
+    n_pairs       = n_chains - 1
+    swap_attempts = np.zeros(n_pairs, dtype=int)
+    swap_accepts  = np.zeros(n_pairs, dtype=int)
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 4) Main loop
+    # ──────────────────────────────────────────────────────────────────────
+    total_iters      = burn_in + n_samples * thinning
+    accepted_samples = []
+
+    for i in range(total_iters):
+
+        # ── Step 1: per-chain tempered MH update ──────────────────────────
+        for c in range(n_chains):
+            var = random.choice(hidden_vars)
+            cur_val     = chains[c][var]
+            cardinality = cpd_array[var].shape[0]
+            if cardinality < 2:
+                continue
+            new_val = random.randrange(cardinality - 1)
+            if new_val >= cur_val:
+                new_val += 1
+
+            # Try fast local delta path
+            proposed_lj = [0.0] * n_target_states
+            recompute   = False
+            for t_idx in target_state_idx:
+                if chain_ljs[c][t_idx] == float('-inf'):
+                    recompute = True
+                    break
+                delta  = 0.0
+                failed = False
+                for node in affected_cache[var]:
+                    order = cpd_vars[node]
+                    p_old_args = tuple(
+                        t_idx if v == target else chains[c][v]
+                        for v in order
+                    )
+                    p_new_args = tuple(
+                        t_idx if v == target
+                        else (new_val if v == var else chains[c][v])
+                        for v in order
+                    )
+                    p_old = cpd_array[node][p_old_args]
+                    p_new = cpd_array[node][p_new_args]
+                    if p_new == 0.0:
+                        failed = True
+                        break
+                    if p_old == 0.0:
+                        recompute = True
+                        break
+                    delta += math.log(p_new) - math.log(p_old)
+
+                if recompute:
+                    break
+                if failed:
+                    proposed_lj[t_idx] = float('-inf')
+                    continue
+                proposed_lj[t_idx] = chain_ljs[c][t_idx] + delta
+
+            if recompute:
+                tmp = dict(chains[c])
+                tmp[var] = new_val
+                proposed_lj = [full_log_joint(tmp, t) for t in target_state_idx]
+
+            proposed_log_p = log_sum(proposed_lj)
+
+            # Tempered acceptance: log_alpha / τ
+            log_alpha = (proposed_log_p - chain_logp[c]) / temps[c]
+
+            if log_alpha >= 0 or (
+                proposed_log_p != float('-inf')
+                and math.log(random.random()) < log_alpha
+            ):
+                chains[c][var]  = new_val
+                chain_ljs[c]    = proposed_lj
+                chain_logp[c]   = proposed_log_p
+
+        # ── Step 2: adjacent-pair swap every 10 iterations ────────────────
+        if i % 10 == 0 and n_chains > 1:
+            c1 = random.randint(0, n_pairs - 1)
+            c2 = c1 + 1
+            swap_attempts[c1] += 1
+
+            log_alpha_swap = (
+                (1.0 / temps[c1] - 1.0 / temps[c2])
+                * (chain_logp[c2] - chain_logp[c1])
+            )
+
+            if log_alpha_swap >= 0 or math.log(random.random()) < log_alpha_swap:
+                chains[c1],     chains[c2]     = chains[c2],     chains[c1]
+                chain_ljs[c1],  chain_ljs[c2]  = chain_ljs[c2],  chain_ljs[c1]
+                chain_logp[c1], chain_logp[c2] = chain_logp[c2], chain_logp[c1]
+                swap_accepts[c1] += 1
+
+        # ── Step 3: collect from cold chain only ──────────────────────────
+        if i >= burn_in and (i - burn_in) % thinning == 0:
+            accepted_samples.append(
+                tuple(chains[0][v] for v in hidden_vars)
+            )
+
+    # ──────────────────────────────────────────────────────────────────────
+    # 5) Decision boundary evaluation (cold chain samples)
+    # ──────────────────────────────────────────────────────────────────────
+    count_same     = 0
+    decision_cache = {}
+
+    for snapshot in accepted_samples:
+        key = snapshot
+        if key not in decision_cache:
+            sample_h = {
+                v: inv_state[v][snapshot[k]]
+                for k, v in enumerate(hidden_vars)
+            }
+            full_ev = {**patient, **sample_h}
+            p = get_exact_target_posterior_O1(bn, target, target_value, full_ev)
             decision_cache[key] = (p >= threshold)
         if decision_cache[key]:
             count_same += 1

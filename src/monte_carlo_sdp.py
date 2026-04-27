@@ -757,9 +757,21 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
 
     cpd_array = {}       # node -> numpy array shape (node_card, pa1_card, ...)
     cpd_vars  = {}       # node -> list of variables in CPD order
+    EPSILON = 1e-10      # Tuning parameter for smoothing zero-probabilities
+
     for n in all_nodes:
         cpd = bn.get_cpds(n)
-        cpd_array[n] = np.asarray(cpd.values)
+        arr = np.asarray(cpd.values, dtype=float)
+        
+        # --- EPSILON SMOOTHING ---
+        # 1. Replace absolute zeros with a tiny probability
+        arr[arr == 0.0] = EPSILON
+        
+        # 2. Re-normalize the CPD along the node's state axis (axis=0 in pgmpy)
+        # This ensures the probabilities for any given parent configuration still sum to 1.0
+        arr = arr / arr.sum(axis=0, keepdims=True)
+        
+        cpd_array[n] = arr
         cpd_vars[n]  = list(cpd.variables)
 
     inv_state = {v: {i: s for s, i in state_index[v].items()} for v in bn.nodes()}

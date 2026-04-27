@@ -493,8 +493,8 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
 
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
-                        vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient,
-                        DECISION_THRESHOLD, n_samples=3000, burn_in=burn_in, thinning=thinning
+                        fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
+                        DECISION_THRESHOLD, n_samples=3000, burn_in=burn_in, thinning=thinning, use_lw_seed = True
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)
@@ -765,6 +765,10 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
     return pd.DataFrame(results)
 
 if __name__ == "__main__":
+
+    alarm_model = get_example_model('alarm')
+    alarm_model.name = 'alarm'
+    alarm_debug = run_targeted_sdp_experiment(output_csv="alarm_debug.csv", models_to_run=[alarm_model])
 
     print(f"Starting Targeted SDP Benchmark Experiment using {MAX_TENSOR_ALLOWED} MB")
 

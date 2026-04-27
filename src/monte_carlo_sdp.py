@@ -846,51 +846,52 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
         cur_val = current_idx[var]
         cardinality = cpd_array[var].shape[0]
         if cardinality < 2:
-            continue
-        # Propose a different state uniformly at random
-        new_val = random.randrange(cardinality - 1)
-        if new_val >= cur_val:
-            new_val += 1
+            pass
+        else:
+            # Propose a different state uniformly at random
+            new_val = random.randrange(cardinality - 1)
+            if new_val >= cur_val:
+                new_val += 1
 
-        # Attempt fast local-delta path; fall back to full recompute on
-        # zero-probability edge cases.
-        proposed_lj = [0.0] * n_target_states
-        recompute = False
-        for t_idx in target_state_idx:
-            if current_lj[t_idx] == float('-inf'):
-                recompute = True
-                break
-            delta = 0.0
-            failed = False
-            for node in affected_cache[var]:
-                order = cpd_vars[node]
-                p_old_args = tuple(
-                    t_idx if v == target else current_idx[v]
-                    for v in order
-                )
-                p_new_args = tuple(
-                    t_idx if v == target
-                    else (new_val if v == var else current_idx[v])
-                    for v in order
-                )
-                p_old = cpd_array[node][p_old_args]
-                p_new = cpd_array[node][p_new_args]
-                if p_new == 0.0:
-                    failed = True
-                    break
-                if p_old == 0.0:
-                    # Old state was zero-prob — need full pass to recover
+            # Attempt fast local-delta path; fall back to full recompute on
+            # zero-probability edge cases.
+            proposed_lj = [0.0] * n_target_states
+            recompute = False
+            for t_idx in target_state_idx:
+                if current_lj[t_idx] == float('-inf'):
                     recompute = True
                     break
-                delta += math.log(p_new) - math.log(p_old)
+                delta = 0.0
+                failed = False
+                for node in affected_cache[var]:
+                    order = cpd_vars[node]
+                    p_old_args = tuple(
+                        t_idx if v == target else current_idx[v]
+                        for v in order
+                    )
+                    p_new_args = tuple(
+                        t_idx if v == target
+                        else (new_val if v == var else current_idx[v])
+                        for v in order
+                    )
+                    p_old = cpd_array[node][p_old_args]
+                    p_new = cpd_array[node][p_new_args]
+                    if p_new == 0.0:
+                        failed = True
+                        break
+                    if p_old == 0.0:
+                        # Old state was zero-prob — need full pass to recover
+                        recompute = True
+                        break
+                    delta += math.log(p_new) - math.log(p_old)
 
-            if recompute:
-                break
-            if failed:
-                # New state is zero-prob under some target assignment — reject
-                proposed_lj[t_idx] = float('-inf')
-                continue
-            proposed_lj[t_idx] = current_lj[t_idx] + delta
+                if recompute:
+                    break
+                if failed:
+                    # New state is zero-prob under some target assignment — reject
+                    proposed_lj[t_idx] = float('-inf')
+                    continue
+                proposed_lj[t_idx] = current_lj[t_idx] + delta
 
         # Full-joint fallback
         if recompute:

@@ -493,8 +493,8 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
 
                 for trial in range(MCMC_TRIALS):
                     est_sdp, t_time, _ = run_for_time(
-                        fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-                        DECISION_THRESHOLD, n_samples=3000, burn_in=burn_in, thinning=thinning, use_lw_seed = True
+                        vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient,
+                        DECISION_THRESHOLD, n_samples=3000, burn_in=burn_in, thinning=thinning
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)

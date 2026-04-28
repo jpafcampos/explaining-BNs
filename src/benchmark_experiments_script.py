@@ -596,6 +596,10 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
             target          = get_target(bn)
             target_states   = bn.get_cpds(target).state_names[target]
             target_value    = target_states[1] if len(target_states) > 1 else target_states[0]
+            print("using target node:")
+            print(target)
+            print("using target value")
+            print(target_value)
             available_nodes = [n for n in all_nodes if n != target]
             n_hidden        = max(1, int(len(available_nodes) * H_RATIO))
             n_evidence      = len(available_nodes) - n_hidden

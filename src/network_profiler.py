@@ -51,7 +51,7 @@ def profile_network(bn, name=None):
         cpd_sizes.append(c_size)
 
     # ── Moral graph (for treewidth approximation) ─────────────────────────
-    moral = nx.moral_graph(G.to_undirected())
+    moral = nx.moral_graph(G)
     moral_edges   = moral.number_of_edges()
     moral_density = nx.density(moral)
 

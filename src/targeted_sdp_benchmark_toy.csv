@@ -1,4 +1,0 @@
-Network,N_Nodes,Target_Bucket,H_Ratio,N_Hidden,Target_Node,Target_Value,Status,Wall_Hits,Attempts_OK,SDP_Failures,Exact_SDP,Exact_Time_sec,Exact_Mem_MB_Python,Exact_Mem_MB_RSS,Max_Partition_Size,Max_Tensor_Size,MCMC_Mean_SDP,MCMC_Variance,MCMC_Avg_Time_sec,MCMC_Mem_MB_Python,MCMC_Mem_MB_RSS,Absolute_Error
-child,20,0.4,0.1,1,Sick,no,BUCKET_NOT_FOUND,0,283,0,,,,,,,,,,,,
-child,20,0.5,0.1,1,Sick,no,OK,0,283,0,0.45289251422019516,0.0047338008880615234,0.10461044311523438,0.015625,1.0,6.0,0.46069999999999994,0.0001748099999999997,2.454842281341553,0.4143409729003906,0.2109375,0.007807485779804779
-child,20,0.7,0.1,1,Sick,no,BUCKET_NOT_FOUND,0,283,0,,,,,,,,,,,,

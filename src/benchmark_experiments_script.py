@@ -307,7 +307,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
     H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
-    TARGET_BUCKETS = [0.7, 1.0]
+    TARGET_BUCKETS = [0.4, 0.5, 0.7, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
 
     # Fixed schema — every row has these columns
@@ -345,7 +345,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=600,
+                batch_size=20,
                 max_batches=2,
                 max_tensor_entries=max_tensor_entries,
             )
@@ -554,7 +554,7 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
 
 def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networks.csv",
                                   models_to_run=None,
-                                  max_tensor_entries=67_108_864,
+                                  max_tensor_entries=90_000_000,
                                   n_patients=10):
     """
     Experiment loop for large networks where bucket harvesting is impractical.
@@ -565,7 +565,7 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
     Target_Bucket is filled with the nearest standard bucket value to the
     actual exact SDP, so results are compatible with the main experiment CSV.
     """
-    STANDARD_BUCKETS = [0.3, 0.5, 0.7, 0.9, 1.0]
+    STANDARD_BUCKETS = [0.4, 0.5, 0.7, 0.9, 1.0]
     H_RATIOS         = [0.10, 0.25, 0.50, 0.75, 0.9]
     DECISION_THRESHOLD = 0.5
     MCMC_TRIALS      = 10
@@ -686,7 +686,7 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
                         fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
                         DECISION_THRESHOLD,
                         n_samples=1000, burn_in=5000, thinning=100,
-                        use_lw_seed=False
+                        use_lw_seed=True
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)
@@ -699,8 +699,8 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
                 mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
                     fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
                     DECISION_THRESHOLD,
-                    n_samples=100, burn_in=50, thinning=5,
-                    use_lw_seed=False
+                    n_samples=10, burn_in=50, thinning=5,
+                    use_lw_seed=True
                 )
 
                 absolute_error = abs(exact_sdp - mcmc_mean)
@@ -769,9 +769,9 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
 
 if __name__ == "__main__":
 
-    alarm_model = get_example_model('alarm')
-    alarm_model.name = 'alarm'
-    alarm_debug = run_targeted_sdp_experiment(output_csv="alarm_debug.csv", models_to_run=[alarm_model])
+    #alarm_model = get_example_model('alarm')
+    #alarm_model.name = 'alarm'
+    #alarm_debug = run_targeted_sdp_experiment(output_csv="alarm_debug.csv", models_to_run=[alarm_model])
 
     print(f"Starting Targeted SDP Benchmark Experiment using {MAX_TENSOR_ALLOWED} MB")
 
@@ -807,9 +807,7 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [child_model, insurance_model, alarm_model, 
-              hepar_model, hailfinder_model, 
-              barley_model]
+    models_to_run = [win95pts_model, andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
 
@@ -847,7 +845,8 @@ if __name__ == "__main__":
     # Run the experiment
     #results_df_toy = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_toy.csv", models_to_run=[child_model], max_tensor_entries=15_000_000)
     
-    results_medium = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_medium_nets_seed_true.csv", models_to_run=[alarm_model])
+    #results_medium = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_full_isambard_medium_nets_seed_true.csv", models_to_run=[alarm_model])
+    results_large = run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark_large.csv", models_to_run=models_to_run)
     #results_large = run_large_network_experiment(
     #output_csv="targeted_sdp_benchmark_large_networks.csv",
     #models_to_run=[andes_model, link_model, pathfinder_model],

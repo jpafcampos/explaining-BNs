@@ -303,7 +303,8 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
         Memory wall for exact SDP.
     """
     results = []
-    H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
+    H_RATIOS = [0.10, 0.25, 0.50]
+    #H_RATIOS = [0.25] # TESTING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
@@ -499,6 +500,8 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
                     )
                     mcmc_estimates.append(est_sdp)
                     mcmc_times.append(t_time)
+                
+                print(patient)
 
                 mcmc_mean = np.mean(mcmc_estimates)
                 mcmc_avg_time = np.mean(mcmc_times)
@@ -774,6 +777,10 @@ if __name__ == "__main__":
     #alarm_model = get_example_model('alarm')
     #alarm_model.name = 'alarm'
     #alarm_debug = run_targeted_sdp_experiment(output_csv="alarm_debug.csv", models_to_run=[alarm_model])
+    
+    #win95pts_model = get_example_model('win95pts')
+    #win95pts_model.name = 'win95pts'
+    #win95pts_debug = run_targeted_sdp_experiment(output_csv="win95pts_debug.csv", models_to_run=[win95pts_model])
 
     print(f"Starting Targeted SDP Benchmark Experiment using {MAX_TENSOR_ALLOWED} MB")
 

@@ -276,7 +276,7 @@ def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
         
     sub_inference = VariableElimination(sub_model)
     
-    initial_dist = sub_inference.query(variables=[D], evidence=evidence, show_progress=False)
+    initial_dist = sub_inference.query(variables=[D], evidence=evidence, elimination_order='MinFill', show_progress=False)
     p_d_e = initial_dist.get_value(**{D: d_value})
     p_not_d_e = initial_dist.get_value(**{D: not_d_value})
 

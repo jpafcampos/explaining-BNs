@@ -15,7 +15,6 @@ import networkx as nx
 import itertools
 import math
 import networkx as nx
-import matplotlib.pyplot as plt
 from same_decision_probability_calculation import *
 from utils import *
 import time
@@ -221,7 +220,7 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
             # 4. Check base decision meets the threshold
             try:
                 base_dist = base_inference.query(
-                    variables=[target_node], evidence=temp_patient, show_progress=False
+                    variables=[target_node], evidence=temp_patient, elimination_order='MinFill', show_progress=False
                 )
                 if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
                     continue  # legitimate rejection, not a failure
@@ -307,7 +306,6 @@ def run_targeted_sdp_experiment(output_csv="targeted_sdp_benchmark.csv", models_
     H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
-    TARGET_BUCKETS = [0.4, 0.5, 0.7, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
 
     # Fixed schema — every row has these columns
@@ -640,7 +638,7 @@ def run_large_network_experiment(output_csv="targeted_sdp_benchmark_large_networ
                 # 3. Base decision must meet threshold
                 try:
                     base_dist = base_inference.query(
-                        variables=[target], evidence=patient, show_progress=False
+                        variables=[target], evidence=patient, elimination_order='MinFill', show_progress=False
                     )
                     if base_dist.get_value(**{target: target_value}) < DECISION_THRESHOLD:
                         continue

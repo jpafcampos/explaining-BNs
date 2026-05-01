@@ -723,7 +723,7 @@ import random
 
 def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
                               n_samples=11000, burn_in=1000, thinning=10,
-                              use_lw_seed=False):
+                              use_lw_seed=True):
     """
     Estimates the Same-Decision Probability via Metropolis-Hastings MCMC.
 

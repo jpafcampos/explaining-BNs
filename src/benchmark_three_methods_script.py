@@ -36,7 +36,7 @@ MAX_TENSOR_SIZE_128 = 67_108_864   # = 2^26, 128gb RAM
 MAX_TENSOR_SIZE_40 = 16_777_216  # = 2^24, ~40gb RAM 
 
 #MAX_TENSOR_ALLOWED = MAX_TENSOR_SIZE_128  # Set this to the desired memory wall for the experiment
-MAX_TENSOR_ALLOWED = 90_000_000
+MAX_TENSOR_ALLOWED = 85_000_000
 # =================================================================================
 # / -------------------------- HELPER FUNCTIONS --------------------------
 # =================================================================================

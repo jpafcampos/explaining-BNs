@@ -313,7 +313,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
         Hottest temperature (cold = 1.0, ladder is geometric).
     """
     results = []
-    H_RATIOS = [0.10, 0.25, 0.50, 0.75, 90]
+    H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10

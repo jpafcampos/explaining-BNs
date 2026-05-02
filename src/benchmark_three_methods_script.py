@@ -380,7 +380,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
         Hottest temperature (cold = 1.0, ladder is geometric).
     """
     results = []
-    H_RATIOS = [0.50, 0.75, 0.90]
+    H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
@@ -504,7 +504,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 n_evidence,
                 buckets=TARGET_BUCKETS,
                 batch_size=400,
-                max_batches=1,
+                max_batches=2,
                 max_tensor_entries=max_tensor_entries,
             )
             harvested_data = harvested['buckets']
@@ -718,9 +718,9 @@ if __name__ == "__main__":
     #win95pts_model.name = 'win95pts'
     #win95pts_debug = run_targeted_sdp_experiment(output_csv="win95pts_debug.csv", models_to_run=[win95pts_model])
 
-    hailfinder_model = get_example_model('hailfinder')
-    hailfinder_model.name = 'hailfinder'
-    hailfinder_model_debug = run_3_method_targeted_sdp(output_csv="debug.csv", models_to_run=[hailfinder_model])
+    #hailfinder_model = get_example_model('hailfinder')
+    #hailfinder_model.name = 'hailfinder'
+    #hailfinder_model_debug = run_3_method_targeted_sdp(output_csv="debug.csv", models_to_run=[hailfinder_model])
 
     print(f"Starting Targeted SDP Benchmark Experiment using {MAX_TENSOR_ALLOWED} MB")
 
@@ -756,7 +756,7 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [hailfinder_model, hepar_model, win95pts_model, andes_model, link_model, pathfinder_model]
+    models_to_run = [hepar_model, win95pts_model, andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
 

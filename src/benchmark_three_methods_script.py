@@ -285,6 +285,7 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
             # 4. Check base decision meets the threshold
             try:
                 print("-> Trying base distribution query...")
+                print(f"--> Estimated Max Tensor VE: {max_tensor_ve}")
                 base_dist = base_inference.query(
                     variables=[target_node], evidence=temp_patient, elimination_order='MinFill', show_progress=False
                 )
@@ -379,7 +380,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
         Hottest temperature (cold = 1.0, ladder is geometric).
     """
     results = []
-    H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
+    H_RATIOS = [0.50, 0.75, 0.90]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
@@ -716,6 +717,10 @@ if __name__ == "__main__":
     #win95pts_model = get_example_model('win95pts')
     #win95pts_model.name = 'win95pts'
     #win95pts_debug = run_targeted_sdp_experiment(output_csv="win95pts_debug.csv", models_to_run=[win95pts_model])
+
+    hailfinder_model = get_example_model('hailfinder')
+    hailfinder_model.name = 'hailfinder'
+    hailfinder_model_debug = run_3_method_targeted_sdp(output_csv="debug.csv", models_to_run=[hailfinder_model])
 
     print(f"Starting Targeted SDP Benchmark Experiment using {MAX_TENSOR_ALLOWED} MB")
 

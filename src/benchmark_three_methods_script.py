@@ -36,7 +36,7 @@ MAX_TENSOR_SIZE_128 = 67_108_864   # = 2^26, 128gb RAM
 MAX_TENSOR_SIZE_40 = 16_777_216  # = 2^24, ~40gb RAM 
 
 #MAX_TENSOR_ALLOWED = MAX_TENSOR_SIZE_128  # Set this to the desired memory wall for the experiment
-MAX_TENSOR_ALLOWED = 85_000_000
+MAX_TENSOR_ALLOWED = 100_000_000
 # =================================================================================
 # / -------------------------- HELPER FUNCTIONS --------------------------
 # =================================================================================
@@ -503,8 +503,8 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=400,
-                max_batches=2,
+                batch_size=100,
+                max_batches=1,
                 max_tensor_entries=max_tensor_entries,
             )
             harvested_data = harvested['buckets']
@@ -756,7 +756,7 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    models_to_run = [hepar_model, win95pts_model, andes_model, link_model, pathfinder_model]
+    models_to_run = [andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
 

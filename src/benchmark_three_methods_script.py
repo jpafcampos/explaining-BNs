@@ -41,6 +41,65 @@ MAX_TENSOR_ALLOWED = 85_000_000
 # / -------------------------- HELPER FUNCTIONS --------------------------
 # =================================================================================
 
+def estimate_ve_cost_min_fill(bn, evidence, target):
+    """
+    Estimates the maximum factor (tensor) size during Variable Elimination
+    by simulating the elimination process using the Min-Fill heuristic.
+    """
+    elim_vars = set(v for v in bn.nodes() if v != target and v not in evidence)
+    
+    # Initialize the moral graph and get cardinalities
+    moral = bn.to_markov_model() 
+    cards = {n: len(bn.get_cpds(n).state_names[n]) for n in bn.nodes()}
+    
+    max_tensor_size = 1
+    
+    while elim_vars:
+        # --- MIN-FILL HEURISTIC ---
+        best_var = None
+        min_fill_count = float('inf')
+        best_tensor_size = float('inf') # Tie-breaker
+        
+        for v in elim_vars:
+            neighbors = list(moral.neighbors(v))
+            fill_count = 0
+            
+            # Count how many edges are missing between neighbors
+            for i in range(len(neighbors)):
+                for j in range(i + 1, len(neighbors)):
+                    if not moral.has_edge(neighbors[i], neighbors[j]):
+                        fill_count += 1
+            
+            # Tie-breaker: If two nodes create the same number of fill edges,
+            # eliminate the one that generates the smaller tensor.
+            if fill_count < min_fill_count:
+                min_fill_count = fill_count
+                best_var = v
+                best_tensor_size = prod(cards[n] for n in neighbors + [v])
+            elif fill_count == min_fill_count:
+                current_tensor = prod(cards[n] for n in neighbors + [v])
+                if current_tensor < best_tensor_size:
+                    best_var = v
+                    best_tensor_size = current_tensor
+                    
+        # --- ELIMINATION ---
+        neighbors = list(moral.neighbors(best_var))
+        
+        # 1. Update our max tensor size tracker
+        max_tensor_size = max(max_tensor_size, best_tensor_size)
+        
+        # 2. Add the fill-in edges to the moral graph
+        for i in range(len(neighbors)):
+            for j in range(i + 1, len(neighbors)):
+                if not moral.has_edge(neighbors[i], neighbors[j]):
+                    moral.add_edge(neighbors[i], neighbors[j])
+                    
+        # 3. Remove the node
+        moral.remove_node(best_var)
+        elim_vars.remove(best_var)
+        
+    return max_tensor_size
+
 def get_target(model):
     targets = {
         'child': 'Sick',
@@ -212,13 +271,20 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
                 continue  # nothing to compute
 
             # 3. MEMORY SAFETY — reject if any tensor exceeds the wall
+            print("-> Testing memory wall...")
             max_tensor = compute_max_tensor_size(bn, partitions)
             if max_tensor >= max_tensor_entries:
                 wall_hits += 1
                 continue
 
+            max_tensor_ve = estimate_ve_cost_min_fill(bn, temp_patient, target_node)
+            if max_tensor_ve >= max_tensor_entries:
+                wall_hits += 1
+                continue
+
             # 4. Check base decision meets the threshold
             try:
+                print("-> Trying base distribution query...")
                 base_dist = base_inference.query(
                     variables=[target_node], evidence=temp_patient, elimination_order='MinFill', show_progress=False
                 )
@@ -437,7 +503,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 n_evidence,
                 buckets=TARGET_BUCKETS,
                 batch_size=400,
-                max_batches=2,
+                max_batches=1,
                 max_tensor_entries=max_tensor_entries,
             )
             harvested_data = harvested['buckets']
@@ -685,10 +751,10 @@ if __name__ == "__main__":
               barley_model, 
               andes_model, link_model, pathfinder_model]
     
-    #models_to_run = [child_model, insurance_model, alarm_model, 
-    #          hepar_model, hailfinder_model, win95pts_model, 
-    #          barley_model, 
-    #          andes_model, link_model, pathfinder_model]
+    models_to_run = [child_model, insurance_model, alarm_model, 
+              hepar_model, hailfinder_model, win95pts_model, 
+              barley_model, 
+              andes_model, link_model, pathfinder_model]
     
     model_names = [model.name for model in models]
 

@@ -441,7 +441,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
             'var':  float(np.var(ests)),
             'avg_time': float(np.mean(times)),
             'mem_py': mem_py, 'mem_rss': mem_rss,
-            'success': True,
+            'success': False,
         }
  
     def benchmark_pt(bn, target, target_value, patient):
@@ -453,7 +453,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient,
                 DECISION_THRESHOLD, n_samples=1000, burn_in=burn_in,
                 thinning=thinning, n_chains=pt_n_chains, max_temp=pt_max_temp,
-                use_ancestral_seed=True
+                use_ancestral_seed=False
             )
             if not ok:
                 success = False

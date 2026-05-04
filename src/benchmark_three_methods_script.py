@@ -358,8 +358,8 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                                burn_in=5_000,
                                thinning=100,
                                max_tensor_entries=MAX_TENSOR_ALLOWED,
-                               pt_n_chains=4,
-                               pt_max_temp=40.0):
+                               pt_n_chains=6,
+                               pt_max_temp=80.0):
     """
     Three-method SDP benchmark: exact, plain MCMC (LW-seeded), and
     parallel tempering. Same structure as run_targeted_sdp_experiment,
@@ -380,7 +380,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
         Hottest temperature (cold = 1.0, ladder is geometric).
     """
     results = []
-    H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
+    H_RATIOS = [0.10, 0.25]
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
@@ -503,8 +503,8 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=100,
-                max_batches=1,
+                batch_size=200,
+                max_batches=2,
                 max_tensor_entries=max_tensor_entries,
             )
             harvested_data = harvested['buckets']

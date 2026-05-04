@@ -441,7 +441,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
             'var':  float(np.var(ests)),
             'avg_time': float(np.mean(times)),
             'mem_py': mem_py, 'mem_rss': mem_rss,
-            'success': False,
+            'success': True,
         }
  
     def benchmark_pt(bn, target, target_value, patient):
@@ -791,4 +791,4 @@ if __name__ == "__main__":
     
     toy_models = models[:2]
 
-    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods.csv", models_to_run=[child_model])
+    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods.csv", models_to_run=models_to_run)

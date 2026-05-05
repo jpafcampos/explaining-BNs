@@ -326,6 +326,7 @@ def process_single_file(args):
             mcmc_mean = np.mean(mcmc_estimates)
             mcmc_avg_time = np.mean(mcmc_times)
             mcmc_variance = np.var(mcmc_estimates)
+            print(f"               -> Mean MCMC: {mcmc_mean}")
 
             # Pass 2: Peak Memory
             gc.collect() # Clean up before the memory test
@@ -363,7 +364,7 @@ def process_single_file(args):
             pt_mcmc_mean = np.mean(pt_mcmc_estimates)
             pt_mcmc_avg_time = np.mean(pt_mcmc_times)
             pt_mcmc_variance = np.var(pt_mcmc_estimates)
-
+            print(f"               -> Mean PT: {pt_mcmc_mean}")
             # Pass 2: Peak Memory
             gc.collect() # Clean up before the memory test
             pt_mcmc_mem_mb = run_for_memory(

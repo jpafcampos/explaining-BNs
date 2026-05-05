@@ -30,6 +30,8 @@ from monte_carlo_sdp import *
 import glob
 import time
 import tracemalloc
+import gc
+import threading
 from multiprocessing import Pool
 
 def parse_bn_filename(filename):
@@ -155,11 +157,10 @@ def run_for_time(func, *args, **kwargs):
         result = func(*args, **kwargs)
         return result, (time.time() - start_time), True
     except Exception as e:
-        return None, np.nan, False # Failed
-
-import gc
-import resource
-import threading
+        print(f"\n[!] run_for_time: {func.__name__} failed with "
+              f"{type(e).__name__}: {e}")
+        return None, (time.time() - start_time), False
+    
 def run_for_memory(func, *args, **kwargs):
     """
     Measures peak memory using BOTH tracemalloc (Python-level) and
@@ -181,7 +182,8 @@ def run_for_memory(func, *args, **kwargs):
                     peak_rss[0] = current
             except Exception:
                 pass
-            time.sleep(0.001)  # 1ms poll
+            #time.sleep(0.001)
+            time.sleep(0.01) #CHANGED HERE TO REDUCE SAMPLING OVERHEAD 
 
     sampler_thread = threading.Thread(target=sampler, daemon=True)
     sampler_thread.start()
@@ -203,7 +205,8 @@ def run_for_memory(func, *args, **kwargs):
     python_peak_mb = python_peak_bytes / (1024 * 1024)
     rss_delta_mb = (peak_rss[0] - baseline_rss) / (1024 * 1024)
 
-    return max(python_peak_mb, rss_delta_mb)
+    return (python_peak_mb, rss_delta_mb)
+
 
 
 import psutil
@@ -312,8 +315,8 @@ def process_single_file(args):
             # Pass 1: Pure Time (across all trials)
             for trial in range(MCMC_TRIALS):
                 est_sdp, t_time, _ = run_for_time(
-                    fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                    n_samples=1000, burn_in=2000, thinning=50
+                    fast_mcmc_sdp_estimation_new, bn, target, target_value, patient, DECISION_THRESHOLD,
+                    n_samples=1000, burn_in=5000, thinning=100, use_lw_seed = True
                 )
                 mcmc_estimates.append(est_sdp)
                 mcmc_times.append(t_time)
@@ -327,8 +330,8 @@ def process_single_file(args):
             # Pass 2: Peak Memory
             gc.collect() # Clean up before the memory test
             mcmc_mem_mb = run_for_memory(
-                fast_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                n_samples=10, burn_in=50, thinning=5
+                fast_mcmc_sdp_estimation_new, bn, target, target_value, patient, DECISION_THRESHOLD,
+                n_samples=10, burn_in=5, thinning=5
             )
             log_mem(f"After MCMC Memory Test: {os.path.basename(file)}")
             gc.collect() # Clean up after the memory test
@@ -349,8 +352,8 @@ def process_single_file(args):
             # Pass 1: Pure Time (across all trials)
             for trial in range(MCMC_TRIALS):
                 est_sdp, t_time, _ = run_for_time(
-                    pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                    n_samples=1000, burn_in=2000, thinning=50, n_chains=1, max_temp=40.0
+                    vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
+                    n_samples=1000, burn_in=5000, thinning=100, n_chains=4, max_temp=40.0, use_ancestral_seed = True
                 )
                 pt_mcmc_estimates.append(est_sdp)
                 pt_mcmc_times.append(t_time)
@@ -364,8 +367,8 @@ def process_single_file(args):
             # Pass 2: Peak Memory
             gc.collect() # Clean up before the memory test
             pt_mcmc_mem_mb = run_for_memory(
-                pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                n_samples=10, burn_in=50, thinning=5, n_chains=4, max_temp=10.0
+                vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
+                n_samples=10, burn_in=5, thinning=5, n_chains=4, max_temp=10.0
             )
             log_mem(f"After PT-MCMC Memory Test: {os.path.basename(file)}")
             gc.collect() # Clean up after the memory test
@@ -407,16 +410,14 @@ def process_single_file(args):
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", n_workers=4):
     bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
     
-    H_RATIOS = [0.75, 0.90] # Hidden variable ratios to test
-    #H_RATIOS = [0.3]
+    H_RATIOS = [0.25] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.90, 1.0]
-    #TARGET_BUCKETS = [0.5, 0.9]
-    MCMC_TRIALS = 2
+    TARGET_BUCKETS = [0.4, 0.5, 0.6, 0.7, 0.8, 0.90, 1.0]
+    MCMC_TRIALS = 10
 
-    SIZES_TO_RUN = [50]
-    DENSITIES_TO_RUN = [2]
-    #SIZES_TO_RUN = [200]
+    SIZES_TO_RUN = [20, 50, 100, 200]
+    DENSITIES_TO_RUN = [2, 6]
+
     # Build args list for each file
     args_list = [
         (file, H_RATIOS, DECISION_THRESHOLD, TARGET_BUCKETS, SIZES_TO_RUN, DENSITIES_TO_RUN, MCMC_TRIALS)

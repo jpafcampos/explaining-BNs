@@ -125,7 +125,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     print(f"Job {job_idx} processing {len(bif_files)} files...")
     results = []
     
-    H_RATIOS = [0.1, 0.3, 0.5, 0.70, 0.90] # Hidden variable ratios to test
+    H_RATIOS = [0.25] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0]
     MCMC_TRIALS = 10
@@ -284,9 +284,9 @@ def run_targeted_sdp_experiment_toy(bif_directory, output_csv="targeted_sdp_rand
     bif_files = glob.glob(os.path.join(bif_directory, "*.bif"))
     results = []
     
-    H_RATIOS = [0.5] # Hidden variable ratios to test
+    H_RATIOS = [0.25] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.70]
+    TARGET_BUCKETS = [0.4, 0.5, 0.6, 0.70, 0.80, 0.9, 1.0]
     MCMC_TRIALS = 2
     
     for file in bif_files:

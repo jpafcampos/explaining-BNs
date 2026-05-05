@@ -205,7 +205,7 @@ def run_for_memory(func, *args, **kwargs):
     python_peak_mb = python_peak_bytes / (1024 * 1024)
     rss_delta_mb = (peak_rss[0] - baseline_rss) / (1024 * 1024)
 
-    return (python_peak_mb, rss_delta_mb)
+    return max(python_peak_mb, rss_delta_mb)
 
 
 

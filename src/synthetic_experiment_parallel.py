@@ -267,7 +267,7 @@ def process_single_file(args):
         #)
         gc.collect() # Clean up before the harvest, which can be memory-intensive
         harvested_data = find_exact_experimental_patients_random(bn, target, target_value, DECISION_THRESHOLD,
-                                                                n_evidence, buckets=TARGET_BUCKETS, batch_size=8_000)
+                                                                n_evidence, buckets=TARGET_BUCKETS, batch_size=2_000)
         gc.collect() # Clean up after the harvest, which can be memory-intensive
         # Now process whatever it managed to find
         for target_sdp, result in harvested_data.items():

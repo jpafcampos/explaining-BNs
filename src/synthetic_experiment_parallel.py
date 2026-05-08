@@ -34,6 +34,8 @@ import gc
 import threading
 from multiprocessing import Pool
 
+MAX_TENSOR_ALLOWED = 90_000_000
+
 def parse_bn_filename(filename):
     base = os.path.basename(filename).replace('.bif', '').replace('bn_', '')
     parts = base.split('_')
@@ -164,8 +166,9 @@ def run_for_time(func, *args, **kwargs):
 def run_for_memory(func, *args, **kwargs):
     """
     Measures peak memory using BOTH tracemalloc (Python-level) and
-    thread-sampled RSS (OS-level, catches numpy C allocations).
-    Returns the max of both.
+    thread-sampled RSS (OS-level, catches numpy/C allocations).
+    Both are measured as deltas from baseline.
+    Returns (python_peak_mb, rss_peak_mb).
     """
     process = psutil.Process(os.getpid())
 
@@ -182,13 +185,14 @@ def run_for_memory(func, *args, **kwargs):
                     peak_rss[0] = current
             except Exception:
                 pass
-            #time.sleep(0.001)
-            time.sleep(0.01) #CHANGED HERE TO REDUCE SAMPLING OVERHEAD 
+            time.sleep(0.01)
+
+    tracemalloc.start()
+    baseline_traced, _ = tracemalloc.get_traced_memory()  # snapshot before func
 
     sampler_thread = threading.Thread(target=sampler, daemon=True)
     sampler_thread.start()
 
-    tracemalloc.start()
     try:
         func(*args, **kwargs)
     except MemoryError:
@@ -202,11 +206,225 @@ def run_for_memory(func, *args, **kwargs):
     _, python_peak_bytes = tracemalloc.get_traced_memory()
     tracemalloc.stop()
 
-    python_peak_mb = python_peak_bytes / (1024 * 1024)
-    rss_delta_mb = (peak_rss[0] - baseline_rss) / (1024 * 1024)
+    python_peak_mb = (python_peak_bytes - baseline_traced) / (1024 * 1024)
+    rss_peak_mb = (peak_rss[0] - baseline_rss) / (1024 * 1024)
 
-    return max(python_peak_mb, rss_delta_mb)
+    return python_peak_mb, rss_peak_mb
 
+from math import prod
+def compute_tensor_size(bn, partition):
+    return prod(len(bn.get_cpds(v).state_names[v]) for v in partition)
+
+
+def compute_max_tensor_size(bn, partitions):
+    if not partitions:
+        return 0
+    return max(compute_tensor_size(bn, p) for p in partitions)
+
+def estimate_ve_cost_min_fill(bn, evidence, target):
+    """
+    Estimates the maximum factor (tensor) size during Variable Elimination
+    by simulating the elimination process using the Min-Fill heuristic.
+    """
+    elim_vars = set(v for v in bn.nodes() if v != target and v not in evidence)
+    
+    # Initialize the moral graph and get cardinalities
+    moral = bn.to_markov_model() 
+    cards = {n: len(bn.get_cpds(n).state_names[n]) for n in bn.nodes()}
+    
+    max_tensor_size = 1
+    
+    while elim_vars:
+        # --- MIN-FILL HEURISTIC ---
+        best_var = None
+        min_fill_count = float('inf')
+        best_tensor_size = float('inf') # Tie-breaker
+        
+        for v in elim_vars:
+            neighbors = list(moral.neighbors(v))
+            fill_count = 0
+            
+            # Count how many edges are missing between neighbors
+            for i in range(len(neighbors)):
+                for j in range(i + 1, len(neighbors)):
+                    if not moral.has_edge(neighbors[i], neighbors[j]):
+                        fill_count += 1
+            
+            # Tie-breaker: If two nodes create the same number of fill edges,
+            # eliminate the one that generates the smaller tensor.
+            if fill_count < min_fill_count:
+                min_fill_count = fill_count
+                best_var = v
+                best_tensor_size = prod(cards[n] for n in neighbors + [v])
+            elif fill_count == min_fill_count:
+                current_tensor = prod(cards[n] for n in neighbors + [v])
+                if current_tensor < best_tensor_size:
+                    best_var = v
+                    best_tensor_size = current_tensor
+                    
+        # --- ELIMINATION ---
+        neighbors = list(moral.neighbors(best_var))
+        
+        # 1. Update our max tensor size tracker
+        max_tensor_size = max(max_tensor_size, best_tensor_size)
+        
+        # 2. Add the fill-in edges to the moral graph
+        for i in range(len(neighbors)):
+            for j in range(i + 1, len(neighbors)):
+                if not moral.has_edge(neighbors[i], neighbors[j]):
+                    moral.add_edge(neighbors[i], neighbors[j])
+                    
+        # 3. Remove the node
+        moral.remove_node(best_var)
+        elim_vars.remove(best_var)
+        
+    return max_tensor_size
+
+def memory_aware_random_harvester(bn, target_node, target_value, decision_threshold,
+                                            n_evidence,
+                                            buckets=[0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                                            tolerance=0.05,
+                                            batch_size=500,
+                                            max_batches=1,
+                                            max_tensor_entries=MAX_TENSOR_ALLOWED):
+    """
+    -> Same logic as function find_exact_experimental_patients_random, 
+    but with an explicit memory wall check
+    
+    Random-evidence harvester that fills target SDP buckets with example patients.
+    
+    Uses tensor size (product of hidden-variable cardinalities) as the memory
+    safety metric, so it works correctly on networks with mixed cardinalities
+    like Child (not just binary synthetic BNs).
+    
+    Parameters
+    ----------
+    max_tensor_entries : int
+        Maximum number of entries allowed in any single tensor during SDP.
+    
+    Returns
+    -------
+    dict with keys:
+        'buckets'       : {bucket_value: (patient_dict, exact_sdp) | None}
+        'wall_hits'     : int — patients rejected for exceeding the memory wall
+        'attempts_ok'   : int — patients that passed the wall and got evaluated
+        'sdp_failures'  : int — patients that passed the wall but crashed in SDP
+        'inference_failures' : int — patients whose base inference crashed
+    """
+    all_nodes = list(bn.nodes())
+    available_nodes = [n for n in all_nodes if n != target_node]
+
+    unfilled_buckets = {b: None for b in buckets}
+    wall_hits = 0
+    attempts_ok = 0
+    sdp_failures = 0
+    inference_failures = 0
+
+    print(f"\nHunting for patients... (Locking {n_evidence} variables as evidence)")
+    print(f"Memory wall: tensor size ≤ {max_tensor_entries:,} entries "
+          f"(~{max_tensor_entries * 8 / 1024**3:.1f} GB raw)")
+
+    base_inference = VariableElimination(bn)
+    batch_count = 0
+
+    while any(v is None for v in unfilled_buckets.values()) and batch_count < max_batches:
+        batch_count += 1
+        print(f"Generating batch {batch_count}/{max_batches} of {batch_size} random realities...")
+
+        for i in range(batch_size):
+            # 1. Generate a random patient with randomly-sampled evidence
+            evidence_vars = random.sample(available_nodes, min(n_evidence, len(available_nodes)))
+            hidden_vars = [n for n in all_nodes if n not in evidence_vars and n != target_node]
+
+            temp_patient = {
+                var: random.choice(bn.get_cpds(var).state_names[var])
+                for var in evidence_vars
+            }
+
+            # 2. Build partitions for this patient
+            partitions = get_partitions(bn, hidden_vars, target_node, temp_patient)
+
+            if not partitions:
+                continue  # nothing to compute
+
+            # 3. MEMORY SAFETY — reject if any tensor exceeds the wall
+            print("-> Testing memory wall...")
+            max_tensor = compute_max_tensor_size(bn, partitions)
+            if max_tensor >= max_tensor_entries:
+                wall_hits += 1
+                continue
+
+            max_tensor_ve = estimate_ve_cost_min_fill(bn, temp_patient, target_node)
+            if max_tensor_ve >= max_tensor_entries:
+                wall_hits += 1
+                continue
+
+            # 4. Check base decision meets the threshold
+            try:
+                print("-> Trying base distribution query...")
+                print(f"--> Estimated Max Tensor VE: {max_tensor_ve}")
+                base_dist = base_inference.query(
+                    variables=[target_node], evidence=temp_patient, elimination_order='MinFill', show_progress=False
+                )
+                if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
+                    continue  # legitimate rejection, not a failure
+            except (ValueError, MemoryError) as e:
+                inference_failures += 1
+                print(f"    [!] Base inference failed ({type(e).__name__}): {e}")
+                gc.collect()
+                continue  # try another patient rather than bailing out
+
+            # 5. Calculate exact SDP
+            try:
+                exact_sdp = fast_broadcast_sdp(
+                    bn, target_node, target_value, temp_patient,
+                    decision_threshold, partitions
+                )
+            except (ValueError, MemoryError) as e:
+                sdp_failures += 1
+                print(f"    [!] SDP failed despite passing wall ({type(e).__name__}): {e}")
+                gc.collect()
+                continue  # try another patient
+
+            attempts_ok += 1
+
+            # 6. Try to fit this SDP into an empty bucket
+            empty_targets = [b for b, v in unfilled_buckets.items() if v is None]
+            for b in empty_targets:
+                if abs(exact_sdp - b) <= tolerance:
+                    unfilled_buckets[b] = (temp_patient.copy(), exact_sdp)
+                    print(f"--> Filled bucket {b} with Exact SDP: {exact_sdp:.4f} "
+                          f"(tensor size: {max_tensor:,})")
+                    break
+
+            # 7. Early exit if all buckets filled
+            if not any(v is None for v in unfilled_buckets.values()):
+                break
+
+    # Summary
+    missing = [b for b, v in unfilled_buckets.items() if v is None]
+    filled = len(buckets) - len(missing)
+
+    print(f"\nHarvest summary:")
+    print(f"  Buckets filled:      {filled}/{len(buckets)}")
+    if missing:
+        print(f"  Missing buckets:     {missing}")
+    print(f"  Wall hits:           {wall_hits} (tensor too big)")
+    print(f"  Attempts past wall:  {attempts_ok}")
+    print(f"  SDP failures:        {sdp_failures}")
+    print(f"  Inference failures:  {inference_failures}")
+
+    # Diagnose intractable cases
+    if filled == 0 and wall_hits > 0 and attempts_ok == 0:
+        print(f"  -> INTRACTABLE: every random patient exceeded the memory wall")
+
+    return {
+        'buckets': unfilled_buckets,
+        'wall_hits': wall_hits,
+        'attempts_ok': attempts_ok,
+        'sdp_failures': sdp_failures,
+        'inference_failures': inference_failures,
+    }
 
 
 import psutil
@@ -266,8 +484,18 @@ def process_single_file(args):
         #    bn, target, target_value, DECISION_THRESHOLD, evidence_vars, TARGET_BUCKETS
         #)
         gc.collect() # Clean up before the harvest, which can be memory-intensive
-        harvested_data = find_exact_experimental_patients_random(bn, target, target_value, DECISION_THRESHOLD,
-                                                                n_evidence, buckets=TARGET_BUCKETS, batch_size=2_000)
+        #harvested_data = find_exact_experimental_patients_random(bn, target, target_value, DECISION_THRESHOLD,
+        #                                                        n_evidence, buckets=TARGET_BUCKETS, batch_size=2_000)
+        harvested = memory_aware_random_harvester(
+            bn, target, target_value, DECISION_THRESHOLD,
+            n_evidence,
+            buckets=TARGET_BUCKETS,
+            batch_size=400,
+            max_batches=2,
+            max_tensor_entries=MAX_TENSOR_ALLOWED,
+        )
+        harvested_data = harvested['buckets']
+        
         gc.collect() # Clean up after the harvest, which can be memory-intensive
         # Now process whatever it managed to find
         for target_sdp, result in harvested_data.items():
@@ -289,20 +517,20 @@ def process_single_file(args):
             exact_sdp, exact_time, exact_success = run_for_time(
                 fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
             )
-            log_mem(f"After Exact SDP Time Test: {os.path.basename(file)}")
+            #log_mem(f"After Exact SDP Time Test: {os.path.basename(file)}")
             
             # Pass 2: Memory
             gc.collect() # Clean up before the memory test
-            exact_mem_mb = run_for_memory(
+            exact_mem_mb_python, exact_mem_mb_rss = run_for_memory(
                 fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
             )
-            log_mem(f"After Exact SDP Memory Test: {os.path.basename(file)}")
+            #log_mem(f"After Exact SDP Memory Test: {os.path.basename(file)}")
             gc.collect() # Clean up after the memory test
 
             if exact_success:
-                print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb:.2f} MB")
+                print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb_python:.2f} MB (Python) / {exact_mem_mb_rss:.2f} MB (RSS)")
             else:
-                print(f"          [FAILED]: Crashed at {exact_mem_mb:.2f} MB")
+                print(f"          [FAILED]: Crashed at {exact_mem_mb_python:.2f} MB (Python) / {exact_mem_mb_rss:.2f} MB (RSS)")
 
             # ========================================================
             # MCMC EVALUATION
@@ -320,9 +548,9 @@ def process_single_file(args):
                 )
                 mcmc_estimates.append(est_sdp)
                 mcmc_times.append(t_time)
-                log_mem(f"After MCMC Trial {trial+1}/{MCMC_TRIALS} Time Test: {os.path.basename(file)}")
+                #log_mem(f"After MCMC Trial {trial+1}/{MCMC_TRIALS} Time Test: {os.path.basename(file)}")
                 
-            log_mem(f"After MCMC Time Test: {os.path.basename(file)}")
+            #log_mem(f"After MCMC Time Test: {os.path.basename(file)}")
             mcmc_mean = np.mean(mcmc_estimates)
             mcmc_avg_time = np.mean(mcmc_times)
             mcmc_variance = np.var(mcmc_estimates)
@@ -330,15 +558,15 @@ def process_single_file(args):
 
             # Pass 2: Peak Memory
             gc.collect() # Clean up before the memory test
-            mcmc_mem_mb = run_for_memory(
+            mcmc_mem_mb_python, mcmc_mem_mb_rss = run_for_memory(
                 fast_mcmc_sdp_estimation_new, bn, target, target_value, patient, DECISION_THRESHOLD,
                 n_samples=10, burn_in=5, thinning=5
             )
-            log_mem(f"After MCMC Memory Test: {os.path.basename(file)}")
+            #log_mem(f"After MCMC Memory Test: {os.path.basename(file)}")
             gc.collect() # Clean up after the memory test
-            
-            print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb:.2f} MB")
-            
+
+            print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb_python:.2f} MB (Python) / {mcmc_mem_mb_rss:.2f} MB (RSS)")
+
             absolute_error = abs(exact_sdp - mcmc_mean)
 
             # ========================================================
@@ -358,22 +586,22 @@ def process_single_file(args):
                 )
                 pt_mcmc_estimates.append(est_sdp)
                 pt_mcmc_times.append(t_time)
-                log_mem(f"After PT-MCMC Trial {trial+1}/{MCMC_TRIALS} Time Test: {os.path.basename(file)}")
+                #log_mem(f"After PT-MCMC Trial {trial+1}/{MCMC_TRIALS} Time Test: {os.path.basename(file)}")
             
-            log_mem(f"After PT-MCMC Time Test: {os.path.basename(file)}")
+            #log_mem(f"After PT-MCMC Time Test: {os.path.basename(file)}")
             pt_mcmc_mean = np.mean(pt_mcmc_estimates)
             pt_mcmc_avg_time = np.mean(pt_mcmc_times)
             pt_mcmc_variance = np.var(pt_mcmc_estimates)
             print(f"               -> Mean PT: {pt_mcmc_mean}")
             # Pass 2: Peak Memory
             gc.collect() # Clean up before the memory test
-            pt_mcmc_mem_mb = run_for_memory(
+            pt_mcmc_mem_mb_python, pt_mcmc_mem_mb_rss = run_for_memory(
                 vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
                 n_samples=10, burn_in=5, thinning=5, n_chains=4, max_temp=10.0
             )
-            log_mem(f"After PT-MCMC Memory Test: {os.path.basename(file)}")
+            #log_mem(f"After PT-MCMC Memory Test: {os.path.basename(file)}")
             gc.collect() # Clean up after the memory test
-            print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb:.2f} MB")
+            print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb_python:.2f} MB (Python) / {pt_mcmc_mem_mb_rss:.2f} MB (RSS)")
 
             absolute_error_pt = abs(exact_sdp - pt_mcmc_mean)
             
@@ -390,16 +618,19 @@ def process_single_file(args):
                 'Target_Value': target_value,
                 'Exact_SDP': exact_sdp,
                 'Exact_Time_sec': exact_time,
-                'Exact_Peak_Memory_MB': exact_mem_mb,
+                'Exact_Peak_Memory_MB_Python': exact_mem_mb_python,
+                'Exact_Peak_Memory_MB_RSS': exact_mem_mb_rss,
                 'MCMC_Mean_SDP': mcmc_mean,
                 'MCMC_Variance': mcmc_variance,
                 'MCMC_Avg_Time_sec': mcmc_avg_time,
-                'MCMC_Peak_Memory_MB': mcmc_mem_mb,
+                'MCMC_Peak_Memory_MB_Python': mcmc_mem_mb_python,
+                'MCMC_Peak_Memory_MB_RSS': mcmc_mem_mb_rss,
                 'Absolute_Error': absolute_error,
                 'PT_MCMC_Mean_SDP': pt_mcmc_mean,
                 'PT_MCMC_Variance': pt_mcmc_variance,
                 'PT_MCMC_Avg_Time_sec': pt_mcmc_avg_time,
-                'PT_Peak_Memory_MB': pt_mcmc_mem_mb,
+                'PT_Peak_Memory_MB_Python': pt_mcmc_mem_mb_python,
+                'PT_Peak_Memory_MB_RSS': pt_mcmc_mem_mb_rss,
                 'PT_Absolute_Error': absolute_error_pt
             })
     
@@ -411,9 +642,9 @@ def process_single_file(args):
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", n_workers=4):
     bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
     
-    H_RATIOS = [0.50] # Hidden variable ratios to test
+    H_RATIOS = [0.25, 0.50] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.4, 0.5, 0.6, 0.7, 0.8, 0.90, 1.0]
+    TARGET_BUCKETS = [0.4, 0.5, 0.7, 0.90, 1.0]
     MCMC_TRIALS = 10
 
     SIZES_TO_RUN = [20, 50, 100, 200]

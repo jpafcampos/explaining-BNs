@@ -271,7 +271,7 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
                 continue  # nothing to compute
 
             # 3. MEMORY SAFETY — reject if any tensor exceeds the wall
-            print("-> Testing memory wall...")
+            #print("-> Testing memory wall...")
             max_tensor = compute_max_tensor_size(bn, partitions)
             if max_tensor >= max_tensor_entries:
                 wall_hits += 1
@@ -358,8 +358,8 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                                burn_in=5_000,
                                thinning=100,
                                max_tensor_entries=MAX_TENSOR_ALLOWED,
-                               pt_n_chains=10,
-                               pt_max_temp=100.0):
+                               pt_n_chains=4,
+                               pt_max_temp=40.0):
     """
     Three-method SDP benchmark: exact, plain MCMC (LW-seeded), and
     parallel tempering. Same structure as run_targeted_sdp_experiment,
@@ -503,7 +503,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=1000,
+                batch_size=500,
                 max_batches=2,
                 max_tensor_entries=max_tensor_entries,
             )
@@ -791,4 +791,4 @@ if __name__ == "__main__":
     
     toy_models = models[:2]
 
-    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_bucket_06.csv", models_to_run=models)
+    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_bucket_06.csv", models_to_run=[alarm_model])

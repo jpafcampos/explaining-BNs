@@ -644,7 +644,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     
     H_RATIOS = [0.25, 0.50] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.4, 0.5, 0.7, 0.90, 1.0]
+    TARGET_BUCKETS = [0.4, 0.5, 0.6, 0.7, 0.8, 0.90, 1.0]
     MCMC_TRIALS = 10
 
     SIZES_TO_RUN = [20, 50, 100, 200]

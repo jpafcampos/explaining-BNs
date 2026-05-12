@@ -2,10 +2,10 @@
 #SBATCH --job-name=sdp_benchmark_experiment
 #SBATCH --output=results/logs/benchmark_experiment_%j.out
 #SBATCH --error=results/logs/benchmark_experiment_%j.err
-#SBATCH --time=15:00:00
+#SBATCH --time=1:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=140G
+#SBATCH --mem=60G
 
 source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs

@@ -380,9 +380,9 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
         Hottest temperature (cold = 1.0, ladder is geometric).
     """
     results = []
-    H_RATIOS = [0.10, 0.25, 0.50]
+    H_RATIOS = [0.25, 0.50]
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.40, 0.50, 0.70, 0.8, 0.9, 1.0]
+    TARGET_BUCKETS = [0.50, 1.0]
     MCMC_TRIALS = 10
  
     # Fixed schema — every row has these columns
@@ -419,7 +419,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
             est, t, ok = run_for_time(
                 fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
                 DECISION_THRESHOLD, n_samples=1000, burn_in=burn_in,
-                thinning=thinning, use_lw_seed=True
+                thinning=thinning, use_lw_seed=False
             )
             if not ok:
                 success = False
@@ -434,7 +434,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
         mem_py, mem_rss = run_for_memory(
             fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
             DECISION_THRESHOLD, n_samples=10, burn_in=5, thinning=5,
-            use_lw_seed=True
+            use_lw_seed=False
         )
         return {
             'mean': float(np.mean(ests)),
@@ -791,4 +791,4 @@ if __name__ == "__main__":
     
     toy_models = models[:2]
 
-    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods.csv", models_to_run=models_to_run)
+    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods.csv", models_to_run=[insurance_model, pathfinder_model])

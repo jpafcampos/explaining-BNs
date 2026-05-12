@@ -284,8 +284,8 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
 
             # 4. Check base decision meets the threshold
             try:
-                print("-> Trying base distribution query...")
-                print(f"--> Estimated Max Tensor VE: {max_tensor_ve}")
+                #print("-> Trying base distribution query...")
+                #print(f"--> Estimated Max Tensor VE: {max_tensor_ve}")
                 base_dist = base_inference.query(
                     variables=[target_node], evidence=temp_patient, elimination_order='MinFill', show_progress=False
                 )
@@ -503,7 +503,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=400,
+                batch_size=1000,
                 max_batches=2,
                 max_tensor_entries=max_tensor_entries,
             )

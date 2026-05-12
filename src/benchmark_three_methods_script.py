@@ -380,9 +380,9 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
         Hottest temperature (cold = 1.0, ladder is geometric).
     """
     results = []
-    H_RATIOS = [0.25, 0.50]
+    H_RATIOS = [0.10, 0.25, 0.50, 0.75, 0.90]
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.50, 1.0]
+    TARGET_BUCKETS = [0.60]
     MCMC_TRIALS = 10
  
     # Fixed schema — every row has these columns
@@ -791,4 +791,4 @@ if __name__ == "__main__":
     
     toy_models = models[:2]
 
-    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods.csv", models_to_run=[insurance_model, pathfinder_model])
+    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_bucket_06.csv", models_to_run=models)

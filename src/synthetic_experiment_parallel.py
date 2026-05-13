@@ -348,7 +348,7 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
                 continue  # nothing to compute
 
             # 3. MEMORY SAFETY — reject if any tensor exceeds the wall
-            print("-> Testing memory wall...")
+            #print("-> Testing memory wall...")
             max_tensor = compute_max_tensor_size(bn, partitions)
             if max_tensor >= max_tensor_entries:
                 wall_hits += 1
@@ -361,8 +361,8 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
 
             # 4. Check base decision meets the threshold
             try:
-                print("-> Trying base distribution query...")
-                print(f"--> Estimated Max Tensor VE: {max_tensor_ve}")
+                #print("-> Trying base distribution query...")
+                #print(f"--> Estimated Max Tensor VE: {max_tensor_ve}")
                 base_dist = base_inference.query(
                     variables=[target_node], evidence=temp_patient, elimination_order='MinFill', show_progress=False
                 )
@@ -582,7 +582,7 @@ def process_single_file(args):
             for trial in range(MCMC_TRIALS):
                 est_sdp, t_time, _ = run_for_time(
                     vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient, DECISION_THRESHOLD,
-                    n_samples=1000, burn_in=5000, thinning=100, n_chains=4, max_temp=40.0, use_ancestral_seed = False
+                    n_samples=1000, burn_in=5000, thinning=100, n_chains=4, max_temp=40.0, use_ancestral_seed = True
                 )
                 pt_mcmc_estimates.append(est_sdp)
                 pt_mcmc_times.append(t_time)

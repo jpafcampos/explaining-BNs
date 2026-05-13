@@ -791,4 +791,4 @@ if __name__ == "__main__":
     
     toy_models = models[:2]
 
-    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_bucket_06.csv", models_to_run=[alarm_model])
+    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_bucket_06.csv", models_to_run=models)

@@ -201,27 +201,22 @@ import pandas as pd
 import numpy as np
 from pgmpy.factors.discrete import TabularCPD
 
-def inject_determinism(bn, sparsity=0.3):
+import numpy as np
+from pgmpy.factors.discrete import TabularCPD
+
+def inject_determinism(bn, sparsity=0.4):
     """
     Randomly injects zeros into the CPTs of a BayesianNetwork to simulate 
     the determinism found in real-world networks.
-    
-    Parameters:
-      bn (BayesianNetwork): The pgmpy model.
-      sparsity (float): Approximate fraction of CPT entries to set to 0.
     """
     for cpd in bn.get_cpds():
-        # Get raw values. pgmpy stores this internally as an N-dimensional array
         vals = cpd.values.copy()
-        
         var_card = cpd.variable_card
         
         # Calculate how many parent instantiations exist
-        # If no parents, it's just 1 (the prior)
         num_parent_inst = np.prod(cpd.cardinality[1:]) if len(cpd.cardinality) > 1 else 1
         
         # Flatten into a 2D array: (states_of_variable, parent_instantiations)
-        # This makes it easy to normalize columns
         vals_2d = vals.reshape(var_card, num_parent_inst)
         
         for col in range(num_parent_inst):
@@ -236,18 +231,18 @@ def inject_determinism(bn, sparsity=0.3):
             col_sum = np.sum(vals_2d[:, col])
             vals_2d[:, col] /= col_sum
             
-        # Reconstruct the TabularCPD object
-        # TabularCPD expects the values exactly in this 2D shape
+        # FIX: Check if the node actually has parents before setting evidence
+        has_parents = len(cpd.variables) > 1
+        
         new_cpd = TabularCPD(
             variable=cpd.variable,
             variable_card=cpd.variable_card,
             values=vals_2d, 
-            evidence=cpd.variables[1:],
-            evidence_card=cpd.cardinality[1:] if len(cpd.cardinality) > 1 else None,
+            evidence=cpd.variables[1:] if has_parents else None,
+            evidence_card=cpd.cardinality[1:] if has_parents else None,
             state_names=cpd.state_names
         )
         
-        # bn.add_cpds silently overwrites the existing CPD for this variable
         bn.add_cpds(new_cpd)
         
     print(f"Injected ~{sparsity*100}% sparsity into the network CPTs.")

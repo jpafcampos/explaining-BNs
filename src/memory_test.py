@@ -486,4 +486,4 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
 if __name__ == "__main__":
 
     #benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)
-   results = benchmark_growing_partition("./generated_bif_files/bn_n100_w2_uncertain_strong.bif", max_steps=30, mcmc_trials=2)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n100_w2_rigid_extreme.bif", max_steps=30, mcmc_trials=2)

@@ -4,7 +4,7 @@ import gc
 from pgmpy.readwrite import BIFReader
 
 from same_decision_probability_calculation import *
-from monte_carlo_sdp import fast_mcmc_sdp_estimation
+from monte_carlo_sdp import *
 
 import random
 import time 
@@ -506,7 +506,7 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
             mcmc_estimates = []
             for _ in range(mcmc_trials):
                 start = time.perf_counter()
-                est = fast_mcmc_sdp_estimation(bn, target, target_value, patient, 0.5,
+                est = fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, 0.5,
                                               n_samples=1000, burn_in=200, thinning=10)
                 mcmc_times.append(time.perf_counter() - start)
                 mcmc_estimates.append(est)

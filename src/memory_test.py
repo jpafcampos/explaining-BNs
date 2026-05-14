@@ -425,6 +425,8 @@ def profile_sdp_allocations(bn, target, target_value, patient, threshold, partit
 
     return result, peak_tracked_mb, peak_rss_mb
 
+from pgmpy.utils import get_example_model
+
 def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
     """
     Runs the exact SDP and MCMC benchmark on configurations where the 
@@ -434,8 +436,10 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
     import gc
     import time
     
-    bn = BIFReader(bif_file).get_model()
-    bn = inject_determinism(bn, sparsity=0.4)
+    #bn = BIFReader(bif_file).get_model()
+    #bn = inject_determinism(bn, sparsity=0.4)
+    bn = get_example_model('win95pts')
+    
     all_nodes = list(bn.nodes())
     target = select_optimal_target_node(bn)
     target_states = bn.get_cpds(target).state_names[target]

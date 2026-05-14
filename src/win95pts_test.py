@@ -37,6 +37,7 @@ def harvest_win95_sdp1_tracked(output_csv="win95_sdp1_tracked.csv", max_attempts
     success_count = 0
     
     for attempt in range(max_attempts):
+        print(f"\nAttempt {attempt+1}/{max_attempts}:", end="")
         # 1. Sample Evidence and Hidden Variables
         evidence_vars = random.sample(available_nodes, len(available_nodes) - n_hidden)
         hidden_vars = [n for n in all_nodes if n not in evidence_vars and n != target]
@@ -54,6 +55,10 @@ def harvest_win95_sdp1_tracked(output_csv="win95_sdp1_tracked.csv", max_attempts
         
         # Skip small partitions to focus on the big space/time trade-offs
         if max_partition_size < 20:
+            continue
+
+        if max_partition_size > 26:
+            print(f"  [SKIP] Max partition size {max_partition_size} exceeds 25 variables.")
             continue
             
         # 3. Compute Exact SDP with Space/Time Tracking

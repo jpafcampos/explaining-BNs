@@ -4,7 +4,7 @@
 #SBATCH --error=results/logs/win95.err
 #SBATCH --time=5:00:00
 #SBATCH --ntasks=1
-#SBATCH --mem=120G
+#SBATCH --mem=140G
 
 source ~/miniforge3/bin/activate bn-medical
 

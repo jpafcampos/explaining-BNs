@@ -118,6 +118,15 @@ def get_target(model):
 
     return targets[model.name]
 
+def check_d_separation(bn, partition, target, evidence_vars):
+    if not partition:
+        return True
+    
+    active_trails = bn.active_trail_nodes(target, observed=evidence_vars)
+    reachable_from_target = active_trails[target]
+    
+    return set(partition).isdisjoint(reachable_from_target)
+
 def run_for_time(func, *args, **kwargs):
     """Runs natively at maximum speed to record pure execution time."""
     start_time = time.time()
@@ -380,10 +389,10 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
         Hottest temperature (cold = 1.0, ladder is geometric).
     """
     results = []
-    H_RATIOS = [0.75, 0.90]
+    H_RATIOS = [0.50]
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00]
-    MCMC_TRIALS = 10
+    TARGET_BUCKETS = [1.00]
+    MCMC_TRIALS = 1
  
     # Fixed schema — every row has these columns
     EMPTY_ROW = {
@@ -503,7 +512,7 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=100,
+                batch_size=1000,
                 max_batches=1,
                 max_tensor_entries=max_tensor_entries,
             )
@@ -612,9 +621,14 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 patient, exact_sdp = result
                 hidden_vars = [n for n in bn.nodes() if n not in patient and n != target]
                 partitions = get_partitions(bn, hidden_vars, target, patient)
+                largest_partition = max(partitions, key=len) if partitions else []
+                is_d_separated = check_d_separation(bn, largest_partition, target, patient)
                 max_partition_size = max(len(p) for p in partitions)
                 max_tensor_size = compute_max_tensor_size(bn, partitions)
- 
+
+                print(f"\n  -> Largest partition size: {max_partition_size} variables ")
+                print(f"\n  -> Is d-separated: {is_d_separated}")
+
                 print(f"\n  -> Benchmarking patient for bucket {target_bucket} "
                       f"(Exact: {exact_sdp:.4f}, partition: {max_partition_size}, "
                       f"tensor: {max_tensor_size:,})")
@@ -791,4 +805,4 @@ if __name__ == "__main__":
     
     toy_models = models[:2]
 
-    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_BIG_MEMORY.csv", models_to_run=models)
+    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_BIG_MEMORY.csv", models_to_run=[win95pts_model])

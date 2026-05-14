@@ -441,7 +441,8 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
     bn = get_example_model('win95pts')
     
     all_nodes = list(bn.nodes())
-    target = select_optimal_target_node(bn)
+    #target = select_optimal_target_node(bn)
+    target = 'PrtMem'
     target_states = bn.get_cpds(target).state_names[target]
     target_value = target_states[1] if len(target_states) > 1 else target_states[0]
     available_nodes = [n for n in all_nodes if n != target]

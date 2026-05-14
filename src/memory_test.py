@@ -198,7 +198,60 @@ def benchmark_hidden_vars(bif_file, n_trials=20, n_hidden=80):
 
 import pandas as pd
 
+import numpy as np
+from pgmpy.factors.discrete import TabularCPD
 
+def inject_determinism(bn, sparsity=0.3):
+    """
+    Randomly injects zeros into the CPTs of a BayesianNetwork to simulate 
+    the determinism found in real-world networks.
+    
+    Parameters:
+      bn (BayesianNetwork): The pgmpy model.
+      sparsity (float): Approximate fraction of CPT entries to set to 0.
+    """
+    for cpd in bn.get_cpds():
+        # Get raw values. pgmpy stores this internally as an N-dimensional array
+        vals = cpd.values.copy()
+        
+        var_card = cpd.variable_card
+        
+        # Calculate how many parent instantiations exist
+        # If no parents, it's just 1 (the prior)
+        num_parent_inst = np.prod(cpd.cardinality[1:]) if len(cpd.cardinality) > 1 else 1
+        
+        # Flatten into a 2D array: (states_of_variable, parent_instantiations)
+        # This makes it easy to normalize columns
+        vals_2d = vals.reshape(var_card, num_parent_inst)
+        
+        for col in range(num_parent_inst):
+            # Try to inject zeros based on the sparsity threshold
+            for row in range(var_card):
+                if np.random.rand() < sparsity:
+                    # CRITICAL: Only zero it out if it's NOT the last remaining non-zero probability
+                    if np.sum(vals_2d[:, col] > 0) > 1:
+                        vals_2d[row, col] = 0.0
+            
+            # Re-normalize the column so it sums to 1.0
+            col_sum = np.sum(vals_2d[:, col])
+            vals_2d[:, col] /= col_sum
+            
+        # Reconstruct the TabularCPD object
+        # TabularCPD expects the values exactly in this 2D shape
+        new_cpd = TabularCPD(
+            variable=cpd.variable,
+            variable_card=cpd.variable_card,
+            values=vals_2d, 
+            evidence=cpd.variables[1:],
+            evidence_card=cpd.cardinality[1:] if len(cpd.cardinality) > 1 else None,
+            state_names=cpd.state_names
+        )
+        
+        # bn.add_cpds silently overwrites the existing CPD for this variable
+        bn.add_cpds(new_cpd)
+        
+    print(f"Injected ~{sparsity*100}% sparsity into the network CPTs.")
+    return bn
 
 def build_growing_partition_benchmark(bn, target, evidence_vars_pool, patient_states, max_steps=30):
     """
@@ -387,6 +440,7 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
     import time
     
     bn = BIFReader(bif_file).get_model()
+    bn = inject_determinism(bn, sparsity=0.4)
     all_nodes = list(bn.nodes())
     target = select_optimal_target_node(bn)
     target_states = bn.get_cpds(target).state_names[target]

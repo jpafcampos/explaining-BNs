@@ -9,6 +9,78 @@ from monte_carlo_sdp import fast_mcmc_sdp_estimation
 import random
 import time 
 
+import networkx as nx
+
+def _moral_graph(bn):
+    G = nx.Graph()
+    G.add_nodes_from(bn.nodes())
+    for node in bn.nodes():
+        parents = list(bn.predecessors(node))
+        for p in parents:
+            G.add_edge(node, p)
+        for i, p1 in enumerate(parents):
+            for p2 in parents[i+1:]:
+                G.add_edge(p1, p2)
+    return G
+
+
+def constrained_treewidth(bn, eliminate_last, evidence_vars=None):
+    """
+    Min-fill upper bound on the constrained treewidth: width of an elimination
+    order in which the variables in `eliminate_last` are eliminated AFTER
+    everything else. This is the quantity that bounds the cost of Algorithm 1
+    in Choi, Xue, Darwiche (2012) — cost is O(N * 2^tw) for the VE phase.
+
+    Pass `evidence_vars` to strip instantiated nodes before elimination
+    (they're cost-free, so leaving them out gives a tighter bound).
+    """
+    G = _moral_graph(bn)
+    last = set(eliminate_last)
+
+    # Strip evidence: connect its neighbours, then drop it.
+    if evidence_vars:
+        for v in list(evidence_vars):
+            if v in G:
+                nbrs = list(G.neighbors(v))
+                for i, a in enumerate(nbrs):
+                    for b in nbrs[i+1:]:
+                        G.add_edge(a, b)
+                G.remove_node(v)
+
+    def fill_in(graph, v):
+        nbrs = list(graph.neighbors(v))
+        return sum(
+            1 for i, a in enumerate(nbrs)
+            for b in nbrs[i+1:]
+            if not graph.has_edge(a, b)
+        )
+
+    def eliminate(graph, v):
+        nbrs = list(graph.neighbors(v))
+        for i, a in enumerate(nbrs):
+            for b in nbrs[i+1:]:
+                graph.add_edge(a, b)
+        graph.remove_node(v)
+        return len(nbrs) + 1  # clique size including v
+
+    max_clique = 0
+
+    # Phase 1: eliminate the "free" vars first (anything not in eliminate_last).
+    free = [v for v in G.nodes() if v not in last]
+    while free:
+        v = min(free, key=lambda x: fill_in(G, x))
+        max_clique = max(max_clique, eliminate(G, v))
+        free.remove(v)
+
+    # Phase 2: eliminate the constrained set last.
+    remaining = [v for v in eliminate_last if v in G]
+    while remaining:
+        v = min(remaining, key=lambda x: fill_in(G, x))
+        max_clique = max(max_clique, eliminate(G, v))
+        remaining.remove(v)
+
+    return max_clique - 1   # treewidth = max clique size - 1
+
 def select_optimal_target_node(bn):
     """
     Selects a binary target node that is well-embedded as a CHILD in the
@@ -188,15 +260,29 @@ def build_growing_partition_benchmark(bn, target, evidence_vars_pool, patient_st
         del evidence[chosen]
         
         new_partitions = get_partitions(bn, hidden, target, evidence)
-        new_biggest_size = max(len(p) for p in new_partitions) if new_partitions else 0
+        new_biggest = max(new_partitions, key=len) if new_partitions else []
+        new_biggest_size = len(new_biggest)
         
+        # Constrained treewidth: H eliminated last (bounds Algorithm 1 globally)
+        tw_all_H = constrained_treewidth(
+            bn, eliminate_last=hidden, evidence_vars=set(evidence.keys())
+        )
+        # Constrained treewidth: only the biggest partition last (per-bucket cost)
+        tw_biggest = constrained_treewidth(
+            bn, eliminate_last=new_biggest, evidence_vars=set(evidence.keys())
+        )
+
+
         print(f"Step {step+1:3d}: added '{chosen}' → "
-              f"n_hidden={len(hidden)}, biggest_partition={new_biggest_size}")
+              f"n_hidden={len(hidden)}, biggest_partition={new_biggest_size}, "
+              f"tw(H)={tw_all_H}, tw(biggest)={tw_biggest}")
         
         configurations.append({
             'step': step + 1,
             'n_hidden': len(hidden),
             'biggest_partition_size': new_biggest_size,
+            'constrained_treewidth_H': tw_all_H,
+            'constrained_treewidth_biggest': tw_biggest,
             'hidden_vars': list(hidden),
             'patient': dict(evidence),
         })
@@ -331,6 +417,8 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
             'n_hidden': config['n_hidden'],
             'max_partition_size': max_partition,
             'max_partition_tensor_size': max_partition_tensor_size,
+            'constrained_treewidth_H': config['constrained_treewidth_H'],
+            'constrained_treewidth_biggest': config['constrained_treewidth_biggest'],
             'exact_time_sec': None,
             'exact_peak_memory_mb': None,
             'exact_success': False,
@@ -398,4 +486,4 @@ def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
 if __name__ == "__main__":
 
     #benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)
-   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=40, mcmc_trials=2)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n100_w2_uncertain_strong.bif", max_steps=30, mcmc_trials=2)

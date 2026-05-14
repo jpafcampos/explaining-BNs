@@ -503,8 +503,8 @@ def run_3_method_targeted_sdp(output_csv="three_method_sdp_benchmark.csv",
                 bn, target, target_value, DECISION_THRESHOLD,
                 n_evidence,
                 buckets=TARGET_BUCKETS,
-                batch_size=1000,
-                max_batches=2,
+                batch_size=100,
+                max_batches=1,
                 max_tensor_entries=max_tensor_entries,
             )
             harvested_data = harvested['buckets']

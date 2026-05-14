@@ -805,4 +805,4 @@ if __name__ == "__main__":
     
     toy_models = models[:2]
 
-    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_BIG_MEMORY.csv", models_to_run=[win95pts_model])
+    results = run_3_method_targeted_sdp(output_csv="targeted_sdp_benchmark_all_methods_win95pts_partition_analyse.csv", models_to_run=[win95pts_model])

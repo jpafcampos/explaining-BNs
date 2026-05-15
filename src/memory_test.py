@@ -655,7 +655,7 @@ def benchmark_growing_partition(bif_file, max_steps=30):
             if mcmc_result['success']:
                 print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
                       f"MCMC Time/Memory: {mcmc_result['avg_time']:.4f}s / {mcmc_result['mem_py']:.2f}MB | Estimate: {mcmc_result['mean']:.4f}")
-                
+                print(f"MCMC error: {abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
                 row['mcmc_avg_time_sec'] = mcmc_result['avg_time']
                 row['mcmc_peak_memory_mb'] = mcmc_result['mem_py']
                 row['mcmc_avg_estimate'] = mcmc_result['mean']
@@ -672,7 +672,7 @@ def benchmark_growing_partition(bif_file, max_steps=30):
             if pt_result['success']:
                 print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
                       f"PT Time/Memory: {pt_result['avg_time']:.4f}s / {pt_result['mem_py']:.2f}MB | Estimate: {pt_result['mean']:.4f}")
-                
+                print(f"PT error: {abs(pt_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
                 row['pt_avg_time_sec'] = pt_result['avg_time']
                 row['pt_peak_memory_mb'] = pt_result['mem_py']
                 row['pt_avg_estimate'] = pt_result['mean']

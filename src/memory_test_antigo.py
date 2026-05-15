@@ -198,55 +198,7 @@ def benchmark_hidden_vars(bif_file, n_trials=20, n_hidden=80):
 
 import pandas as pd
 
-import numpy as np
-from pgmpy.factors.discrete import TabularCPD
 
-import numpy as np
-from pgmpy.factors.discrete import TabularCPD
-
-def inject_determinism(bn, sparsity=0.4):
-    """
-    Randomly injects zeros into the CPTs of a BayesianNetwork to simulate 
-    the determinism found in real-world networks.
-    """
-    for cpd in bn.get_cpds():
-        vals = cpd.values.copy()
-        var_card = cpd.variable_card
-        
-        # Calculate how many parent instantiations exist
-        num_parent_inst = np.prod(cpd.cardinality[1:]) if len(cpd.cardinality) > 1 else 1
-        
-        # Flatten into a 2D array: (states_of_variable, parent_instantiations)
-        vals_2d = vals.reshape(var_card, num_parent_inst)
-        
-        for col in range(num_parent_inst):
-            # Try to inject zeros based on the sparsity threshold
-            for row in range(var_card):
-                if np.random.rand() < sparsity:
-                    # CRITICAL: Only zero it out if it's NOT the last remaining non-zero probability
-                    if np.sum(vals_2d[:, col] > 0) > 1:
-                        vals_2d[row, col] = 0.0
-            
-            # Re-normalize the column so it sums to 1.0
-            col_sum = np.sum(vals_2d[:, col])
-            vals_2d[:, col] /= col_sum
-            
-        # FIX: Check if the node actually has parents before setting evidence
-        has_parents = len(cpd.variables) > 1
-        
-        new_cpd = TabularCPD(
-            variable=cpd.variable,
-            variable_card=cpd.variable_card,
-            values=vals_2d, 
-            evidence=cpd.variables[1:] if has_parents else None,
-            evidence_card=cpd.cardinality[1:] if has_parents else None,
-            state_names=cpd.state_names
-        )
-        
-        bn.add_cpds(new_cpd)
-        
-    print(f"Injected ~{sparsity*100}% sparsity into the network CPTs.")
-    return bn
 
 def build_growing_partition_benchmark(bn, target, evidence_vars_pool, patient_states, max_steps=30):
     """
@@ -425,150 +377,7 @@ def profile_sdp_allocations(bn, target, target_value, patient, threshold, partit
 
     return result, peak_tracked_mb, peak_rss_mb
 
-from pgmpy.utils import get_example_model
-
-MCMC_TRIALS = 10
-
-def run_for_time(func, *args, **kwargs):
-    """Runs natively at maximum speed to record pure execution time."""
-    start_time = time.time()
-    try:
-        result = func(*args, **kwargs)
-        return result, (time.time() - start_time), True
-    except Exception as e:
-        print(f"\n[!] run_for_time: {func.__name__} failed with "
-              f"{type(e).__name__}: {e}")
-        return None, (time.time() - start_time), False
-    
-def run_for_memory(func, *args, **kwargs):
-    """
-    Measures peak memory using BOTH tracemalloc (Python-level) and
-    thread-sampled RSS (OS-level, catches numpy C allocations).
-    Returns the max of both.
-    """
-    process = psutil.Process(os.getpid())
-
-    gc.collect()
-    baseline_rss = process.memory_info().rss
-    peak_rss = [baseline_rss]
-    stop_event = threading.Event()
-
-    def sampler():
-        while not stop_event.is_set():
-            try:
-                current = process.memory_info().rss
-                if current > peak_rss[0]:
-                    peak_rss[0] = current
-            except Exception:
-                pass
-            #time.sleep(0.001)
-            time.sleep(0.1) #CHANGED HERE TO REDUCE SAMPLING OVERHEAD 
-
-    sampler_thread = threading.Thread(target=sampler, daemon=True)
-    sampler_thread.start()
-
-    tracemalloc.start()
-    try:
-        func(*args, **kwargs)
-    except MemoryError:
-        pass
-    except Exception as e:
-        print(f"\n[!] Memory Tracker Warning: {func.__name__} failed with {type(e).__name__}: {e}")
-    finally:
-        stop_event.set()
-        sampler_thread.join(timeout=2.0)
-
-    _, python_peak_bytes = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-
-    python_peak_mb = python_peak_bytes / (1024 * 1024)
-    rss_delta_mb = (peak_rss[0] - baseline_rss) / (1024 * 1024)
-
-    return (python_peak_mb, rss_delta_mb)
-
-from math import prod
-import gc
-import random
-from pgmpy.inference import VariableElimination
-
-
-def compute_tensor_size(bn, partition):
-    return prod(len(bn.get_cpds(v).state_names[v]) for v in partition)
-
-
-def compute_max_tensor_size(bn, partitions):
-    if not partitions:
-        return 0
-    return max(compute_tensor_size(bn, p) for p in partitions)
-
-def benchmark_plain_mcmc(bn, target, target_value, patient):
-    """Run MCMC_TRIALS times and measure memory once. Returns dict."""
-    ests, times = [], []
-    success = True
-    for _ in range(MCMC_TRIALS):
-        est, t, ok = run_for_time(
-            fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-            0.5, n_samples=1000, burn_in=5000,
-            thinning=100, use_lw_seed=True
-        )
-        if not ok:
-            success = False
-            break
-        ests.append(est)
-        times.append(t)
-
-    if not success or not ests:
-        return {'mean': None, 'var': None, 'avg_time': None,
-                'mem_py': None, 'mem_rss': None, 'success': False}
-
-    mem_py, mem_rss = run_for_memory(
-        fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-        0.5, n_samples=10, burn_in=5, thinning=5,
-        use_lw_seed=False
-    )
-    return {
-        'mean': float(np.mean(ests)),
-        'var':  float(np.var(ests)),
-        'avg_time': float(np.mean(times)),
-        'mem_py': mem_py, 'mem_rss': mem_rss,
-        'success': True,
-    }
-
-def benchmark_pt(bn, target, target_value, patient):
-    """Run MCMC_TRIALS times and measure memory once. Returns dict."""
-    ests, times = [], []
-    success = True
-    for _ in range(MCMC_TRIALS):
-        est, t, ok = run_for_time(
-            vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient,
-            0.5, n_samples=1000, burn_in=5000,
-            thinning=100, n_chains=4, max_temp=40,
-            use_ancestral_seed=True
-        )
-        if not ok:
-            success = False
-            break
-        ests.append(est)
-        times.append(t)
-
-    if not success or not ests:
-        return {'mean': None, 'var': None, 'avg_time': None,
-                'mem_py': None, 'mem_rss': None, 'success': False}
-
-    mem_py, mem_rss = run_for_memory(
-        vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient,
-        0.5, n_samples=10, burn_in=5, thinning=5,
-        n_chains=4, max_temp=40, use_ancestral_seed=True
-    )
-    return {
-        'mean': float(np.mean(ests)),
-        'var':  float(np.var(ests)),
-        'avg_time': float(np.mean(times)),
-        'mem_py': mem_py, 'mem_rss': mem_rss,
-        'success': True,
-    }
-
-def benchmark_growing_partition(bif_file, max_steps=30):
+def benchmark_growing_partition(bif_file, max_steps=30, mcmc_trials=1):
     """
     Runs the exact SDP and MCMC benchmark on configurations where the 
     biggest partition grows by exactly 1 at each step.
@@ -578,12 +387,8 @@ def benchmark_growing_partition(bif_file, max_steps=30):
     import time
     
     bn = BIFReader(bif_file).get_model()
-    #bn = inject_determinism(bn, sparsity=0.4)
-    #bn = get_example_model('win95pts')
-    
     all_nodes = list(bn.nodes())
     target = select_optimal_target_node(bn)
-    #target = 'PrtMem'
     target_states = bn.get_cpds(target).state_names[target]
     target_value = target_states[1] if len(target_states) > 1 else target_states[0]
     available_nodes = [n for n in all_nodes if n != target]
@@ -621,10 +426,6 @@ def benchmark_growing_partition(bif_file, max_steps=30):
             'mcmc_peak_memory_mb': None,
             'mcmc_avg_estimate': None,
             'mcmc_success': False,
-            'pt_avg_time_sec': None,
-            'pt_peak_memory_mb': None,
-            'pt_avg_estimate': None,
-            'pt_success': False
         }
         
         # Exact SDP
@@ -650,41 +451,33 @@ def benchmark_growing_partition(bif_file, max_steps=30):
         
         # MCMC
         gc.collect()
+        tracemalloc.start()
         try:
-            mcmc_result = benchmark_plain_mcmc(bn, target, target_value, patient)
-            if mcmc_result['success']:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                      f"MCMC Time/Memory: {mcmc_result['avg_time']:.4f}s / {mcmc_result['mem_py']:.2f}MB | Estimate: {mcmc_result['mean']:.4f}")
-                print(f"MCMC error: {abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
-                row['mcmc_avg_time_sec'] = mcmc_result['avg_time']
-                row['mcmc_peak_memory_mb'] = mcmc_result['mem_py']
-                row['mcmc_avg_estimate'] = mcmc_result['mean']
-                row['mcmc_error'] = abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else None
-                row['mcmc_success'] = True
-            else:
-                print(f"Step {config['step']:3d} | MCMC FAILED")
+            mcmc_times = []
+            mcmc_estimates = []
+            for _ in range(mcmc_trials):
+                start = time.perf_counter()
+                est = fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, 0.5,
+                                              n_samples=1000, burn_in=200, thinning=10)
+                mcmc_times.append(time.perf_counter() - start)
+                mcmc_estimates.append(est)
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+
+            print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
+                  f"MCMC Time/Memory: {np.mean(mcmc_times):.4f}s / {peak/1024/1024:.2f}MB | Estimate: {np.mean(mcmc_estimates):.4f}")
+            
+            row['mcmc_avg_time_sec'] = np.mean(mcmc_times)
+            row['mcmc_peak_memory_mb'] = peak / 1024 / 1024
+            row['mcmc_avg_estimate'] = np.mean(mcmc_estimates)
+            row['mcmc_error'] = abs(np.mean(mcmc_estimates) - real_sdp) if row['exact_success'] else None
+            row['mcmc_success'] = True
         except Exception as e:
+            tracemalloc.stop()
             print(f"Step {config['step']:3d} | MCMC FAILED: {e}")
         
-        # PT
-        try:
-            pt_result = benchmark_pt(bn, target, target_value, patient)
-            if pt_result['success']:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                      f"PT Time/Memory: {pt_result['avg_time']:.4f}s / {pt_result['mem_py']:.2f}MB | Estimate: {pt_result['mean']:.4f}")
-                print(f"PT error: {abs(pt_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
-                row['pt_avg_time_sec'] = pt_result['avg_time']
-                row['pt_peak_memory_mb'] = pt_result['mem_py']
-                row['pt_avg_estimate'] = pt_result['mean']
-                row['pt_error'] = abs(pt_result['mean'] - real_sdp) if row['exact_success'] else None
-                row['pt_success'] = True
-            else:
-                print(f"Step {config['step']:3d} | PT FAILED")
-        except Exception as e:
-            print(f"Step {config['step']:3d} | PT FAILED: {e}")
-            
         results.append(row)
-        pd.DataFrame(results).to_csv("results/growing_partition_benchmark_all_methods.csv", index=False)
+        pd.DataFrame(results).to_csv("results/growing_partition_benchmark.csv", index=False)
     
     return results
 
@@ -693,4 +486,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 if __name__ == "__main__":
 
     #benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)
-   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=40)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=3, mcmc_trials=5)

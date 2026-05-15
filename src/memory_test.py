@@ -140,62 +140,6 @@ def select_optimal_target_node(bn):
     return best_node
 
 
-
-def benchmark_hidden_vars(bif_file, n_trials=20, n_hidden=80):
-    bn = BIFReader(bif_file).get_model()
-    all_nodes = list(bn.nodes())
-    target = select_optimal_target_node(bn)
-    target_states = bn.get_cpds(target).state_names[target]
-    target_value = target_states[1] if len(target_states) > 1 else target_states[0]
-    available_nodes = [n for n in all_nodes if n != target]
-
-    print(f"Nodes: {len(all_nodes)} | Running {n_trials} trials with {n_hidden} random hidden vars each\n")
-
-    times = []
-    memories = []
-
-    for trial in range(n_trials):
-        # Mirror exactly what the harvester does
-        evidence_vars = random.sample(available_nodes, len(available_nodes) - n_hidden)
-        hidden_vars = [n for n in all_nodes if n not in evidence_vars and n != target]
-        patient = {var: random.choice(bn.get_cpds(var).state_names[var]) 
-                   for var in evidence_vars}
-
-        gc.collect()
-        tracemalloc.start()
-
-        try:
-            partitions = get_partitions(bn, hidden_vars, target, patient)
-
-            start = time.perf_counter()
-            result = fast_broadcast_sdp(bn, target, target_value, patient, 0.5, partitions)
-            elapsed = time.perf_counter() - start
-
-            current, peak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-
-            peak_mb = peak / 1024 / 1024
-            times.append(elapsed)
-            memories.append(peak_mb)
-
-            print(f"Trial {trial+1:3d}/{n_trials} | "
-                  f"Hidden edges: {bn.subgraph(hidden_vars).number_of_edges():3d} | "
-                  f"Time: {elapsed:.4f} sec | "
-                  f"Peak memory: {peak_mb:.2f} MB | OK")
-
-        except MemoryError:
-            tracemalloc.stop()
-            print(f"Trial {trial+1:3d}/{n_trials} | OUT OF MEMORY")
-        except Exception as e:
-            tracemalloc.stop()
-            print(f"Trial {trial+1:3d}/{n_trials} | ERROR: {e}")
-
-    if times:
-        print(f"\n--- Summary ---")
-        print(f"Time    — min: {min(times):.4f}s | max: {max(times):.4f}s | avg: {sum(times)/len(times):.4f}s")
-        print(f"Memory  — min: {min(memories):.2f}MB | max: {max(memories):.2f}MB | avg: {sum(memories)/len(memories):.2f}MB")
-        print(f"Hidden edges — this tells us if low memory correlates with sparse hidden subgraphs")
-
 import pandas as pd
 
 import numpy as np
@@ -630,16 +574,24 @@ def benchmark_growing_partition(bif_file, max_steps=30):
         # Exact SDP
         gc.collect()
         try:
-            start = time.perf_counter()
-            real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
-                bn, target, target_value, patient, 0.5, partitions
+            #start = time.perf_counter()
+            #real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
+            #    bn, target, target_value, patient, 0.5, partitions
+            #)
+            #exact_time = time.perf_counter() - start
+
+            real_sdp, exact_time, exact_success = run_for_time(
+                fast_broadcast_sdp, bn, target, target_value, patient,
+                0.5, partitions
             )
-            exact_time = time.perf_counter() - start
+            peak_traced_mb, peak_rss_mb = run_for_memory(
+                fast_broadcast_sdp, bn, target, target_value, patient,
+                0.5, partitions)
 
             row['exact_time_sec'] = exact_time
             row['exact_peak_memory_mb'] = peak_traced_mb
             row['exact_peak_rss_mb'] = peak_rss_mb
-            row['exact_success'] = True
+            row['exact_success'] = exact_success
             row['exact_sdp_result'] = real_sdp
 
             print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
@@ -692,5 +644,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 
 if __name__ == "__main__":
 
-    #benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)
-   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=40)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=27)

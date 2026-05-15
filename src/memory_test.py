@@ -509,7 +509,7 @@ def benchmark_plain_mcmc(bn, target, target_value, patient):
         est, t, ok = run_for_time(
             fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
             0.5, n_samples=1000, burn_in=5000,
-            thinning=100, use_lw_seed=False
+            thinning=100, use_lw_seed=True
         )
         if not ok:
             success = False
@@ -693,4 +693,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 if __name__ == "__main__":
 
     #benchmark_hidden_vars("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", n_hidden=150)
-   results = benchmark_growing_partition("./generated_bif_files/bn_n100_w2_uncertain_moderate.bif", max_steps=40)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_moderate.bif", max_steps=40)

@@ -164,6 +164,56 @@ def entropy_discrete_bn(model: _DBN) -> float:
     return total_entropy
 
 
+def export_node_entropies_to_csv(model, filename="node_entropies.csv"):
+    """
+    Calculates H(Xi | Pi_Xi) for every node in a pgmpy Discrete BN 
+    and exports the results to a CSV.
+    """
+    inference = VariableElimination(model)
+    node_data = []
+
+    for node in model.nodes():
+        cpd = model.get_cpds(node)
+        parents_in_cpd_order = list(cpd.variables[1:])
+        
+        node_entropy = 0.0
+
+        if not parents_in_cpd_order:
+            # Root node calculation
+            node_entropy = _safe_entropy(cpd.values)
+        else:
+            # Conditional entropy: H(Xi | Pi_Xi)
+            parent_factor = inference.query(
+                variables=parents_in_cpd_order,
+                show_progress=False,
+            )
+
+            parent_cards = tuple(
+                len(cpd.state_names[p]) for p in parents_in_cpd_order
+            )
+
+            for cfg in np.ndindex(*parent_cards):
+                p_cfg = float(parent_factor.values[cfg])
+                if p_cfg < 1e-300:
+                    continue
+
+                # Slice CPD to get P(Xi | parents = cfg)
+                probs_xi = cpd.values[(slice(None),) + cfg]
+                node_entropy += p_cfg * _safe_entropy(probs_xi)
+
+        # Store the result for this node
+        node_data.append({
+            "Node": node,
+            "Entropy_Nats": node_entropy,
+            "Parent_Count": len(parents_in_cpd_order)
+        })
+
+    # Create DataFrame and Export
+    df = pd.DataFrame(node_data)
+    df.to_csv(filename, index=False)
+    
+    print(f"Entropy report saved to {filename}")
+    return df
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -307,17 +357,16 @@ if __name__ == "__main__":
     hepar_model = get_example_model('hepar2')
     barley_model = get_example_model('barley')
     win95pts_model = get_example_model('win95pts')
-    #mildew_model = get_example_model('mildew')
-    #water_model = get_example_model('water')
-    mildew_model = None
-    water_model = None
+    andes_model = get_example_model('andes')
+    link_model = get_example_model('link')
+    pathfinder_model = get_example_model('pathfinder')
 
     # compute entropies
     print("\nComputing entropies of benchmark models...")
     df_entropies = []
     for model, name in [
-        (voting_model, "voting"),
-        (chess_model, "chess"),
+        #(voting_model, "voting"),
+        #(chess_model, "chess"),
         (alarm_model, "alarm"),
         (child_model, "child"),
         #(asia_model, "asia"),
@@ -326,14 +375,21 @@ if __name__ == "__main__":
         (hepar_model, "hepar"),
         (barley_model, "barley"),
         (win95pts_model, "win95pts"),
+        (andes_model, "andes"),
+        (link_model, "link"),
+        (pathfinder_model, "pathfinder"),
         #(mildew_model, "Mildew"),
         #(water_model, "Water"),
     ]:
-        h = entropy_bn(model)
-        print(f"  {name:12s} H(B) = {h:.4f} nats")
-        df_entropies.append({"Model": name, "Entropy (nats)": h})
-    df_entropies = pd.DataFrame(df_entropies)
-    print("\nSummary of entropies:")
-    print(df_entropies.to_string(index=False))
-    df_entropies.to_csv("bn_entropies.csv", index=False)
+        export_node_entropies_to_csv(model, filename=f"model_{name}_node_entropies.csv")
+        
+        
+        
+        #h = entropy_bn(model)
+        #print(f"  {name:12s} H(B) = {h:.4f} nats")
+        #df_entropies.append({"Model": name, "Entropy (nats)": h})
+    #df_entropies = pd.DataFrame(df_entropies)
+    #print("\nSummary of entropies:")
+    #print(df_entropies.to_string(index=False))
+    #df_entropies.to_csv("bn_entropies.csv", index=False)
 

@@ -782,6 +782,11 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
     patient_idx = {v: state_index[v][val] for v, val in patient.items()}
     current_idx = dict(patient_idx)
 
+    ve_init = VariableElimination(bn)
+    init_post = float(ve_init.query(variables=[target], evidence=patient,
+                                    show_progress=False).get_value(**{target: target_value}))
+    initial_decision_positive = (init_post >= threshold)
+
     # ──────────────────────────────────────────────────────────────────────
     # 2) Seed hidden vars from a single likelihood-weighted draw
     # ──────────────────────────────────────────────────────────────────────
@@ -931,6 +936,8 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
     # 5) Decision boundary evaluation
     # ──────────────────────────────────────────────────────────────────────
     
+    # NOTE TO SELF:
+    # We are only computing samples where p >= threshold
 
     count_same = 0
     decision_cache = {}
@@ -944,7 +951,8 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
             }
             full_ev = {**patient, **sample_h}
             p = get_exact_target_posterior_O1(bn, target, target_value, full_ev)
-            decision_cache[key] = (p >= threshold)
+            #decision_cache[key] = (p >= threshold)
+            decision_cache[key] = ((p >= threshold) == initial_decision_positive)
         if decision_cache[key]:
             count_same += 1
 

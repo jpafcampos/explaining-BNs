@@ -642,13 +642,13 @@ def process_single_file(args):
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", n_workers=4):
     bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
     
-    H_RATIOS = [0.25, 0.50] # Hidden variable ratios to test
+    H_RATIOS = [0.1] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [0.6, 0.8]
-    MCMC_TRIALS = 10
+    TARGET_BUCKETS = [1.0]
+    MCMC_TRIALS = 5
 
-    SIZES_TO_RUN = [20, 50]
-    DENSITIES_TO_RUN = [2, 6]
+    SIZES_TO_RUN = [20]
+    DENSITIES_TO_RUN = [2]
 
     # Build args list for each file
     args_list = [

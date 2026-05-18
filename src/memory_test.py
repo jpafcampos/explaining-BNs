@@ -11,6 +11,8 @@ import time
 
 import networkx as nx
 
+MCMC_TRIALS = 5
+
 def _moral_graph(bn):
     G = nx.Graph()
     G.add_nodes_from(bn.nodes())
@@ -371,7 +373,7 @@ def profile_sdp_allocations(bn, target, target_value, patient, threshold, partit
 
 from pgmpy.utils import get_example_model
 
-MCMC_TRIALS = 10
+
 
 def run_for_time(func, *args, **kwargs):
     """Runs natively at maximum speed to record pure execution time."""
@@ -572,34 +574,43 @@ def benchmark_growing_partition(bif_file, max_steps=30):
         }
         
         # Exact SDP
-        gc.collect()
-        try:
-            #start = time.perf_counter()
-            #real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
-            #    bn, target, target_value, patient, 0.5, partitions
-            #)
-            #exact_time = time.perf_counter() - start
+        if config['step'] < 28:
+            gc.collect()
+            try:
+                #start = time.perf_counter()
+                #real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
+                #    bn, target, target_value, patient, 0.5, partitions
+                #)
+                #exact_time = time.perf_counter() - start
 
-            real_sdp, exact_time, exact_success = run_for_time(
-                fast_broadcast_sdp, bn, target, target_value, patient,
-                0.5, partitions
-            )
-            peak_traced_mb, peak_rss_mb = run_for_memory(
-                fast_broadcast_sdp, bn, target, target_value, patient,
-                0.5, partitions)
+                real_sdp, exact_time, exact_success = run_for_time(
+                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    0.5, partitions
+                )
+                peak_traced_mb, peak_rss_mb = run_for_memory(
+                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    0.5, partitions)
 
-            row['exact_time_sec'] = exact_time
-            row['exact_peak_memory_mb'] = peak_traced_mb
-            row['exact_peak_rss_mb'] = peak_rss_mb
-            row['exact_success'] = exact_success
-            row['exact_sdp_result'] = real_sdp
+                row['exact_time_sec'] = exact_time
+                row['exact_peak_memory_mb'] = peak_traced_mb
+                row['exact_peak_rss_mb'] = peak_rss_mb
+                row['exact_success'] = exact_success
+                row['exact_sdp_result'] = real_sdp
 
-            print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                  f"Max partition tensor size: {max_partition_tensor_size} entries | "
-                f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
-        except Exception as e:
-            print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
+                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
+                    f"Max partition tensor size: {max_partition_tensor_size} entries | "
+                    f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
+            except Exception as e:
+                print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
         
+        else:
+            # SDP cannot run, fill data with N/A
+            #print(f"Step {config['step']:3d} | partition={max_partition:3d} | SDP SKIPPED (too large)")
+            row['exact_time_sec'] = None
+            row['exact_peak_memory_mb'] = None
+            row['exact_peak_rss_mb'] = None
+            row['exact_success'] = False
+
         # MCMC
         gc.collect()
         try:
@@ -644,4 +655,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 
 if __name__ == "__main__":
 
-   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=27)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n200_w2_uniform.bif", max_steps=190)

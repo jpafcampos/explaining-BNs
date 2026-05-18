@@ -618,6 +618,7 @@ def benchmark_growing_partition(bif_file, max_steps=30):
                 row['exact_success_2'] = True
                 row['exact_sdp_result_2'] = real_sdp
 
+                print("Run with memory profiling (higher overhead):")
                 print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
                     f"Max partition tensor size: {max_partition_tensor_size} entries | "
                     f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")

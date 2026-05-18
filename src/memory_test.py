@@ -11,7 +11,7 @@ import time
 
 import networkx as nx
 
-MCMC_TRIALS = 5
+MCMC_TRIALS = 1
 
 def _moral_graph(bn):
     G = nx.Graph()
@@ -655,4 +655,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 
 if __name__ == "__main__":
 
-   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_rigid_moderate.bif", max_steps=27)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_rigid_uncertain_moderate.bif", max_steps=27)

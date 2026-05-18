@@ -1,4 +1,0 @@
-step,n_hidden,max_partition_size,max_partition_tensor_size,constrained_treewidth_H,constrained_treewidth_biggest,exact_time_sec,exact_peak_memory_mb,exact_success,mcmc_avg_time_sec,mcmc_peak_memory_mb,mcmc_avg_estimate,mcmc_success,exact_peak_rss_mb,exact_sdp_result,mcmc_error
-1,1,1,2,1,1,0.20548098699873663,0.5428628921508789,True,0.5660333807994903,0.45551013946533203,1.0,True,1.7734375,1.0,0.0
-2,2,2,4,2,2,0.2051495519990567,0.49007606506347656,True,0.5388688053993974,0.35880565643310547,1.0,True,0.20703125,1.0,0.0
-3,3,3,8,2,2,0.20215655699939816,0.48435401916503906,True,0.46018745339970335,0.3671760559082031,1.0,True,0.03515625,1.0,0.0

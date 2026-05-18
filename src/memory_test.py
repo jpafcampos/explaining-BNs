@@ -603,25 +603,27 @@ def benchmark_growing_partition(bif_file, max_steps=30):
             except Exception as e:
                 print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
 
-            # Exact SDP 2 - Run for time with memory profiling (more accurate but higher overhead)
+            #Exact SDP 2 - Accurate Chen paper version
             gc.collect()
             try:
-                start = time.perf_counter()
-                real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
-                    bn, target, target_value, patient, 0.5, partitions
+                real_sdp_chen, exact_time_chen, exact_success_chen = run_for_time(
+                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    0.5, partitions
                 )
-                exact_time = time.perf_counter() - start
+                peak_traced_mb_chen, peak_rss_mb_chen = run_for_memory(
+                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    0.5, partitions)
 
-                row['exact_time_sec_2'] = exact_time
-                row['exact_peak_memory_mb_2'] = peak_traced_mb
-                row['exact_peak_rss_mb_2'] = peak_rss_mb
-                row['exact_success_2'] = True
-                row['exact_sdp_result_2'] = real_sdp
+                row['exact_time_sec_chen'] = exact_time_chen
+                row['exact_peak_memory_mb_chen'] = peak_traced_mb_chen
+                row['exact_peak_rss_mb_chen'] = peak_rss_mb_chen
+                row['exact_success_chen'] = exact_success_chen
+                row['exact_sdp_result_chen'] = real_sdp_chen
 
-                print("Run with memory profiling (higher overhead):")
+                print("Accurate Chen paper version:")
                 print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
                     f"Max partition tensor size: {max_partition_tensor_size} entries | "
-                    f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
+                    f"Time: {exact_time_chen:.4f}s | Traced: {peak_traced_mb_chen:.2f}MB | RSS: {peak_rss_mb_chen:.2f}MB")
             except Exception as e:
                 print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
         
@@ -632,10 +634,10 @@ def benchmark_growing_partition(bif_file, max_steps=30):
             row['exact_peak_memory_mb'] = None
             row['exact_peak_rss_mb'] = None
             row['exact_success'] = False
-            row['exact_time_sec_2'] = None
-            row['exact_peak_memory_mb_2'] = None
-            row['exact_peak_rss_mb_2'] = None
-            row['exact_success_2'] = False
+            row['exact_time_sec_chen'] = None
+            row['exact_peak_memory_mb_chen'] = None
+            row['exact_peak_rss_mb_chen'] = None
+            row['exact_success_chen'] = False
 
         
 

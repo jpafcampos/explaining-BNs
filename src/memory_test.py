@@ -655,4 +655,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 
 if __name__ == "__main__":
 
-   results = benchmark_growing_partition("./generated_bif_files/bn_n200_w2_uniform.bif", max_steps=190)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uniform.bif", max_steps=48)

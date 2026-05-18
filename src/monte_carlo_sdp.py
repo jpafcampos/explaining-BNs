@@ -1043,6 +1043,11 @@ def pt_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
     swap_attempts = np.zeros(n_pairs, dtype=int)
     swap_accepts  = np.zeros(n_pairs, dtype=int)
 
+    ve_init = VariableElimination(bn)
+    init_post = float(ve_init.query(variables=[target], evidence=patient,
+                                    show_progress=False).get_value(**{target: target_value}))
+    initial_decision_positive = (init_post >= threshold)
+
     # ── Main loop ─────────────────────────────────────────────────────────────
     total_iters      = burn_in + n_samples * thinning
     accepted_samples = []
@@ -1138,7 +1143,8 @@ def pt_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
             full_ev = {**patient, **sample_h}
             p       = get_exact_target_posterior_O1(
                           bn, target, target_value, full_ev)
-            decision_cache[key] = (p >= threshold)
+            #decision_cache[key] = (p >= threshold)
+            decision_cache[key] = ((p >= threshold) == initial_decision_positive)
         if decision_cache[key]:
             count_same += 1
 

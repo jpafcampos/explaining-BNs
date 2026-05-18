@@ -573,7 +573,7 @@ def benchmark_growing_partition(bif_file, max_steps=30):
             'pt_success': False
         }
         
-        # Exact SDP
+        # Exact SDP - Run for memory
         if config['step'] < 28:
             gc.collect()
             try:
@@ -602,6 +602,27 @@ def benchmark_growing_partition(bif_file, max_steps=30):
                     f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
             except Exception as e:
                 print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
+
+            # Exact SDP 2 - Run for time with memory profiling (more accurate but higher overhead)
+            gc.collect()
+            try:
+                start = time.perf_counter()
+                real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
+                    bn, target, target_value, patient, 0.5, partitions
+                )
+                exact_time = time.perf_counter() - start
+
+                row['exact_time_sec_2'] = exact_time
+                row['exact_peak_memory_mb_2'] = peak_traced_mb
+                row['exact_peak_rss_mb_2'] = peak_rss_mb
+                row['exact_success_2'] = True
+                row['exact_sdp_result_2'] = real_sdp
+
+                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
+                    f"Max partition tensor size: {max_partition_tensor_size} entries | "
+                    f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
+            except Exception as e:
+                print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
         
         else:
             # SDP cannot run, fill data with N/A
@@ -610,6 +631,12 @@ def benchmark_growing_partition(bif_file, max_steps=30):
             row['exact_peak_memory_mb'] = None
             row['exact_peak_rss_mb'] = None
             row['exact_success'] = False
+            row['exact_time_sec_2'] = None
+            row['exact_peak_memory_mb_2'] = None
+            row['exact_peak_rss_mb_2'] = None
+            row['exact_success_2'] = False
+
+        
 
         # MCMC
         gc.collect()
@@ -655,4 +682,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 
 if __name__ == "__main__":
 
-   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_moderate.bif", max_steps=27)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=27)

@@ -1186,6 +1186,11 @@ def vectorized_pt_mcmc_sdp_estimation(bn, target, target_value, patient, thresho
     n_target_states    = len(target_states_list)
     target_state_idx   = list(range(n_target_states))
 
+    ve_init = VariableElimination(bn)
+    init_post = float(ve_init.query(variables=[target], evidence=patient,
+                                    show_progress=False).get_value(**{target: target_value}))
+    initial_decision_positive = (init_post >= threshold)
+
     # ──────────────────────────────────────────────────────────────────────
     # 1) Integer-indexed view of the network (same as plain MCMC)
     # ──────────────────────────────────────────────────────────────────────
@@ -1395,7 +1400,8 @@ def vectorized_pt_mcmc_sdp_estimation(bn, target, target_value, patient, thresho
             }
             full_ev = {**patient, **sample_h}
             p = get_exact_target_posterior_O1(bn, target, target_value, full_ev)
-            decision_cache[key] = (p >= threshold)
+            #decision_cache[key] = (p >= threshold)
+            decision_cache[key] = ((p >= threshold) == initial_decision_positive)
         if decision_cache[key]:
             count_same += 1
 

@@ -607,11 +607,11 @@ def benchmark_growing_partition(bif_file, max_steps=30):
             gc.collect()
             try:
                 real_sdp_chen, exact_time_chen, exact_success_chen = run_for_time(
-                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    chen_sdp_exact, bn, target, target_value, patient,
                     0.5, partitions
                 )
                 peak_traced_mb_chen, peak_rss_mb_chen = run_for_memory(
-                    fast_broadcast_sdp, bn, target, target_value, patient,
+                    chen_sdp_exact, bn, target, target_value, patient,
                     0.5, partitions)
 
                 row['exact_time_sec_chen'] = exact_time_chen

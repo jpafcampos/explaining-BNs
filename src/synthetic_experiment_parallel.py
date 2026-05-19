@@ -196,8 +196,8 @@ def run_for_time(func, *args, timeout_sec=1800, **kwargs):
         if hasattr(result, '__iter__') and not isinstance(result, (list, dict, set, str)):
             result = list(result)
             
-        gc.collect()
         elapsed = time.perf_counter() - start_time
+        gc.collect()
         return result, elapsed, True
         
     except TimeoutException:
@@ -612,7 +612,7 @@ def process_single_file(args):
                     print(f"          [Chen] [TIMEOUT]: Exceeded time budget of 1800 sec")
                 else:
                     chen_status = 'FAILED'
-                print(f"          [Chen] [FAILED]: Crashed at {peak_traced_mb_chen:.2f} MB (Python) / {peak_rss_mb_chen:.2f} MB (RSS)")
+                    print(f"          [Chen] [FAILED]")
 
             # ========================================================
             # MCMC EVALUATION
@@ -734,7 +734,10 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     TARGET_BUCKETS = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
 
-    SIZES_TO_RUN = [20, 50, 100, 200]
+    #SIZES_TO_RUN = [20, 50, 100, 200]
+    SIZES_TO_RUN = [20, 100]
+    #SIZES_TO_RUN = [50, 200]
+    
     DENSITIES_TO_RUN = [2, 6]
 
     # Build args list for each file

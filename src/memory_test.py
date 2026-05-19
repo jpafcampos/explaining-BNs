@@ -377,7 +377,7 @@ from pgmpy.utils import get_example_model
 
 def run_for_time(func, *args, **kwargs):
     """Runs natively at maximum speed to record pure execution time."""
-    start_time = time.time()
+    start_time = time.perf_counter()
     try:
         result = func(*args, **kwargs)
         return result, (time.time() - start_time), True

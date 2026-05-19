@@ -92,127 +92,6 @@ def exact_sdp_bruteforce(model, D, d_value, evidence, threshold):
 
 
 
-def optimized_tree_search_sdp(model, D, d_value, evidence, threshold, partitions):
-    """
-    Highly optimized exact SDP computation using NumPy Vectorization. 
-    Removes iterative dictionary loops to achieve C-level speeds.
-    """
-    inference = VariableElimination(model)
-    #approximate inference
-    #inference = ApproxInference(model)
-    
-    # Get opposite state for D
-    d_states = model.get_cpds(D).state_names[D]
-    d_index = d_states.index(d_value)
-    not_d_value = d_states[1] if d_index == 0 else d_states[0]
-
-    # 1. Compute Initial Log-Odds and Lambda
-    initial_dist = inference.query(variables=[D], evidence=evidence, show_progress=False)
-    p_d_e = initial_dist.get_value(**{D: d_value})
-    p_not_d_e = initial_dist.get_value(**{D: not_d_value})
-    
-    print(f"Initial P(D|e): {p_d_e:.4f}, P(not D|e): {p_not_d_e:.4f}")
-    
-    log_O_d_e = math.log(p_d_e / p_not_d_e) if p_not_d_e > 0 else float('inf')
-    lambda_threshold = math.log(threshold / (1 - threshold))
-    current_decision_positive = (log_O_d_e >= lambda_threshold)
-    
-    # 2. Vectorized Precomputation of probabilities and weights
-    partitions_data = []
-    
-    for s_i in partitions:
-        # Query joint distribution of S_i given D and e
-        # This computes the entire joint distribution table at once
-        print(f"Precomputing for partition: {s_i}")
-        dist_given_d = inference.query(variables=s_i, evidence={**evidence, D: d_value}, show_progress=False)
-        print("computed query distribution given D")
-        dist_given_not_d = inference.query(variables=s_i, evidence={**evidence, D: not_d_value}, show_progress=False)
-        print("computed query distribution given not D")
-        
-        # Extract raw NumPy arrays and apply a small epsilon to prevent log(0)
-        p_d_vals = np.maximum(dist_given_d.values.astype(np.float32), 1e-12)
-        p_not_d_vals = np.maximum(dist_given_not_d.values.astype(np.float32), 1e-12)
-
-        #mask = (p_d_vals > 1e-8) | (p_not_d_vals > 1e-8)
-        #p_d_vals = p_d_vals[mask]
-        #p_not_d_vals = p_not_d_vals[mask]
-        
-        # Vectorized calculation of weights for ALL states simultaneously
-        w_vals = np.log(p_d_vals / p_not_d_vals)
-        
-        # Extract max and min bounds instantly
-        max_w = np.max(w_vals)
-        min_w = np.min(w_vals)
-        
-        # Flatten the arrays to 1D lists for lightning-fast iteration in the DFS
-        partitions_data.append({
-            'w_flat': w_vals.flatten(),
-            'p_d_flat': p_d_vals.flatten(),
-            'p_not_d_flat': p_not_d_vals.flatten(),
-            'max_w': max_w,
-            'min_w': min_w
-        })
-
-    # Sort partitions by max variance for optimal early pruning
-    partitions_data.sort(key=lambda x: x['max_w'] - x['min_w'], reverse=True)
-
-    # 3. Precompute Suffix Sums for O(1) bound lookups
-    n_parts = len(partitions_data)
-    suffix_max = [0.0] * (n_parts + 1)
-    suffix_min = [0.0] * (n_parts + 1)
-    
-    for i in range(n_parts - 1, -1, -1):
-        suffix_max[i] = suffix_max[i+1] + partitions_data[i]['max_w']
-        suffix_min[i] = suffix_min[i+1] + partitions_data[i]['min_w']
-
-    # 4. Lightning-Fast DFS
-    def dfs(depth, current_log_odds, prob_cond_d, prob_cond_not_d):
-        # O(1) Bound calculations
-        upper_bound = current_log_odds + suffix_max[depth]
-        lower_bound = current_log_odds + suffix_min[depth]
-        
-        # O(1) Probability calculation leveraging conditional independence
-        def get_prob_q():
-            return (p_d_e * prob_cond_d) + (p_not_d_e * prob_cond_not_d)
-
-        # --- PRUNING LOGIC ---
-        if current_decision_positive:
-            if lower_bound >= lambda_threshold: return get_prob_q()
-            if upper_bound < lambda_threshold: return 0.0
-        else:
-            if upper_bound < lambda_threshold: return get_prob_q()
-            if lower_bound >= lambda_threshold: return 0.0
-        
-        # Leaf node evaluation
-        if depth == n_parts:
-            is_positive = current_log_odds >= lambda_threshold
-            if is_positive == current_decision_positive:
-                return get_prob_q()
-            return 0.0
-            
-        # Recursive Step passing state as arguments
-        total_sdp = 0.0
-        part_data = partitions_data[depth]
-        
-        # Zip through the flat arrays. This replaces the slow dictionary mapping.
-        for w, p_d, p_not_d in zip(part_data['w_flat'], part_data['p_d_flat'], part_data['p_not_d_flat']):
-            # If the probability is effectively zero, skip the branch to save time
-            if p_d < 1e-10 and p_not_d < 1e-10:
-                continue
-                
-            total_sdp += dfs(
-                depth + 1,
-                current_log_odds + w,
-                prob_cond_d * p_d,
-                prob_cond_not_d * p_not_d
-            )
-            
-        return total_sdp
-
-    # Start DFS with base probabilities of 1.0 (multiplicative identity)
-    return dfs(0, log_O_d_e, 1.0, 1.0)
-
-# Replace the get_exact_target_posterior_O1 call with a direct Markov blanket computation
 def get_initial_posterior(model, D, d_value, evidence):
     """
     Computes P(D=d | evidence) using only the Markov blanket of D.
@@ -254,6 +133,10 @@ def get_initial_posterior(model, D, d_value, evidence):
             idx_not_d = cpd.state_names[D].index(not_d_val)
             return float(cpd.values[idx_d]), float(cpd.values[idx_not_d])
         return 0.5, 0.5  # truly unknown
+    
+'''
+Fast version, trading-off space for time by materialising joint tensors per partition S_i
+'''
 
 def fast_broadcast_sdp(model, D, d_value, evidence, threshold, partitions):
     #print(f"    [SDP] called with {len(partitions)} partitions, "
@@ -696,8 +579,7 @@ def _maxmin_eliminate_log(log_factors, vars_to_eliminate, mode):
 # ---------------------------------------------------------------------------
 def chen_sdp_exact(model, D, d_value, evidence, threshold, partitions):
     """
-    Exact SDP via Chen et al. (2014, §5.2). Same signature as
-    ``fast_broadcast_sdp``.
+    Exact SDP via Chen et al. (2014)
 
     Parameters
     ----------
@@ -871,7 +753,7 @@ def chen_sdp_exact(model, D, d_value, evidence, threshold, partitions):
         lb = current_log_odds + suffix_min[depth]
         prob_q = lambda: p_d_e * prob_cond_d + p_not_d_e * prob_cond_not_d
 
-        # Bound-based pruning (same shape as fast_broadcast_sdp)
+        # Bound-based pruning 
         if current_decision_positive:
             if lb >= lambda_threshold:
                 return prob_q()

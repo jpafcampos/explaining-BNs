@@ -2,10 +2,10 @@
 #SBATCH --job-name=sdp__parallel_experiment
 #SBATCH --output=results/logs/parallel_experiment_%j.out
 #SBATCH --error=results/logs/parallel_experiment_%j.err
-#SBATCH --time=2:00:00
+#SBATCH --time=30:00:00
 #SBATCH --ntasks=2
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=60G
+#SBATCH --mem=160G
 
 source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs

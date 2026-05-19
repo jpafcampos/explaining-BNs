@@ -152,16 +152,67 @@ def select_optimal_target_node(bn):
 
 
 
-def run_for_time(func, *args, **kwargs):
+def elapsed_time(func, *args, **kwargs):
     """Runs natively at maximum speed to record pure execution time."""
-    start_time = time.time()
+    start_time = time.perf_counter()
     try:
         result = func(*args, **kwargs)
-        return result, (time.time() - start_time), True
+        return result, (time.perf_counter() - start_time), True
     except Exception as e:
-        print(f"\n[!] run_for_time: {func.__name__} failed with "
+        print(f"\n[!] elapsed_time: {func.__name__} failed with "
               f"{type(e).__name__}: {e}")
-        return None, (time.time() - start_time), False
+        return None, (time.perf_counter() - start_time), False
+
+import time
+import gc
+import signal
+
+# 1. Define a custom exception to catch the timeout cleanly
+class TimeoutException(Exception):
+    pass
+
+# 2. Define the handler that raises the exception when time is up
+def _timeout_handler(signum, frame):
+    raise TimeoutException("Execution exceeded the time budget.")
+
+def run_for_time(func, *args, timeout_sec=1800, **kwargs):
+    """Runs natively with a strict time budget and memory cleanup."""
+    
+    # Register the signal handler
+    signal.signal(signal.SIGALRM, _timeout_handler)
+    
+    gc.collect()
+    start_time = time.perf_counter()
+    
+    try:
+        # 3. Start the countdown alarm (e.g., 1800 seconds)
+        signal.alarm(timeout_sec)
+        
+        result = func(*args, **kwargs)
+        
+        # 4. If the function finishes in time, cancel the alarm IMMEDIATELY
+        signal.alarm(0)
+        
+        if hasattr(result, '__iter__') and not isinstance(result, (list, dict, set, str)):
+            result = list(result)
+            
+        gc.collect()
+        elapsed = time.perf_counter() - start_time
+        return result, elapsed, True
+        
+    except TimeoutException:
+        # The alarm went off before the function finished
+        print(f"\n[!] TIMEOUT: {func.__name__} aborted after {timeout_sec} seconds.")
+        # We know exactly how long it took: the timeout limit
+        return None, float(timeout_sec), False
+        
+    except Exception as e:
+        print(f"\n[!] run_for_time: {func.__name__} failed with {type(e).__name__}: {e}")
+        return None, (time.perf_counter() - start_time), False
+        
+    finally:
+        # 5. Safety catch: Guarantee the alarm is turned off no matter what happens
+        signal.alarm(0)
     
 def run_for_memory(func, *args, **kwargs):
     """
@@ -507,7 +558,7 @@ def process_single_file(args):
             print(f"\n  -> Benchmarking found patient for bucket {target_sdp} (Exact: {exact_sdp:.4f})")
             
             # ========================================================
-            # EXACT SDP EVALUATION
+            # EXACT SDP EVALUATION - VECTORIZED VERSION, HIGH MEMORY
             # ========================================================
             partitions = get_partitions(bn, hidden_vars, target, patient)
             print(f"       -> Biggest partition size: {max(len(p) for p in partitions)} hidden variables")
@@ -520,7 +571,7 @@ def process_single_file(args):
             #log_mem(f"After Exact SDP Time Test: {os.path.basename(file)}")
             
             # Pass 2: Memory
-            gc.collect() # Clean up before the memory test
+            #gc.collect() # Clean up before the memory test
             exact_mem_mb_python, exact_mem_mb_rss = run_for_memory(
                 fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
             )
@@ -531,6 +582,37 @@ def process_single_file(args):
                 print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb_python:.2f} MB (Python) / {exact_mem_mb_rss:.2f} MB (RSS)")
             else:
                 print(f"          [FAILED]: Crashed at {exact_mem_mb_python:.2f} MB (Python) / {exact_mem_mb_rss:.2f} MB (RSS)")
+
+            # ========================================================
+            # EXACT SDP EVALUATION - ACCURATE CHEN PAPER IMPLEMENTATION
+            # ========================================================
+            #gc.collect() # Clean up before the test, which can be memory-intensive
+
+            exact_sdp_chen, exact_time_chen, exact_success_chen = run_for_time(
+                chen_sdp_exact, bn, target, target_value, patient,
+                DECISION_THRESHOLD, partitions
+            )
+
+            if exact_success_chen:
+                peak_traced_mb_chen, peak_rss_mb_chen = run_for_memory(
+                    chen_sdp_exact, bn, target, target_value, patient,
+                    DECISION_THRESHOLD, partitions
+                )
+            else:
+                peak_traced_mb_chen, peak_rss_mb_chen = None, None
+
+            gc.collect() # Clean up after the test
+            if exact_success_chen:
+                chen_status = 'OK'
+                print(f"          [Chen] Time: {exact_time_chen:.4f} sec | Peak Memory: {peak_traced_mb_chen:.2f} MB (Python) / {peak_rss_mb_chen:.2f} MB (RSS)")
+                print(f"          [Chen] Exact SDP: {exact_sdp_chen:.4f}")
+            else:
+                if exact_time_chen >= 1800:
+                    chen_status = 'TIMEOUT'
+                    print(f"          [Chen] [TIMEOUT]: Exceeded time budget of 1800 sec")
+                else:
+                    chen_status = 'FAILED'
+                print(f"          [Chen] [FAILED]: Crashed at {peak_traced_mb_chen:.2f} MB (Python) / {peak_rss_mb_chen:.2f} MB (RSS)")
 
             # ========================================================
             # MCMC EVALUATION
@@ -592,7 +674,7 @@ def process_single_file(args):
             pt_mcmc_mean = np.mean(pt_mcmc_estimates)
             pt_mcmc_avg_time = np.mean(pt_mcmc_times)
             pt_mcmc_variance = np.var(pt_mcmc_estimates)
-            print(f"               -> Mean PT: {pt_mcmc_mean}")
+            print(f"               -> Mean PT: {pt_mcmc_mean}, Error PT: {abs(exact_sdp - pt_mcmc_mean):.4f}")
             # Pass 2: Peak Memory
             gc.collect() # Clean up before the memory test
             pt_mcmc_mem_mb_python, pt_mcmc_mem_mb_rss = run_for_memory(
@@ -620,6 +702,11 @@ def process_single_file(args):
                 'Exact_Time_sec': exact_time,
                 'Exact_Peak_Memory_MB_Python': exact_mem_mb_python,
                 'Exact_Peak_Memory_MB_RSS': exact_mem_mb_rss,
+                'Exact_SDP_Original': exact_sdp_chen,
+                'Exact_Time_sec_Original': exact_time_chen,
+                'Exact_Peak_Memory_MB_Python_Original': peak_traced_mb_chen,
+                'Exact_Peak_Memory_MB_RSS_Original': peak_rss_mb_chen,
+                'Exact_SDP_Original_Status': chen_status,
                 'MCMC_Mean_SDP': mcmc_mean,
                 'MCMC_Variance': mcmc_variance,
                 'MCMC_Avg_Time_sec': mcmc_avg_time,
@@ -642,13 +729,13 @@ def process_single_file(args):
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", n_workers=4):
     bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
     
-    H_RATIOS = [0.1] # Hidden variable ratios to test
+    H_RATIOS = [0.25, 0.50] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
-    TARGET_BUCKETS = [1.0]
-    MCMC_TRIALS = 5
+    TARGET_BUCKETS = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    MCMC_TRIALS = 10
 
-    SIZES_TO_RUN = [20]
-    DENSITIES_TO_RUN = [2]
+    SIZES_TO_RUN = [20, 50, 100, 200]
+    DENSITIES_TO_RUN = [2, 6]
 
     # Build args list for each file
     args_list = [

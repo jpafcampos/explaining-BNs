@@ -557,7 +557,7 @@ def process_single_file(args):
             bn, target, target_value, DECISION_THRESHOLD,
             n_evidence,
             buckets=TARGET_BUCKETS,
-            batch_size=400,
+            batch_size=1000,
             max_batches=2,
             max_tensor_entries=MAX_TENSOR_ALLOWED,
         )

@@ -782,10 +782,29 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
     patient_idx = {v: state_index[v][val] for v, val in patient.items()}
     current_idx = dict(patient_idx)
 
-    ve_init = VariableElimination(bn)
-    init_post = float(ve_init.query(variables=[target], evidence=patient,
-                                    show_progress=False).get_value(**{target: target_value}))
-    initial_decision_positive = (init_post >= threshold)
+    #ve_init = VariableElimination(bn)
+    #init_post = float(ve_init.query(variables=[target], evidence=patient,
+    #                                show_progress=False).get_value(**{target: target_value}))
+    #initial_decision_positive = (init_post >= threshold)
+
+    #def _mb_posterior(state_val):
+    #    log_p = 0.0
+    #    for node in [target] + list(bn.get_children(target)):
+    #        idx = tuple(
+    #            (state_index[target][state_val] if v == target else current_idx[v])
+    #            for v in cpd_vars[node]
+    #        )
+    #        p = cpd_array[node][idx]
+    #        if p <= 0:
+    #            return float('-inf')
+    #        log_p += math.log(p)
+    #    return log_p
+#
+    #log_ps = {s: _mb_posterior(s) for s in target_states_list}
+    #max_lp = max(v for v in log_ps.values() if v != float('-inf'))
+    #denom  = sum(math.exp(v - max_lp) for v in log_ps.values() if v != float('-inf'))
+    #init_post = math.exp(log_ps.get(target_value, float('-inf')) - max_lp) / denom
+    #initial_decision_positive = (init_post >= threshold)
 
     # ──────────────────────────────────────────────────────────────────────
     # 2) Seed hidden vars from a single likelihood-weighted draw
@@ -951,8 +970,8 @@ def fast_mcmc_sdp_estimation_new(bn, target, target_value, patient, threshold,
             }
             full_ev = {**patient, **sample_h}
             p = get_exact_target_posterior_O1(bn, target, target_value, full_ev)
-            #decision_cache[key] = (p >= threshold)
-            decision_cache[key] = ((p >= threshold) == initial_decision_positive)
+            decision_cache[key] = (p >= threshold)
+            #decision_cache[key] = ((p >= threshold) == initial_decision_positive)
         if decision_cache[key]:
             count_same += 1
 
@@ -1043,10 +1062,11 @@ def pt_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
     swap_attempts = np.zeros(n_pairs, dtype=int)
     swap_accepts  = np.zeros(n_pairs, dtype=int)
 
-    ve_init = VariableElimination(bn)
-    init_post = float(ve_init.query(variables=[target], evidence=patient,
-                                    show_progress=False).get_value(**{target: target_value}))
-    initial_decision_positive = (init_post >= threshold)
+    # ============ COMPUTE INITIAL DECISION FOR THE GENERAL CASE =================
+    #ve_init = VariableElimination(bn)
+    #init_post = float(ve_init.query(variables=[target], evidence=patient,
+    #                                show_progress=False).get_value(**{target: target_value}))
+    #initial_decision_positive = (init_post >= threshold)
 
     # ── Main loop ─────────────────────────────────────────────────────────────
     total_iters      = burn_in + n_samples * thinning
@@ -1143,8 +1163,8 @@ def pt_mcmc_sdp_estimation(bn, target, target_value, patient, threshold,
             full_ev = {**patient, **sample_h}
             p       = get_exact_target_posterior_O1(
                           bn, target, target_value, full_ev)
-            #decision_cache[key] = (p >= threshold)
-            decision_cache[key] = ((p >= threshold) == initial_decision_positive)
+            decision_cache[key] = (p >= threshold)
+            #decision_cache[key] = ((p >= threshold) == initial_decision_positive)
         if decision_cache[key]:
             count_same += 1
 
@@ -1186,10 +1206,11 @@ def vectorized_pt_mcmc_sdp_estimation(bn, target, target_value, patient, thresho
     n_target_states    = len(target_states_list)
     target_state_idx   = list(range(n_target_states))
 
-    ve_init = VariableElimination(bn)
-    init_post = float(ve_init.query(variables=[target], evidence=patient,
-                                    show_progress=False).get_value(**{target: target_value}))
-    initial_decision_positive = (init_post >= threshold)
+    # ============= COMPUTE INITIAL DECISION FOR THE GENERAL CASE =================
+    #ve_init = VariableElimination(bn)
+    #init_post = float(ve_init.query(variables=[target], evidence=patient,
+    #                                show_progress=False).get_value(**{target: target_value}))
+    #initial_decision_positive = (init_post >= threshold)
 
     # ──────────────────────────────────────────────────────────────────────
     # 1) Integer-indexed view of the network (same as plain MCMC)
@@ -1400,8 +1421,8 @@ def vectorized_pt_mcmc_sdp_estimation(bn, target, target_value, patient, thresho
             }
             full_ev = {**patient, **sample_h}
             p = get_exact_target_posterior_O1(bn, target, target_value, full_ev)
-            #decision_cache[key] = (p >= threshold)
-            decision_cache[key] = ((p >= threshold) == initial_decision_positive)
+            decision_cache[key] = (p >= threshold)
+            #decision_cache[key] = ((p >= threshold) == initial_decision_positive)
         if decision_cache[key]:
             count_same += 1
 

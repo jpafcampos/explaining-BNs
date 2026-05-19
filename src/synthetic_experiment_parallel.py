@@ -527,6 +527,13 @@ def process_single_file(args):
         if n_nodes == 200 and n_hidden > 100:
             continue
 
+        # ==== !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # ==== !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if n_nodes == 100 and density == 2:
+            continue
+        # ==== !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # ==== !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         n_evidence = len(available_nodes) - n_hidden
         #evidence_vars = [n for n in available_nodes if n not in hidden_vars]
         

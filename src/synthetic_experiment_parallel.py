@@ -331,6 +331,27 @@ def estimate_ve_cost_min_fill(bn, evidence, target):
         
     return max_tensor_size
 
+def compute_initial_posterior(bn, target, target_value, patient):
+    """
+    Pr(target=target_value | patient) via ancestral-subgraph VE.
+    Uses the minimal subgraph to avoid pgmpy's 52-variable einsum limit
+    on dense networks. Returns None on failure.
+    """
+    try:
+        relevant = list(patient.keys()) + [target]
+        ancestral = bn.get_ancestral_graph(relevant)
+        sub = BayesianNetwork(ancestral.edges())
+        sub.add_nodes_from(ancestral.nodes())
+        for node in sub.nodes():
+            sub.add_cpds(bn.get_cpds(node))
+        result = VariableElimination(sub).query(
+            variables=[target], evidence=patient,
+            elimination_order='MinFill', show_progress=False
+        )
+        return float(result.get_value(**{target: target_value}))
+    except Exception:
+        return None
+
 def memory_aware_random_harvester(bn, target_node, target_value, decision_threshold,
                                             n_evidence,
                                             buckets=[0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
@@ -414,10 +435,9 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
             try:
                 #print("-> Trying base distribution query...")
                 #print(f"--> Estimated Max Tensor VE: {max_tensor_ve}")
-                base_dist = base_inference.query(
-                    variables=[target_node], evidence=temp_patient, elimination_order='MinFill', show_progress=False
-                )
-                if base_dist.get_value(**{target_node: target_value}) < decision_threshold:
+                base_dist = compute_initial_posterior(bn, target_node, target_value, temp_patient)
+                
+                if base_dist < decision_threshold:
                     continue  # legitimate rejection, not a failure
             except (ValueError, MemoryError) as e:
                 inference_failures += 1
@@ -474,7 +494,7 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
         'wall_hits': wall_hits,
         'attempts_ok': attempts_ok,
         'sdp_failures': sdp_failures,
-        'inference_failures': inference_failures,
+        'inference_failures': inference_failures
     }
 
 
@@ -523,17 +543,6 @@ def process_single_file(args):
         
         n_hidden = max(1, int(len(available_nodes) * H_RATIO))
 
-        # can not process more than 100 hidden variables
-        if n_nodes == 200 and n_hidden > 100:
-            continue
-
-        # ==== !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # ==== !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if n_nodes == 100 and density == 2:
-            continue
-        # ==== !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # ==== !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         n_evidence = len(available_nodes) - n_hidden
         #evidence_vars = [n for n in available_nodes if n not in hidden_vars]
         
@@ -568,6 +577,12 @@ def process_single_file(args):
             # EXACT SDP EVALUATION - VECTORIZED VERSION, HIGH MEMORY
             # ========================================================
             partitions = get_partitions(bn, hidden_vars, target, patient)
+            number_of_subnetworks = len(partitions)
+            max_partition_size = max(len(p) for p in partitions)
+            max_tensor_size = compute_max_tensor_size(bn, partitions)
+            base_dist = compute_initial_posterior(bn, target, target_value, patient)
+            distance_to_threshold = abs(base_dist - DECISION_THRESHOLD)
+
             print(f"       -> Biggest partition size: {max(len(p) for p in partitions)} hidden variables")
             print(f"       -> Running Exact SDP...")
             
@@ -705,6 +720,10 @@ def process_single_file(args):
                 'Target_Bucket': target_sdp,
                 'Target_Node': target,
                 'Target_Value': target_value,
+                'Number_Subnetworks': number_of_subnetworks,
+                'Max_Partition_Size': max_partition_size,
+                'Max_Tensor_Size': max_tensor_size,
+                'Threshold_Distance': distance_to_threshold,
                 'Exact_SDP': exact_sdp,
                 'Exact_Time_sec': exact_time,
                 'Exact_Peak_Memory_MB_Python': exact_mem_mb_python,

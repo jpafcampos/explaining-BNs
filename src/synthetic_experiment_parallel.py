@@ -761,7 +761,7 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     MCMC_TRIALS = 10
 
     #SIZES_TO_RUN = [20, 50, 100, 200]
-    SIZES_TO_RUN = [20, 100]
+    SIZES_TO_RUN = [20, 50, 100]
     #SIZES_TO_RUN = [50, 200]
     
     DENSITIES_TO_RUN = [2, 6]
@@ -796,7 +796,7 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--bif-dir', type=str, default='./generated_bif_files/')
+    parser.add_argument('--bif-dir', type=str, default='./bif_files_to_run/')
     parser.add_argument('--output', type=str, default='results/parallel_output.csv')
     parser.add_argument('--n-workers', type=int, default=1)
     args = parser.parse_args()

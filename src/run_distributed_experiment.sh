@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=sdp__parallel_experiment
+#SBATCH --job-name=sdp_parallel_experiment
 #SBATCH --output=results/logs/parallel_experiment_%j.out
 #SBATCH --error=results/logs/parallel_experiment_%j.err
 #SBATCH --time=20:00:00
@@ -16,6 +16,6 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
 python synthetic_experiment_parallel.py \
-    --bif-dir ./generated_bif_files/ \
+    --bif-dir ./bif_files_to_run/ \
     --output results/final_results_$SLURM_JOB_ID.csv \
     --n-workers 1

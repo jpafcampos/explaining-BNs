@@ -593,12 +593,12 @@ def process_single_file(args):
             #log_mem(f"After Exact SDP Time Test: {os.path.basename(file)}")
             
             # Pass 2: Memory
-            #gc.collect() # Clean up before the memory test
+            now = time.perf_counter()
             exact_mem_mb_python, exact_mem_mb_rss = run_for_memory(
                 fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
             )
-            #log_mem(f"After Exact SDP Memory Test: {os.path.basename(file)}")
-            gc.collect() # Clean up after the memory test
+
+            print(f"          Time elapsed during memory test: {time.perf_counter() - now:.4f} sec")
 
             if exact_success:
                 print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb_python:.2f} MB (Python) / {exact_mem_mb_rss:.2f} MB (RSS)")
@@ -623,11 +623,13 @@ def process_single_file(args):
             else:
                 peak_traced_mb_chen, peak_rss_mb_chen = None, None
 
-            gc.collect() # Clean up after the test
+            now = time.perf_counter()
+
             if exact_success_chen:
                 chen_status = 'OK'
                 print(f"          [Chen] Time: {exact_time_chen:.4f} sec | Peak Memory: {peak_traced_mb_chen:.2f} MB (Python) / {peak_rss_mb_chen:.2f} MB (RSS)")
                 print(f"          [Chen] Exact SDP: {exact_sdp_chen:.4f}")
+                print(f"          [Chen] Time elapsed during memory test: {time.perf_counter() - now:.4f} sec")
             else:
                 if exact_time_chen >= 1800:
                     chen_status = 'TIMEOUT'
@@ -635,6 +637,7 @@ def process_single_file(args):
                 else:
                     chen_status = 'FAILED'
                     print(f"          [Chen] [FAILED]")
+
 
             # ========================================================
             # MCMC EVALUATION

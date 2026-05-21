@@ -615,6 +615,8 @@ def process_single_file(args):
                 DECISION_THRESHOLD, partitions
             )
 
+            now = time.perf_counter()
+            
             if exact_success_chen:
                 peak_traced_mb_chen, peak_rss_mb_chen = run_for_memory(
                     chen_sdp_exact, bn, target, target_value, patient,
@@ -623,7 +625,6 @@ def process_single_file(args):
             else:
                 peak_traced_mb_chen, peak_rss_mb_chen = None, None
 
-            now = time.perf_counter()
 
             if exact_success_chen:
                 chen_status = 'OK'

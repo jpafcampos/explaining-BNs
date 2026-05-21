@@ -128,3 +128,72 @@ def get_decision_flipping_scenarios(model, D, d_value, evidence, threshold):
         'threshold': threshold,
         'flipping_scenarios': flipped_scenarios
     }
+
+def classify_partitions(model, evidence, D, d_value, H, threshold):
+    
+    partitions = get_partitions(model, H, D, evidence)
+    inference = VariableElimination(model)
+    
+    # Get opposite state for D
+    d_states = model.get_cpds(D).state_names[D]
+    d_index = d_states.index(d_value)
+    not_d_value = d_states[1] if d_index == 0 else d_states[0]
+    
+    # 1. Compute Initial Log-Odds identically to the SDP function
+    dist_D = inference.query(variables=[D], evidence=evidence, show_progress=False)
+    p_d_e = dist_D.get_value(**{D: d_value})
+    p_not_d_e = dist_D.get_value(**{D: not_d_value})
+    
+    log_O_d_e = math.log(p_d_e / p_not_d_e) if p_not_d_e > 0 else float('inf')
+    lambda_threshold = math.log(threshold / (1 - threshold))
+    is_positive_decision = (log_O_d_e >= lambda_threshold)
+    
+    evidence_d = evidence.copy()
+    evidence_d[D] = d_value
+    
+    evidence_not_d = evidence.copy()
+    evidence_not_d[D] = not_d_value
+    
+    classifications = {}
+    
+    # 2. Evaluate each partition's bounds
+    for partition in partitions:
+        # Query the joint distribution
+        dist_S_given_d = inference.query(variables=partition, evidence=evidence_d, show_progress=False).values
+        dist_S_given_not_d = inference.query(variables=partition, evidence=evidence_not_d, show_progress=False).values
+        
+        p_s_d = np.maximum(dist_S_given_d, 1e-12)
+        p_s_not_d = np.maximum(dist_S_given_not_d, 1e-12)
+        
+        log_weights = np.log(p_s_d / p_s_not_d)
+        
+        # Extract the worst-case and best-case log-odds impact
+        w_min = np.min(log_weights)
+        w_max = np.max(log_weights)
+        swing = w_max - w_min
+        
+        # 3. Classify for Natural Language Generation in medical diagnostic systems
+        if is_positive_decision:
+            if log_O_d_e + w_min < lambda_threshold:
+                category = "Potential Reverser"
+                explanation = "Some combination of these variables could change the current diagnosis."
+            else:
+                category = "Stable"
+                explanation = "This group of variables cannot change the diagnosis."
+        else:
+            if log_O_d_e + w_max >= lambda_threshold:
+                category = "Potential Reverser"
+                explanation = "Some combination of these variables could change the diagnosis."
+            else:
+                category = "Stable"
+                explanation = "This group of variables is not enough to change the current diagnosis."
+                
+        classifications[tuple(partition)] = {
+            "category": category,
+            "explanation": explanation,
+            "w_min": w_min,
+            "w_max": w_max,
+            "swing": swing
+        }
+        
+    return classifications

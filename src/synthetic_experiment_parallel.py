@@ -765,8 +765,8 @@ def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_b
     MCMC_TRIALS = 10
 
     #SIZES_TO_RUN = [20, 50, 100, 200]
-    SIZES_TO_RUN = [20, 50, 100]
-    #SIZES_TO_RUN = [50, 200]
+    #SIZES_TO_RUN = [20, 50, 100]
+    SIZES_TO_RUN = [50, 200]
     
     DENSITIES_TO_RUN = [2, 6]
 

@@ -400,6 +400,10 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
     batch_count = 0
 
     while any(v is None for v in unfilled_buckets.values()) and batch_count < max_batches:
+        # if 5 or more buckets are filled, its enough
+        if sum(1 for v in unfilled_buckets.values() if v is not None) >= 5 and batch_count > 0:
+            print(f"Early exit: filled {sum(1 for v in unfilled_buckets.values() if v is not None)} buckets")
+            break
         batch_count += 1
         print(f"Generating batch {batch_count}/{max_batches} of {batch_size} random realities...")
 
@@ -557,7 +561,7 @@ def process_single_file(args):
             bn, target, target_value, DECISION_THRESHOLD,
             n_evidence,
             buckets=TARGET_BUCKETS,
-            batch_size=1000,
+            batch_size=500,
             max_batches=2,
             max_tensor_entries=MAX_TENSOR_ALLOWED,
         )

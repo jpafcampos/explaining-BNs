@@ -11,7 +11,7 @@ import time
 
 import networkx as nx
 
-MCMC_TRIALS = 1
+MCMC_TRIALS = 5
 
 def _moral_graph(bn):
     G = nx.Graph()

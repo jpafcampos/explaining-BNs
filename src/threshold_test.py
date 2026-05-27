@@ -194,94 +194,6 @@ def inject_determinism(bn, sparsity=0.4):
     print(f"Injected ~{sparsity*100}% sparsity into the network CPTs.")
     return bn
 
-def build_growing_partition_benchmark(bn, target, evidence_vars_pool, patient_states, max_steps=30):
-    """
-    Progressively adds hidden variables to force the biggest partition to grow by exactly 1.
-    
-    Starting with all available_nodes as evidence and 0 hidden variables,
-    at each step we move one evidence variable to the hidden set such that
-    it joins the current biggest partition.
-    
-    Returns a list of (hidden_vars, evidence_patient) tuples to benchmark.
-    """
-    all_nodes = set(bn.nodes())
-    available_nodes = [n for n in all_nodes if n != target]
-    
-    # Start with ALL available as evidence (0 hidden variables)
-    evidence = {v: patient_states[v] for v in available_nodes}
-    hidden = []
-    
-    configurations = []
-    
-    for step in range(max_steps):
-        partitions = get_partitions(bn, hidden, target, evidence)
-        
-        if not partitions:
-            # No hidden variables yet — pick any node connected to target
-            # via active paths given current evidence
-            candidates = list(evidence.keys())
-        else:
-            # Find the current biggest partition
-            biggest_partition = max(partitions, key=len)
-            biggest_size = len(biggest_partition)
-            
-            # We want to find an evidence variable that, when moved to hidden,
-            # will be d-connected to biggest_partition (joining it)
-            candidates = []
-            for candidate in list(evidence.keys()):
-                # Trial: move this candidate to hidden, see what happens
-                trial_hidden = hidden + [candidate]
-                trial_evidence = {k: v for k, v in evidence.items() if k != candidate}
-                
-                trial_partitions = get_partitions(bn, trial_hidden, target, trial_evidence)
-                if not trial_partitions:
-                    continue
-                
-                new_biggest = max(trial_partitions, key=len)
-                new_biggest_size = len(new_biggest)
-                
-                # We want the biggest partition to grow by exactly 1
-                if new_biggest_size == biggest_size + 1:
-                    candidates.append(candidate)
-        
-        if not candidates:
-            print(f"Step {step}: no candidate variable grows the biggest partition. Stopping.")
-            break
-        
-        # Pick the first valid candidate
-        chosen = candidates[0]
-        hidden.append(chosen)
-        del evidence[chosen]
-        
-        new_partitions = get_partitions(bn, hidden, target, evidence)
-        new_biggest = max(new_partitions, key=len) if new_partitions else []
-        new_biggest_size = len(new_biggest)
-        
-        # Constrained treewidth: H eliminated last (bounds Algorithm 1 globally)
-        tw_all_H = constrained_treewidth(
-            bn, eliminate_last=hidden, evidence_vars=set(evidence.keys())
-        )
-        # Constrained treewidth: only the biggest partition last (per-bucket cost)
-        tw_biggest = constrained_treewidth(
-            bn, eliminate_last=new_biggest, evidence_vars=set(evidence.keys())
-        )
-
-
-        print(f"Step {step+1:3d}: added '{chosen}' → "
-              f"n_hidden={len(hidden)}, biggest_partition={new_biggest_size}, "
-              f"tw(H)={tw_all_H}, tw(biggest)={tw_biggest}")
-        
-        configurations.append({
-            'step': step + 1,
-            'n_hidden': len(hidden),
-            'biggest_partition_size': new_biggest_size,
-            'constrained_treewidth_H': tw_all_H,
-            'constrained_treewidth_biggest': tw_biggest,
-            'hidden_vars': list(hidden),
-            'patient': dict(evidence),
-        })
-    
-    return configurations
 
 import threading
 import psutil
@@ -437,7 +349,27 @@ import gc
 import random
 from pgmpy.inference import VariableElimination
 
-
+def compute_initial_posterior(bn, target, target_value, patient):
+    """
+    Pr(target=target_value | patient) via ancestral-subgraph VE.
+    Uses the minimal subgraph to avoid pgmpy's 52-variable einsum limit
+    on dense networks. Returns None on failure.
+    """
+    try:
+        relevant = list(patient.keys()) + [target]
+        ancestral = bn.get_ancestral_graph(relevant)
+        sub = BayesianNetwork(ancestral.edges())
+        sub.add_nodes_from(ancestral.nodes())
+        for node in sub.nodes():
+            sub.add_cpds(bn.get_cpds(node))
+        result = VariableElimination(sub).query(
+            variables=[target], evidence=patient,
+            elimination_order='MinFill', show_progress=False
+        )
+        return float(result.get_value(**{target: target_value}))
+    except Exception:
+        return None
+    
 def compute_tensor_size(bn, partition):
     return prod(len(bn.get_cpds(v).state_names[v]) for v in partition)
 
@@ -514,11 +446,16 @@ def benchmark_pt(bn, target, target_value, patient):
         'success': True,
     }
 
-def benchmark_growing_partition(bif_file, max_steps=30):
-    """
-    Runs the exact SDP and MCMC benchmark on configurations where the 
-    biggest partition grows by exactly 1 at each step.
-    """
+def generate_random_patient(bn, target_node, n_evidence):
+    all_nodes = list(bn.nodes())
+    available_nodes = [n for n in all_nodes if n != target_node]
+    evidence_vars = random.sample(available_nodes, min(n_evidence, len(available_nodes)))
+    return {
+        var: random.choice(bn.get_cpds(var).state_names[var])
+        for var in evidence_vars
+    }
+
+def threshold_distance_test(bif_file):
     import tracemalloc
     import gc
     import time
@@ -540,144 +477,125 @@ def benchmark_growing_partition(bif_file, max_steps=30):
         for n in available_nodes
     }
     
-    configurations = build_growing_partition_benchmark(
-        bn, target, available_nodes, patient_states, max_steps=max_steps
-    )
-    
-    results = []
-    
-    for config in configurations:
-        hidden_vars = config['hidden_vars']
-        patient = config['patient']
-        partitions = get_partitions(bn, hidden_vars, target, patient)
-        max_partition = max(len(p) for p in partitions)
-        max_partition_tensor_size = compute_max_tensor_size(bn, partitions)
-        
-        row = {
-            'step': config['step'],
-            'n_hidden': config['n_hidden'],
-            'max_partition_size': max_partition,
-            'max_partition_tensor_size': max_partition_tensor_size,
-            'constrained_treewidth_H': config['constrained_treewidth_H'],
-            'constrained_treewidth_biggest': config['constrained_treewidth_biggest'],
-            'exact_time_sec': None,
-            'exact_peak_memory_mb': None,
-            'exact_success': False,
-            'mcmc_avg_time_sec': None,
-            'mcmc_peak_memory_mb': None,
-            'mcmc_avg_estimate': None,
-            'mcmc_success': False,
-            'pt_avg_time_sec': None,
-            'pt_peak_memory_mb': None,
-            'pt_avg_estimate': None,
-            'pt_success': False
-        }
-        
-        # Exact SDP - Run for memory
-        if config['step'] < 28:
-            gc.collect()
-            try:
-                #start = time.perf_counter()
-                #real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
-                #    bn, target, target_value, patient, 0.5, partitions
-                #)
-                #exact_time = time.perf_counter() - start
+    for i in range(40):
+        patient = generate_random_patient(bn, target, n_evidence=len(available_nodes) // 2)
+        results = []
+        thresholds = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+        for threshold in thresholds:
+            decision_above_threshold = True
+            hidden_vars = [n for n in bn.nodes() if n not in patient and n != target]
+            partitions = get_partitions(bn, hidden_vars, target, patient)
+            number_subnetworks = len(partitions)
+            max_partition = max(len(p) for p in partitions)
+            max_partition_tensor_size = compute_max_tensor_size(bn, partitions)
+            initial_posterior = compute_initial_posterior(bn, target, target_value, patient)
+            if initial_posterior < threshold:
+                decision_above_threshold = False
+            threshold_distance = abs(initial_posterior - threshold) if initial_posterior is not None else None
+            row = {
+                'threshold': threshold,
+                'threshold_distance': threshold_distance,
+                'number_subnetworks': number_subnetworks,
+                'n_hidden': len(hidden_vars),
+                'max_partition_size': max_partition,
+                'max_partition_tensor_size': max_partition_tensor_size,
+                'exact_time_sec': None,
+                'exact_peak_memory_mb': None,
+                'exact_success': False,
+                'mcmc_avg_time_sec': None,
+                'mcmc_peak_memory_mb': None,
+                'mcmc_avg_estimate': None,
+                'mcmc_success': False,
+                'pt_avg_time_sec': None,
+                'pt_peak_memory_mb': None,
+                'pt_avg_estimate': None,
+                'pt_success': False
+            }
+            
+            # Exact SDP - Run for memory
+            #start = time.perf_counter()
+            #real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
+            #    bn, target, target_value, patient, 0.5, partitions
+            #)
+            #exact_time = time.perf_counter() - start
 
-                real_sdp, exact_time, exact_success = run_for_time(
-                    fast_broadcast_sdp, bn, target, target_value, patient,
-                    0.5, partitions
-                )
-                peak_traced_mb, peak_rss_mb = run_for_memory(
-                    fast_broadcast_sdp, bn, target, target_value, patient,
-                    0.5, partitions)
+            real_sdp, exact_time, exact_success = run_for_time(
+                fast_broadcast_sdp, bn, target, target_value, patient,
+                0.5, partitions
+            )
+            peak_traced_mb, peak_rss_mb = run_for_memory(
+                fast_broadcast_sdp, bn, target, target_value, patient,
+                0.5, partitions)
 
-                row['exact_time_sec'] = exact_time
-                row['exact_peak_memory_mb'] = peak_traced_mb
-                row['exact_peak_rss_mb'] = peak_rss_mb
-                row['exact_success'] = exact_success
-                row['exact_sdp_result'] = real_sdp
+            row['exact_time_sec'] = exact_time
+            row['exact_peak_memory_mb'] = peak_traced_mb
+            row['exact_peak_rss_mb'] = peak_rss_mb
+            row['exact_success'] = exact_success
+            row['exact_sdp_result'] = real_sdp
 
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                    f"Max partition tensor size: {max_partition_tensor_size} entries | "
-                    f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
-            except Exception as e:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
+            print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
+                f"Max partition tensor size: {max_partition_tensor_size} entries | "
+                f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
 
             #Exact SDP 2 - Accurate Chen paper version
             gc.collect()
-            try:
-                real_sdp_chen, exact_time_chen, exact_success_chen = run_for_time(
-                    chen_sdp_exact, bn, target, target_value, patient,
-                    0.5, partitions
-                )
-                peak_traced_mb_chen, peak_rss_mb_chen = run_for_memory(
-                    chen_sdp_exact, bn, target, target_value, patient,
-                    0.5, partitions)
+            real_sdp_original, exact_time_original, exact_success_original = run_for_time(
+                chen_sdp_exact, bn, target, target_value, patient,
+                0.5, partitions
+            )
+            peak_traced_mb_original, peak_rss_mb_original = run_for_memory(
+                chen_sdp_exact, bn, target, target_value, patient,
+                0.5, partitions)
 
-                row['exact_time_sec_chen'] = exact_time_chen
-                row['exact_peak_memory_mb_chen'] = peak_traced_mb_chen
-                row['exact_peak_rss_mb_chen'] = peak_rss_mb_chen
-                row['exact_success_chen'] = exact_success_chen
-                row['exact_sdp_result_chen'] = real_sdp_chen
+            row['exact_time_sec_original'] = exact_time_original
+            row['exact_peak_memory_mb_original'] = peak_traced_mb_original
+            row['exact_peak_rss_mb_original'] = peak_rss_mb_original
+            row['exact_success_original'] = exact_success_original
+            row['exact_sdp_result_original'] = real_sdp_original
 
-                print("Accurate Chen paper version:")
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                    f"Max partition tensor size: {max_partition_tensor_size} entries | "
-                    f"Time: {exact_time_chen:.4f}s | Traced: {peak_traced_mb_chen:.2f}MB | RSS: {peak_rss_mb_chen:.2f}MB")
-            except Exception as e:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
+            print("Accurate Chen paper version:")
+            print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
+                f"Max partition tensor size: {max_partition_tensor_size} entries | "
+                f"Time: {exact_time_original:.4f}s | Traced: {peak_traced_mb_original:.2f}MB | RSS: {peak_rss_mb_original:.2f}MB")
         
-        else:
-            # SDP cannot run, fill data with N/A
-            #print(f"Step {config['step']:3d} | partition={max_partition:3d} | SDP SKIPPED (too large)")
-            row['exact_time_sec'] = None
-            row['exact_peak_memory_mb'] = None
-            row['exact_peak_rss_mb'] = None
-            row['exact_success'] = False
-            row['exact_time_sec_chen'] = None
-            row['exact_peak_memory_mb_chen'] = None
-            row['exact_peak_rss_mb_chen'] = None
-            row['exact_success_chen'] = False
-
-        
-
-        # MCMC
-        gc.collect()
-        try:
-            mcmc_result = benchmark_plain_mcmc(bn, target, target_value, patient)
-            if mcmc_result['success']:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                      f"MCMC Time/Memory: {mcmc_result['avg_time']:.4f}s / {mcmc_result['mem_py']:.2f}MB | Estimate: {mcmc_result['mean']:.4f}")
-                print(f"MCMC error: {abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
-                row['mcmc_avg_time_sec'] = mcmc_result['avg_time']
-                row['mcmc_peak_memory_mb'] = mcmc_result['mem_py']
-                row['mcmc_avg_estimate'] = mcmc_result['mean']
-                row['mcmc_error'] = abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else None
-                row['mcmc_success'] = True
-            else:
-                print(f"Step {config['step']:3d} | MCMC FAILED")
-        except Exception as e:
-            print(f"Step {config['step']:3d} | MCMC FAILED: {e}")
-        
-        # PT
-        try:
-            pt_result = benchmark_pt(bn, target, target_value, patient)
-            if pt_result['success']:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                      f"PT Time/Memory: {pt_result['avg_time']:.4f}s / {pt_result['mem_py']:.2f}MB | Estimate: {pt_result['mean']:.4f}")
-                print(f"PT error: {abs(pt_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
-                row['pt_avg_time_sec'] = pt_result['avg_time']
-                row['pt_peak_memory_mb'] = pt_result['mem_py']
-                row['pt_avg_estimate'] = pt_result['mean']
-                row['pt_error'] = abs(pt_result['mean'] - real_sdp) if row['exact_success'] else None
-                row['pt_success'] = True
-            else:
-                print(f"Step {config['step']:3d} | PT FAILED")
-        except Exception as e:
-            print(f"Step {config['step']:3d} | PT FAILED: {e}")
             
-        results.append(row)
-        pd.DataFrame(results).to_csv("results/growing_partition_benchmark_all_methods.csv", index=False)
+            # MCMC
+            gc.collect()
+            try:
+                mcmc_result = benchmark_plain_mcmc(bn, target, target_value, patient)
+                if mcmc_result['success']:
+                    print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
+                        f"MCMC Time/Memory: {mcmc_result['avg_time']:.4f}s / {mcmc_result['mem_py']:.2f}MB | Estimate: {mcmc_result['mean']:.4f}")
+                    print(f"MCMC error: {abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
+                    row['mcmc_avg_time_sec'] = mcmc_result['avg_time']
+                    row['mcmc_peak_memory_mb'] = mcmc_result['mem_py']
+                    row['mcmc_avg_estimate'] = mcmc_result['mean']
+                    row['mcmc_error'] = abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else None
+                    row['mcmc_success'] = True
+                else:
+                    print(f"Threshold: {threshold:.2f} | MCMC FAILED")
+            except Exception as e:
+                print(f"Threshold: {threshold:.2f} | MCMC FAILED: {e}")
+            
+            # PT
+            try:
+                pt_result = benchmark_pt(bn, target, target_value, patient)
+                if pt_result['success']:
+                    print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
+                        f"PT Time/Memory: {pt_result['avg_time']:.4f}s / {pt_result['mem_py']:.2f}MB | Estimate: {pt_result['mean']:.4f}")
+                    print(f"PT error: {abs(pt_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
+                    row['pt_avg_time_sec'] = pt_result['avg_time']
+                    row['pt_peak_memory_mb'] = pt_result['mem_py']
+                    row['pt_avg_estimate'] = pt_result['mean']
+                    row['pt_error'] = abs(pt_result['mean'] - real_sdp) if row['exact_success'] else None
+                    row['pt_success'] = True
+                else:
+                    print(f"Threshold: {threshold:.2f} | PT FAILED")
+            except Exception as e:
+                print(f"Threshold: {threshold:.2f} | PT FAILED: {e}")
+                
+            results.append(row)
+            pd.DataFrame(results).to_csv("results/threshold_distance_results.csv", index=False)
     
     return results
 
@@ -685,4 +603,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 
 if __name__ == "__main__":
 
-   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=10)
+   results = threshold_distance_test("./generated_bif_files/bn_n200_w2_uniform.bif")

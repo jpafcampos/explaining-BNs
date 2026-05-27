@@ -58,6 +58,27 @@ def get_partitions(model, H, D, E):
             
     return partitions
 
+def compute_initial_posterior(bn, target, target_value, patient):
+    """
+    Pr(target=target_value | patient) via ancestral-subgraph VE.
+    Uses the minimal subgraph to avoid pgmpy's 52-variable einsum limit
+    on dense networks. Returns None on failure.
+    """
+    try:
+        relevant = list(patient.keys()) + [target]
+        ancestral = bn.get_ancestral_graph(relevant)
+        sub = BayesianNetwork(ancestral.edges())
+        sub.add_nodes_from(ancestral.nodes())
+        for node in sub.nodes():
+            sub.add_cpds(bn.get_cpds(node))
+        result = VariableElimination(sub).query(
+            variables=[target], evidence=patient,
+            elimination_order='MinFill', show_progress=False
+        )
+        return float(result.get_value(**{target: target_value}))
+    except Exception:
+        return None
+
 def prune_d_separated_variables(model, target, evidence):
     """
     Identifies and returns only the hidden variables that actually have an 

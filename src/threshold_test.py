@@ -477,9 +477,9 @@ def threshold_distance_test(bif_file):
         for n in available_nodes
     }
     
+    results = []
     for i in range(40):
         patient = generate_random_patient(bn, target, n_evidence=len(available_nodes) // 2)
-        results = []
         thresholds = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
         for threshold in thresholds:
             decision_above_threshold = True

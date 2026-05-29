@@ -285,18 +285,56 @@ def profile_sdp_allocations(bn, target, target_value, patient, threshold, partit
 
 from pgmpy.utils import get_example_model
 
+import time
+import gc
+import signal
 
+# 1. Define a custom exception to catch the timeout cleanly
+class TimeoutException(Exception):
+    pass
 
-def run_for_time(func, *args, **kwargs):
-    """Runs natively at maximum speed to record pure execution time."""
+# 2. Define the handler that raises the exception when time is up
+def _timeout_handler(signum, frame):
+    raise TimeoutException("Execution exceeded the time budget.")
+
+def run_for_time(func, *args, timeout_sec=1800, **kwargs):
+    """Runs natively with a strict time budget and memory cleanup."""
+    
+    # Register the signal handler
+    signal.signal(signal.SIGALRM, _timeout_handler)
+    
+    gc.collect()
     start_time = time.perf_counter()
+    
     try:
+        # 3. Start the countdown alarm (e.g., 1800 seconds)
+        signal.alarm(timeout_sec)
+        
         result = func(*args, **kwargs)
-        return result, (time.perf_counter() - start_time), True
+        
+        # 4. If the function finishes in time, cancel the alarm IMMEDIATELY
+        signal.alarm(0)
+        
+        if hasattr(result, '__iter__') and not isinstance(result, (list, dict, set, str)):
+            result = list(result)
+            
+        elapsed = time.perf_counter() - start_time
+        gc.collect()
+        return result, elapsed, True
+        
+    except TimeoutException:
+        # The alarm went off before the function finished
+        print(f"\n[!] TIMEOUT: {func.__name__} aborted after {timeout_sec} seconds.")
+        # We know exactly how long it took: the timeout limit
+        return None, float(timeout_sec), False
+        
     except Exception as e:
-        print(f"\n[!] run_for_time: {func.__name__} failed with "
-              f"{type(e).__name__}: {e}")
+        print(f"\n[!] run_for_time: {func.__name__} failed with {type(e).__name__}: {e}")
         return None, (time.perf_counter() - start_time), False
+        
+    finally:
+        # 5. Safety catch: Guarantee the alarm is turned off no matter what happens
+        signal.alarm(0)
     
 def run_for_memory(func, *args, **kwargs):
     """
@@ -379,14 +417,14 @@ def compute_max_tensor_size(bn, partitions):
         return 0
     return max(compute_tensor_size(bn, p) for p in partitions)
 
-def benchmark_plain_mcmc(bn, target, target_value, patient):
+def benchmark_plain_mcmc(bn, target, target_value, patient, threshold):
     """Run MCMC_TRIALS times and measure memory once. Returns dict."""
     ests, times = [], []
     success = True
     for _ in range(MCMC_TRIALS):
         est, t, ok = run_for_time(
             fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-            0.5, n_samples=1000, burn_in=5000,
+            threshold, n_samples=1000, burn_in=5000,
             thinning=100, use_lw_seed=True
         )
         if not ok:
@@ -401,7 +439,7 @@ def benchmark_plain_mcmc(bn, target, target_value, patient):
 
     mem_py, mem_rss = run_for_memory(
         fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-        0.5, n_samples=10, burn_in=5, thinning=5,
+        threshold, n_samples=10, burn_in=5, thinning=5,
         use_lw_seed=False
     )
     return {
@@ -412,14 +450,14 @@ def benchmark_plain_mcmc(bn, target, target_value, patient):
         'success': True,
     }
 
-def benchmark_pt(bn, target, target_value, patient):
+def benchmark_pt(bn, target, target_value, patient, threshold):
     """Run MCMC_TRIALS times and measure memory once. Returns dict."""
     ests, times = [], []
     success = True
     for _ in range(MCMC_TRIALS):
         est, t, ok = run_for_time(
             vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient,
-            0.5, n_samples=1000, burn_in=5000,
+            threshold, n_samples=1000, burn_in=5000,
             thinning=100, n_chains=4, max_temp=40,
             use_ancestral_seed=True
         )
@@ -435,7 +473,7 @@ def benchmark_pt(bn, target, target_value, patient):
 
     mem_py, mem_rss = run_for_memory(
         vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient,
-        0.5, n_samples=10, burn_in=5, thinning=5,
+        threshold, n_samples=10, burn_in=5, thinning=5,
         n_chains=4, max_temp=40, use_ancestral_seed=True
     )
     return {
@@ -512,20 +550,15 @@ def threshold_distance_test(bif_file):
                 'pt_success': False
             }
             
-            # Exact SDP - Run for memory
-            #start = time.perf_counter()
-            #real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
-            #    bn, target, target_value, patient, 0.5, partitions
-            #)
-            #exact_time = time.perf_counter() - start
+            # Exact SDP - Fast version
 
             real_sdp, exact_time, exact_success = run_for_time(
                 fast_broadcast_sdp, bn, target, target_value, patient,
-                0.5, partitions
+                threshold, partitions
             )
             peak_traced_mb, peak_rss_mb = run_for_memory(
                 fast_broadcast_sdp, bn, target, target_value, patient,
-                0.5, partitions)
+                threshold, partitions)
 
             row['exact_time_sec'] = exact_time
             row['exact_peak_memory_mb'] = peak_traced_mb
@@ -541,11 +574,15 @@ def threshold_distance_test(bif_file):
             gc.collect()
             real_sdp_original, exact_time_original, exact_success_original = run_for_time(
                 chen_sdp_exact, bn, target, target_value, patient,
-                0.5, partitions
+                threshold, partitions
             )
-            peak_traced_mb_original, peak_rss_mb_original = run_for_memory(
-                chen_sdp_exact, bn, target, target_value, patient,
-                0.5, partitions)
+            if exact_success_original:
+                peak_traced_mb_original, peak_rss_mb_original = run_for_memory(
+                    chen_sdp_exact, bn, target, target_value, patient,
+                    threshold, partitions)
+            else:
+                peak_traced_mb_original, peak_rss_mb_original = None, None    
+            
 
             row['exact_time_sec_original'] = exact_time_original
             row['exact_peak_memory_mb_original'] = peak_traced_mb_original
@@ -562,7 +599,7 @@ def threshold_distance_test(bif_file):
             # MCMC
             gc.collect()
             try:
-                mcmc_result = benchmark_plain_mcmc(bn, target, target_value, patient)
+                mcmc_result = benchmark_plain_mcmc(bn, target, target_value, patient, threshold)
                 if mcmc_result['success']:
                     print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
                         f"MCMC Time/Memory: {mcmc_result['avg_time']:.4f}s / {mcmc_result['mem_py']:.2f}MB | Estimate: {mcmc_result['mean']:.4f}")
@@ -579,7 +616,7 @@ def threshold_distance_test(bif_file):
             
             # PT
             try:
-                pt_result = benchmark_pt(bn, target, target_value, patient)
+                pt_result = benchmark_pt(bn, target, target_value, patient, threshold)
                 if pt_result['success']:
                     print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
                         f"PT Time/Memory: {pt_result['avg_time']:.4f}s / {pt_result['mem_py']:.2f}MB | Estimate: {pt_result['mean']:.4f}")
@@ -603,4 +640,4 @@ def threshold_distance_test(bif_file):
 
 if __name__ == "__main__":
 
-   results = threshold_distance_test("./generated_bif_files/bn_n200_w2_uniform.bif")
+   results = threshold_distance_test("./generated_bif_files/bn_n20_w2_uncertain_strong.bif")

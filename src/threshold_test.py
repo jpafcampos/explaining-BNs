@@ -572,11 +572,13 @@ def threshold_distance_test(bif_file):
 
             #Exact SDP 2 - Accurate Chen paper version
             gc.collect()
+            print("\nRunning accurate Chen paper version...")
             real_sdp_original, exact_time_original, exact_success_original = run_for_time(
                 chen_sdp_exact, bn, target, target_value, patient,
                 threshold, partitions
             )
             if exact_success_original:
+                print("Measuring memory for accurate Chen paper version...")
                 peak_traced_mb_original, peak_rss_mb_original = run_for_memory(
                     chen_sdp_exact, bn, target, target_value, patient,
                     threshold, partitions)
@@ -599,6 +601,7 @@ def threshold_distance_test(bif_file):
             # MCMC
             gc.collect()
             try:
+                print("\nRunning MCMC...")
                 mcmc_result = benchmark_plain_mcmc(bn, target, target_value, patient, threshold)
                 if mcmc_result['success']:
                     print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
@@ -616,6 +619,7 @@ def threshold_distance_test(bif_file):
             
             # PT
             try:
+                print("\nRunning PT-MCMC...")
                 pt_result = benchmark_pt(bn, target, target_value, patient, threshold)
                 if pt_result['success']:
                     print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "

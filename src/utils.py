@@ -60,9 +60,7 @@ def get_partitions(model, H, D, E):
 
 def compute_initial_posterior(bn, target, target_value, patient):
     """
-    Pr(target=target_value | patient) via ancestral-subgraph VE.
-    Uses the minimal subgraph to avoid pgmpy's 52-variable einsum limit
-    on dense networks. Returns None on failure.
+    Pr(target=target_value | patient) via ancestral-subgraph VE
     """
     try:
         relevant = list(patient.keys()) + [target]

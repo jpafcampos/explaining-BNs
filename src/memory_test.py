@@ -373,18 +373,56 @@ def profile_sdp_allocations(bn, target, target_value, patient, threshold, partit
 
 from pgmpy.utils import get_example_model
 
+import time
+import gc
+import signal
 
+# 1. Define a custom exception to catch the timeout cleanly
+class TimeoutException(Exception):
+    pass
 
-def run_for_time(func, *args, **kwargs):
-    """Runs natively at maximum speed to record pure execution time."""
+# 2. Define the handler that raises the exception when time is up
+def _timeout_handler(signum, frame):
+    raise TimeoutException("Execution exceeded the time budget.")
+
+def run_for_time(func, *args, timeout_sec=1800, **kwargs):
+    """Runs natively with a strict time budget and memory cleanup."""
+    
+    # Register the signal handler
+    signal.signal(signal.SIGALRM, _timeout_handler)
+    
+    gc.collect()
     start_time = time.perf_counter()
+    
     try:
+        # 3. Start the countdown alarm (e.g., 1800 seconds)
+        signal.alarm(timeout_sec)
+        
         result = func(*args, **kwargs)
-        return result, (time.perf_counter() - start_time), True
+        
+        # 4. If the function finishes in time, cancel the alarm IMMEDIATELY
+        signal.alarm(0)
+        
+        if hasattr(result, '__iter__') and not isinstance(result, (list, dict, set, str)):
+            result = list(result)
+            
+        elapsed = time.perf_counter() - start_time
+        gc.collect()
+        return result, elapsed, True
+        
+    except TimeoutException:
+        # The alarm went off before the function finished
+        print(f"\n[!] TIMEOUT: {func.__name__} aborted after {timeout_sec} seconds.")
+        # We know exactly how long it took: the timeout limit
+        return None, float(timeout_sec), False
+        
     except Exception as e:
-        print(f"\n[!] run_for_time: {func.__name__} failed with "
-              f"{type(e).__name__}: {e}")
+        print(f"\n[!] run_for_time: {func.__name__} failed with {type(e).__name__}: {e}")
         return None, (time.perf_counter() - start_time), False
+        
+    finally:
+        # 5. Safety catch: Guarantee the alarm is turned off no matter what happens
+        signal.alarm(0)
     
 def run_for_memory(func, *args, **kwargs):
     """
@@ -685,4 +723,4 @@ def benchmark_growing_partition(bif_file, max_steps=30):
 
 if __name__ == "__main__":
 
-   results = benchmark_growing_partition("./generated_bif_files/bn_n50_w2_uncertain_strong.bif", max_steps=10)
+   results = benchmark_growing_partition("./generated_bif_files/bn_n200_w2_uncertain_strong.bif", max_steps=150)

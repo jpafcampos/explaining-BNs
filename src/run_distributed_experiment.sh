@@ -5,7 +5,7 @@
 #SBATCH --time=20:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=120G
+#SBATCH --mem=140G
 
 source ~/miniforge3/bin/activate bn-medical
 mkdir -p results/logs
@@ -16,6 +16,6 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
 python synthetic_experiment_parallel.py \
-    --bif-dir ./bif_files_to_run/ \
-    --output results/final_results_$SLURM_JOB_ID.csv \
+    --bif-dir ./generated_bif_files/ \
+    --output results/final_results_ratio75_$SLURM_JOB_ID.csv \
     --n-workers 1

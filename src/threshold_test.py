@@ -517,7 +517,8 @@ def threshold_distance_test(bif_file):
     }
     
     results = []
-    thresholds = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+    #thresholds = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+    thresholds = [0.50, 0.60, 0.70, 0.80, 0.90]
     MAX_TENSOR_ALLOWED = 90_000_000
     for i in range(40):
         print(f"\n=== Patient {i+1} / 40 ===")

@@ -520,9 +520,9 @@ def threshold_distance_test(bif_file):
     #thresholds = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
     thresholds = [0.50, 0.60, 0.70, 0.80, 0.90]
     MAX_TENSOR_ALLOWED = 90_000_000
-    for i in range(40):
-        print(f"\n=== Patient {i+1} / 40 ===")
-        patient = generate_random_patient(bn, target, n_evidence=len(available_nodes) // 4)
+    for i in range(50):
+        print(f"\n=== Patient {i+1} / 50 ===")
+        patient = generate_random_patient(bn, target, n_evidence=len(available_nodes) // 2)
         hidden_vars = [n for n in bn.nodes() if n not in patient and n != target]
         partitions = get_partitions(bn, hidden_vars, target, patient)
         number_subnetworks = len(partitions)

@@ -408,6 +408,7 @@ def compute_initial_posterior(bn, target, target_value, patient):
     except Exception:
         return None
     
+from math import prod
 def compute_tensor_size(bn, partition):
     return prod(len(bn.get_cpds(v).state_names[v]) for v in partition)
 
@@ -516,16 +517,21 @@ def threshold_distance_test(bif_file):
     }
     
     results = []
+    thresholds = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+    MAX_TENSOR_ALLOWED = 90_000_000
     for i in range(40):
-        patient = generate_random_patient(bn, target, n_evidence=len(available_nodes) // 2)
-        thresholds = [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+        print(f"\n=== Patient {i+1} / 40 ===")
+        patient = generate_random_patient(bn, target, n_evidence=len(available_nodes) // 4)
+        hidden_vars = [n for n in bn.nodes() if n not in patient and n != target]
+        partitions = get_partitions(bn, hidden_vars, target, patient)
+        number_subnetworks = len(partitions)
+        max_partition = max(len(p) for p in partitions)
+        max_partition_tensor_size = compute_max_tensor_size(bn, partitions)
+        if max_partition_tensor_size > MAX_TENSOR_ALLOWED:
+            print(f"Skipping patient {i+1} due to large max partition tensor size")
+            continue
         for threshold in thresholds:
             decision_above_threshold = True
-            hidden_vars = [n for n in bn.nodes() if n not in patient and n != target]
-            partitions = get_partitions(bn, hidden_vars, target, patient)
-            number_subnetworks = len(partitions)
-            max_partition = max(len(p) for p in partitions)
-            max_partition_tensor_size = compute_max_tensor_size(bn, partitions)
             initial_posterior = compute_initial_posterior(bn, target, target_value, patient)
             if initial_posterior < threshold:
                 decision_above_threshold = False
@@ -592,10 +598,11 @@ def threshold_distance_test(bif_file):
             row['exact_success_original'] = exact_success_original
             row['exact_sdp_result_original'] = real_sdp_original
 
-            print("Accurate Chen paper version:")
-            print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
-                f"Max partition tensor size: {max_partition_tensor_size} entries | "
-                f"Time: {exact_time_original:.4f}s | Traced: {peak_traced_mb_original:.2f}MB | RSS: {peak_rss_mb_original:.2f}MB")
+            if exact_success_original:
+                print("Accurate Chen paper version:")
+                print(f"Threshold: {threshold:.2f} | partition={max_partition:3d} | "
+                    f"Max partition tensor size: {max_partition_tensor_size} entries | "
+                    f"Time: {exact_time_original:.4f}s | Traced: {peak_traced_mb_original:.2f}MB | RSS: {peak_rss_mb_original:.2f}MB")
         
             
             # MCMC

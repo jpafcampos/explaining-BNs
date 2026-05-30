@@ -652,4 +652,4 @@ def threshold_distance_test(bif_file):
 
 if __name__ == "__main__":
 
-   results = threshold_distance_test("./generated_bif_files/bn_n200_w2_uncertain_strong.bif")
+   results = threshold_distance_test("./generated_bif_files/bn_n20_w2_uncertain_strong.bif")

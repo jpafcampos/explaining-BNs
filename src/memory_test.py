@@ -11,7 +11,7 @@ import time
 
 import networkx as nx
 
-MCMC_TRIALS = 1
+MCMC_TRIALS = 5
 
 def _moral_graph(bn):
     G = nx.Graph()
@@ -552,171 +552,222 @@ def benchmark_pt(bn, target, target_value, patient):
         'success': True,
     }
 
+def compute_initial_posterior(bn, target, target_value, patient):
+    """
+    Pr(target=target_value | patient) via ancestral-subgraph VE.
+    Uses the minimal subgraph to avoid pgmpy's 52-variable einsum limit
+    on dense networks. Returns None on failure.
+    """
+    try:
+        relevant = list(patient.keys()) + [target]
+        ancestral = bn.get_ancestral_graph(relevant)
+        sub = BayesianNetwork(ancestral.edges())
+        sub.add_nodes_from(ancestral.nodes())
+        for node in sub.nodes():
+            sub.add_cpds(bn.get_cpds(node))
+        result = VariableElimination(sub).query(
+            variables=[target], evidence=patient,
+            elimination_order='MinFill', show_progress=False
+        )
+        return float(result.get_value(**{target: target_value}))
+    except Exception:
+        return None
+
+# ─── tuneable constants ────────────────────────────────────────────────────
+MPS_SKIP_EXACT_VEC = 28     # vectorised exact OOMs at/above this partition size
+TIMEOUT_EXACT_VEC  = 600    # seconds — generous; it's fast when it fits
+TIMEOUT_CHEN       = 1800   # seconds — full paper budget
+TIMEOUT_MCMC       = 300    # seconds — safety net; MCMC always finishes in < 10 s
+# ──────────────────────────────────────────────────────────────────────────
+ 
+ 
 def benchmark_growing_partition(bif_file, max_steps=30):
     """
-    Runs the exact SDP and MCMC benchmark on configurations where the 
-    biggest partition grows by exactly 1 at each step.
+    Runs the growing-partition benchmark on all four algorithms.
+ 
+    - Exact-vec  : runs while MPS < MPS_SKIP_EXACT_VEC; skipped above that.
+    - Chen       : runs until it times out, then permanently skipped.
+    - MH / PT    : unconditionally run at every step.
+ 
+    MCMC error is computed against whichever exact reference is available
+    (exact-vec first, Chen as fallback).  If neither ran, error is recorded
+    as None (the estimate is still saved).
     """
-    import tracemalloc
-    import gc
-    import time
-    
+    import tracemalloc, gc, time, os, signal
+ 
     bn = BIFReader(bif_file).get_model()
-    #bn = inject_determinism(bn, sparsity=0.4)
-    #bn = get_example_model('win95pts')
-    
-    all_nodes = list(bn.nodes())
-    target = select_optimal_target_node(bn)
-    #target = 'PrtMem'
+    all_nodes     = list(bn.nodes())
+    target        = select_optimal_target_node(bn)
     target_states = bn.get_cpds(target).state_names[target]
-    target_value = target_states[1] if len(target_states) > 1 else target_states[0]
-    available_nodes = [n for n in all_nodes if n != target]
-    
-    # Fix a patient state for all evidence variables upfront
-    patient_states = {
-        n: bn.get_cpds(n).state_names[n][0] 
-        for n in available_nodes
-    }
-    
+    target_value  = target_states[1] if len(target_states) > 1 else target_states[0]
+    available     = [n for n in all_nodes if n != target]
+ 
+    patient_states = {n: bn.get_cpds(n).state_names[n][0] for n in available}
+ 
     configurations = build_growing_partition_benchmark(
-        bn, target, available_nodes, patient_states, max_steps=max_steps
+        bn, target, available, patient_states, max_steps=max_steps
     )
-    
-    results = []
-    
+ 
+    results          = []
+    chen_timed_out   = False   # once True, Chen is skipped for all future steps
+ 
     for config in configurations:
         hidden_vars = config['hidden_vars']
-        patient = config['patient']
-        partitions = get_partitions(bn, hidden_vars, target, patient)
-        max_partition = max(len(p) for p in partitions)
-        max_partition_tensor_size = compute_max_tensor_size(bn, partitions)
-        
+        patient     = config['patient']
+        step        = config['step']
+ 
+        partitions        = get_partitions(bn, hidden_vars, target, patient)
+        max_partition     = max(len(p) for p in partitions)
+        max_tensor        = compute_max_tensor_size(bn, partitions)
+        initial_posterior = compute_initial_posterior(bn, target, target_value, patient)
+        threshold_dist    = (abs(initial_posterior - 0.5)
+                             if initial_posterior is not None else None)
+ 
+        print(f"\n{'─'*72}")
+        print(f"Step {step:3d} | MPS={max_partition:3d} | tensor={max_tensor:>12,} | "
+              f"tw(H)={config['constrained_treewidth_H']} | "
+              f"tw(big)={config['constrained_treewidth_biggest']}")
+        print(f"{'─'*72}")
+ 
         row = {
-            'step': config['step'],
-            'n_hidden': config['n_hidden'],
-            'max_partition_size': max_partition,
-            'max_partition_tensor_size': max_partition_tensor_size,
-            'constrained_treewidth_H': config['constrained_treewidth_H'],
+            # bookkeeping
+            'step':                    step,
+            'n_hidden':                config['n_hidden'],
+            'max_partition_size':      max_partition,
+            'max_partition_tensor_size': max_tensor,
+            'threshold_distance':      threshold_dist,
+            'constrained_treewidth_H':       config['constrained_treewidth_H'],
             'constrained_treewidth_biggest': config['constrained_treewidth_biggest'],
-            'exact_time_sec': None,
-            'exact_peak_memory_mb': None,
-            'exact_success': False,
-            'mcmc_avg_time_sec': None,
-            'mcmc_peak_memory_mb': None,
-            'mcmc_avg_estimate': None,
-            'mcmc_success': False,
-            'pt_avg_time_sec': None,
-            'pt_peak_memory_mb': None,
-            'pt_avg_estimate': None,
-            'pt_success': False
+            # exact-vec
+            'exact_sdp_result':        None, 'exact_time_sec':       None,
+            'exact_peak_memory_mb':    None, 'exact_peak_rss_mb':    None,
+            'exact_success':           False, 'exact_status':        'NOT_RUN',
+            # chen
+            'exact_sdp_result_chen':      None, 'exact_time_sec_chen':       None,
+            'exact_peak_memory_mb_chen':  None, 'exact_peak_rss_mb_chen':    None,
+            'exact_success_chen':         False, 'exact_status_chen':         'NOT_RUN',
+            # mcmc
+            'mcmc_avg_estimate':   None, 'mcmc_avg_time_sec':   None,
+            'mcmc_peak_memory_mb': None, 'mcmc_error':          None,
+            'mcmc_success':        False,
+            # pt
+            'pt_avg_estimate':     None, 'pt_avg_time_sec':     None,
+            'pt_peak_memory_mb':   None, 'pt_error':            None,
+            'pt_success':          False,
         }
-        
-        # Exact SDP - Run for memory
-        if config['step'] < 28:
+ 
+        reference_sdp = None  # used to compute MCMC error below
+ 
+        # ── 1. Vectorised exact ──────────────────────────────────────────
+        if max_partition < MPS_SKIP_EXACT_VEC:
             gc.collect()
-            try:
-                #start = time.perf_counter()
-                #real_sdp, peak_traced_mb, peak_rss_mb = profile_sdp_allocations(
-                #    bn, target, target_value, patient, 0.5, partitions
-                #)
-                #exact_time = time.perf_counter() - start
-
-                real_sdp, exact_time, exact_success = run_for_time(
-                    fast_broadcast_sdp, bn, target, target_value, patient,
-                    0.5, partitions
-                )
-                peak_traced_mb, peak_rss_mb = run_for_memory(
-                    fast_broadcast_sdp, bn, target, target_value, patient,
-                    0.5, partitions)
-
-                row['exact_time_sec'] = exact_time
-                row['exact_peak_memory_mb'] = peak_traced_mb
-                row['exact_peak_rss_mb'] = peak_rss_mb
-                row['exact_success'] = exact_success
-                row['exact_sdp_result'] = real_sdp
-
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                    f"Max partition tensor size: {max_partition_tensor_size} entries | "
-                    f"Time: {exact_time:.4f}s | Traced: {peak_traced_mb:.2f}MB | RSS: {peak_rss_mb:.2f}MB")
-            except Exception as e:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
-
-            #Exact SDP 2 - Accurate Chen paper version
-            gc.collect()
-            try:
-                real_sdp_chen, exact_time_chen, exact_success_chen = run_for_time(
-                    chen_sdp_exact, bn, target, target_value, patient,
-                    0.5, partitions
-                )
-                peak_traced_mb_chen, peak_rss_mb_chen = run_for_memory(
-                    chen_sdp_exact, bn, target, target_value, patient,
-                    0.5, partitions)
-
-                row['exact_time_sec_chen'] = exact_time_chen
-                row['exact_peak_memory_mb_chen'] = peak_traced_mb_chen
-                row['exact_peak_rss_mb_chen'] = peak_rss_mb_chen
-                row['exact_success_chen'] = exact_success_chen
-                row['exact_sdp_result_chen'] = real_sdp_chen
-
-                print("Accurate Chen paper version:")
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                    f"Max partition tensor size: {max_partition_tensor_size} entries | "
-                    f"Time: {exact_time_chen:.4f}s | Traced: {peak_traced_mb_chen:.2f}MB | RSS: {peak_rss_mb_chen:.2f}MB")
-            except Exception as e:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | FAILED: {e}")
-        
+            result, t, ok = run_for_time(
+                fast_broadcast_sdp,
+                bn, target, target_value, patient, 0.5, partitions,
+                timeout_sec=TIMEOUT_EXACT_VEC,
+            )
+            mem_py, mem_rss = (
+                run_for_memory(fast_broadcast_sdp,
+                               bn, target, target_value, patient, 0.5, partitions)
+                if ok else (None, None)
+            )
+            row.update(
+                exact_sdp_result=result, exact_time_sec=t,
+                exact_peak_memory_mb=mem_py, exact_peak_rss_mb=mem_rss,
+                exact_success=ok,
+                exact_status=('OK' if ok
+                              else ('TIMEOUT' if t >= TIMEOUT_EXACT_VEC else 'FAILED')),
+            )
+            if ok:
+                reference_sdp = result
+                print(f"  [Exact-vec ] {t:.4f}s | {mem_py:.2f} MB | SDP={result:.4f}")
+            else:
+                print(f"  [Exact-vec ] {row['exact_status']}")
         else:
-            # SDP cannot run, fill data with N/A
-            #print(f"Step {config['step']:3d} | partition={max_partition:3d} | SDP SKIPPED (too large)")
-            row['exact_time_sec'] = None
-            row['exact_peak_memory_mb'] = None
-            row['exact_peak_rss_mb'] = None
-            row['exact_success'] = False
-            row['exact_time_sec_chen'] = None
-            row['exact_peak_memory_mb_chen'] = None
-            row['exact_peak_rss_mb_chen'] = None
-            row['exact_success_chen'] = False
-
-        
-
-        # MCMC
+            row['exact_status'] = 'SKIPPED_OOM'
+            print(f"  [Exact-vec ] SKIPPED — MPS={max_partition} ≥ {MPS_SKIP_EXACT_VEC} "
+                  f"(OOM on this machine)")
+ 
+        # ── 2. Chen exact ────────────────────────────────────────────────
+        if chen_timed_out:
+            row['exact_status_chen'] = 'SKIPPED_PREV_TIMEOUT'
+            print(f"  [Chen      ] SKIPPED — timed out at a previous step")
+        else:
+            gc.collect()
+            result_c, t_c, ok_c = run_for_time(
+                chen_sdp_exact,
+                bn, target, target_value, patient, 0.5, partitions,
+                timeout_sec=TIMEOUT_CHEN,
+            )
+            mem_py_c, mem_rss_c = (
+                run_for_memory(chen_sdp_exact,
+                               bn, target, target_value, patient, 0.5, partitions)
+                if ok_c else (None, None)
+            )
+            row.update(
+                exact_sdp_result_chen=result_c,
+                exact_time_sec_chen=t_c,
+                exact_peak_memory_mb_chen=mem_py_c,
+                exact_peak_rss_mb_chen=mem_rss_c,
+                exact_success_chen=ok_c,
+            )
+            if ok_c:
+                if reference_sdp is None:
+                    reference_sdp = result_c   # fallback when exact-vec was skipped
+                row['exact_status_chen'] = 'OK'
+                print(f"  [Chen      ] {t_c:.4f}s | {mem_py_c:.2f} MB | SDP={result_c:.4f}")
+            elif t_c >= TIMEOUT_CHEN:
+                row['exact_status_chen'] = 'TIMEOUT'
+                chen_timed_out = True          # ← permanent flag; skip from here on
+                print(f"  [Chen      ] TIMEOUT at {TIMEOUT_CHEN}s — "
+                      f"will skip Chen for all subsequent steps")
+            else:
+                row['exact_status_chen'] = 'FAILED'
+                print(f"  [Chen      ] FAILED")
+ 
+        # ── 3. MH-MCMC  (unconditional) ──────────────────────────────────
         gc.collect()
-        try:
-            mcmc_result = benchmark_plain_mcmc(bn, target, target_value, patient)
-            if mcmc_result['success']:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                      f"MCMC Time/Memory: {mcmc_result['avg_time']:.4f}s / {mcmc_result['mem_py']:.2f}MB | Estimate: {mcmc_result['mean']:.4f}")
-                print(f"MCMC error: {abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
-                row['mcmc_avg_time_sec'] = mcmc_result['avg_time']
-                row['mcmc_peak_memory_mb'] = mcmc_result['mem_py']
-                row['mcmc_avg_estimate'] = mcmc_result['mean']
-                row['mcmc_error'] = abs(mcmc_result['mean'] - real_sdp) if row['exact_success'] else None
-                row['mcmc_success'] = True
-            else:
-                print(f"Step {config['step']:3d} | MCMC FAILED")
-        except Exception as e:
-            print(f"Step {config['step']:3d} | MCMC FAILED: {e}")
-        
-        # PT
-        try:
-            pt_result = benchmark_pt(bn, target, target_value, patient)
-            if pt_result['success']:
-                print(f"Step {config['step']:3d} | partition={max_partition:3d} | "
-                      f"PT Time/Memory: {pt_result['avg_time']:.4f}s / {pt_result['mem_py']:.2f}MB | Estimate: {pt_result['mean']:.4f}")
-                print(f"PT error: {abs(pt_result['mean'] - real_sdp) if row['exact_success'] else 'N/A'}")
-                row['pt_avg_time_sec'] = pt_result['avg_time']
-                row['pt_peak_memory_mb'] = pt_result['mem_py']
-                row['pt_avg_estimate'] = pt_result['mean']
-                row['pt_error'] = abs(pt_result['mean'] - real_sdp) if row['exact_success'] else None
-                row['pt_success'] = True
-            else:
-                print(f"Step {config['step']:3d} | PT FAILED")
-        except Exception as e:
-            print(f"Step {config['step']:3d} | PT FAILED: {e}")
-            
+        mcmc = benchmark_plain_mcmc(bn, target, target_value, patient)
+        if mcmc['success']:
+            err = (abs(mcmc['mean'] - reference_sdp)
+                   if reference_sdp is not None else None)
+            row.update(
+                mcmc_avg_estimate=mcmc['mean'],
+                mcmc_avg_time_sec=mcmc['avg_time'],
+                mcmc_peak_memory_mb=mcmc['mem_py'],
+                mcmc_error=err,
+                mcmc_success=True,
+            )
+            err_str = f"err={err:.4f}" if err is not None else "no exact reference"
+            print(f"  [MH-MCMC   ] {mcmc['avg_time']:.4f}s | {mcmc['mem_py']:.3f} MB | "
+                  f"est={mcmc['mean']:.4f} | {err_str}")
+        else:
+            print(f"  [MH-MCMC   ] FAILED")
+ 
+        # ── 4. PT-MCMC  (unconditional) ──────────────────────────────────
+        gc.collect()
+        pt = benchmark_pt(bn, target, target_value, patient)
+        if pt['success']:
+            err = (abs(pt['mean'] - reference_sdp)
+                   if reference_sdp is not None else None)
+            row.update(
+                pt_avg_estimate=pt['mean'],
+                pt_avg_time_sec=pt['avg_time'],
+                pt_peak_memory_mb=pt['mem_py'],
+                pt_error=err,
+                pt_success=True,
+            )
+            err_str = f"err={err:.4f}" if err is not None else "no exact reference"
+            print(f"  [PT-MCMC   ] {pt['avg_time']:.4f}s | {pt['mem_py']:.3f} MB | "
+                  f"est={pt['mean']:.4f} | {err_str}")
+        else:
+            print(f"  [PT-MCMC   ] FAILED")
+ 
         results.append(row)
-        pd.DataFrame(results).to_csv("results/growing_partition_benchmark_all_methods.csv", index=False)
-    
+        pd.DataFrame(results).to_csv(
+            "results/growing_partition_benchmark_all_methods.csv", index=False
+        )
+ 
     return results
 
 

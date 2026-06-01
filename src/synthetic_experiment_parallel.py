@@ -451,15 +451,22 @@ def memory_aware_random_harvester(bn, target_node, target_value, decision_thresh
 
             # 5. Calculate exact SDP
             try:
-                exact_sdp = fast_broadcast_sdp(
+                exact_sdp, sdp_elapsed, sdp_ok = run_for_time(
+                    fast_broadcast_sdp,
                     bn, target_node, target_value, temp_patient,
-                    decision_threshold, partitions
+                    decision_threshold, partitions,
+                    timeout_sec=60
                 )
+
             except (ValueError, MemoryError) as e:
                 sdp_failures += 1
                 print(f"    [!] SDP failed despite passing wall ({type(e).__name__}): {e}")
                 gc.collect()
                 continue  # try another patient
+
+            if not sdp_ok:
+                sdp_failures += 1
+                continue
 
             attempts_ok += 1
 
@@ -763,12 +770,12 @@ def process_single_file(args):
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", n_workers=4):
     bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
     
-    H_RATIOS = [0.25] # Hidden variable ratios to test
+    H_RATIOS = [0.75] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
     TARGET_BUCKETS = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     MCMC_TRIALS = 10
 
-    SIZES_TO_RUN = [20]
+    SIZES_TO_RUN = [20, 50, 100, 200]
     #SIZES_TO_RUN = [20, 50, 100]
     #SIZES_TO_RUN = [50, 200]
     

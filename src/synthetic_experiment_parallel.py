@@ -568,8 +568,8 @@ def process_single_file(args):
             bn, target, target_value, DECISION_THRESHOLD,
             n_evidence,
             buckets=TARGET_BUCKETS,
-            batch_size=500,
-            max_batches=2,
+            batch_size=200,
+            max_batches=1,
             max_tensor_entries=MAX_TENSOR_ALLOWED,
         )
         harvested_data = harvested['buckets']

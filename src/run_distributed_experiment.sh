@@ -16,6 +16,6 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
 python synthetic_experiment_parallel.py \
-    --bif-dir ./generated_bif_files/ \
+    --bif-dir ./bif_files_to_run/ \
     --output results/final_results_ratio75_$SLURM_JOB_ID.csv \
     --n-workers 1

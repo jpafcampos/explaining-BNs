@@ -34,7 +34,7 @@ import gc
 import threading
 from multiprocessing import Pool
 
-MAX_TENSOR_ALLOWED = 90_000_000
+MAX_TENSOR_ALLOWED = 120_000_000
 
 def parse_bn_filename(filename):
     base = os.path.basename(filename).replace('.bif', '').replace('bn_', '')
@@ -370,7 +370,7 @@ def assign_bucket(sdp_value, buckets, tolerance=0.05):
 
 def generate_random_patients(bn, target_node, target_value, decision_threshold,
                              n_evidence, n_patients,
-                             max_attempts_multiplier=20,
+                             max_attempts_multiplier=50,
                              max_tensor_entries=MAX_TENSOR_ALLOWED):
     """
     Generate N random patients (random evidence assignments) that:
@@ -433,19 +433,19 @@ def generate_random_patients(bn, target_node, target_value, decision_threshold,
             continue
 
         # 4. Check base decision meets the threshold
-        try:
-            base_dist = compute_initial_posterior(bn, target_node, target_value, temp_patient)
-            if base_dist is None:
-                inference_failures += 1
-                continue
-            if base_dist < decision_threshold:
-                below_threshold += 1
-                continue  # legitimate rejection
-        except (ValueError, MemoryError) as e:
-            inference_failures += 1
-            print(f"    [!] Base inference failed ({type(e).__name__}): {e}")
-            gc.collect()
-            continue
+        #try:
+        #    base_dist = compute_initial_posterior(bn, target_node, target_value, temp_patient)
+        #    if base_dist is None:
+        #        inference_failures += 1
+        #        continue
+        #    if base_dist < decision_threshold:
+        #        below_threshold += 1
+        #        continue  # legitimate rejection
+        #except (ValueError, MemoryError) as e:
+        #    inference_failures += 1
+        #    print(f"    [!] Base inference failed ({type(e).__name__}): {e}")
+        #    gc.collect()
+        #    continue
 
         # 5. Calculate exact SDP
         try:
@@ -453,7 +453,7 @@ def generate_random_patients(bn, target_node, target_value, decision_threshold,
                 fast_broadcast_sdp,
                 bn, target_node, target_value, temp_patient,
                 decision_threshold, partitions,
-                timeout_sec=120
+                timeout_sec=180
             )
         except (ValueError, MemoryError) as e:
             sdp_failures += 1
@@ -465,6 +465,9 @@ def generate_random_patients(bn, target_node, target_value, decision_threshold,
             sdp_failures += 1
             print(f"    [!] SDP failed to complete in time or returned None.")
             gc.collect()
+            continue
+
+        if exact_sdp == 1.0:
             continue
 
         attempts_ok += 1

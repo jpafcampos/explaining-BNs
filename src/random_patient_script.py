@@ -750,7 +750,7 @@ def process_single_file(args):
 def run_targeted_sdp_experiment(bif_directory, output_csv="targeted_sdp_random_bns.csv", n_workers=4, n_patients=5):
     bif_files = sorted(glob.glob(os.path.join(bif_directory, "*.bif")))
     
-    H_RATIOS = [0.75] # Hidden variable ratios to test
+    H_RATIOS = [0.75, 0.90] # Hidden variable ratios to test
     DECISION_THRESHOLD = 0.5
     MCMC_TRIALS = 10
 

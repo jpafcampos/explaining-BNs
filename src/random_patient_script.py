@@ -594,17 +594,20 @@ def process_single_file(args):
             )
             
             # Pass 2: Memory
-            now = time.perf_counter()
-            exact_mem_mb_python, exact_mem_mb_rss = run_for_memory(
-                fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
-            )
+            if exact_success:
+                now = time.perf_counter()
+                exact_mem_mb_python, exact_mem_mb_rss = run_for_memory(
+                    fast_broadcast_sdp, bn, target, target_value, patient, DECISION_THRESHOLD, partitions
+                )
+            else:
+                exact_mem_mb_python, exact_mem_mb_rss = None, None
 
             print(f"          Time elapsed during memory test: {time.perf_counter() - now:.4f} sec")
 
             if exact_success:
                 print(f"          Time: {exact_time:.4f} sec | Peak Memory: {exact_mem_mb_python:.2f} MB (Python) / {exact_mem_mb_rss:.2f} MB (RSS)")
             else:
-                print(f"          [FAILED]: Crashed at {exact_mem_mb_python:.2f} MB (Python) / {exact_mem_mb_rss:.2f} MB (RSS)")
+                print(f"          [FAILED]: Exact SDP did not complete in time or returned None.")
 
             # ========================================================
             # EXACT SDP EVALUATION - ACCURATE CHEN PAPER IMPLEMENTATION
@@ -671,7 +674,10 @@ def process_single_file(args):
 
             print(f"          Avg Time: {mcmc_avg_time:.4f} sec | Peak Memory: {mcmc_mem_mb_python:.2f} MB (Python) / {mcmc_mem_mb_rss:.2f} MB (RSS)")
 
-            absolute_error = abs(exact_sdp - mcmc_mean)
+            if exact_success:
+                absolute_error = abs(exact_sdp - mcmc_mean)
+            else:
+                absolute_error = None
 
             # ========================================================
             # PARALLEL TEMPERING MCMC EVALUATION
@@ -694,7 +700,7 @@ def process_single_file(args):
             pt_mcmc_mean = np.mean(pt_mcmc_estimates)
             pt_mcmc_avg_time = np.mean(pt_mcmc_times)
             pt_mcmc_variance = np.var(pt_mcmc_estimates)
-            print(f"               -> Mean PT: {pt_mcmc_mean}, Error PT: {abs(exact_sdp - pt_mcmc_mean):.4f}")
+            print(f"               -> Mean PT: {pt_mcmc_mean}")
             # Pass 2: Peak Memory
             gc.collect() # Clean up before the memory test
             pt_mcmc_mem_mb_python, pt_mcmc_mem_mb_rss = run_for_memory(
@@ -704,9 +710,11 @@ def process_single_file(args):
             gc.collect() # Clean up after the memory test
             print(f"          Avg Time: {pt_mcmc_avg_time:.4f} sec | Peak Memory: {pt_mcmc_mem_mb_python:.2f} MB (Python) / {pt_mcmc_mem_mb_rss:.2f} MB (RSS)")
 
-            absolute_error_pt = abs(exact_sdp - pt_mcmc_mean)
-            
-        
+            if exact_success:
+                absolute_error_pt = abs(exact_sdp - pt_mcmc_mean)
+            else:
+                absolute_error_pt = None
+
             # Record everything to the dataset
             results.append({
                 'Network': os.path.basename(file),

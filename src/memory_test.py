@@ -507,7 +507,7 @@ def benchmark_plain_mcmc(bn, target, target_value, patient):
 
     mem_py, mem_rss = run_for_memory(
         fast_mcmc_sdp_estimation_new, bn, target, target_value, patient,
-        0.5, n_samples=10, burn_in=5, thinning=5,
+        0.5, n_samples=1000, burn_in=5000, thinning=100,
         use_lw_seed=False
     )
     return {
@@ -541,7 +541,7 @@ def benchmark_pt(bn, target, target_value, patient):
 
     mem_py, mem_rss = run_for_memory(
         vectorized_pt_mcmc_sdp_estimation, bn, target, target_value, patient,
-        0.5, n_samples=10, burn_in=5, thinning=5,
+        0.5, n_samples=1000, burn_in=5000, thinning=100,
         n_chains=4, max_temp=40, use_ancestral_seed=True
     )
     return {
@@ -726,23 +726,23 @@ def benchmark_growing_partition(bif_file, max_steps=30):
                 print(f"  [Chen      ] FAILED")
  
         # ── 3. MH-MCMC  (unconditional) ──────────────────────────────────
-        gc.collect()
-        mcmc = benchmark_plain_mcmc(bn, target, target_value, patient)
-        if mcmc['success']:
-            err = (abs(mcmc['mean'] - reference_sdp)
-                   if reference_sdp is not None else None)
-            row.update(
-                mcmc_avg_estimate=mcmc['mean'],
-                mcmc_avg_time_sec=mcmc['avg_time'],
-                mcmc_peak_memory_mb=mcmc['mem_py'],
-                mcmc_error=err,
-                mcmc_success=True,
-            )
-            err_str = f"err={err:.4f}" if err is not None else "no exact reference"
-            print(f"  [MH-MCMC   ] {mcmc['avg_time']:.4f}s | {mcmc['mem_py']:.3f} MB | "
-                  f"est={mcmc['mean']:.4f} | {err_str}")
-        else:
-            print(f"  [MH-MCMC   ] FAILED")
+        #gc.collect()
+        #mcmc = benchmark_plain_mcmc(bn, target, target_value, patient)
+        #if mcmc['success']:
+        #    err = (abs(mcmc['mean'] - reference_sdp)
+        #           if reference_sdp is not None else None)
+        #    row.update(
+        #        mcmc_avg_estimate=mcmc['mean'],
+        #        mcmc_avg_time_sec=mcmc['avg_time'],
+        #        mcmc_peak_memory_mb=mcmc['mem_py'],
+        #        mcmc_error=err,
+        #        mcmc_success=True,
+        #    )
+        #    err_str = f"err={err:.4f}" if err is not None else "no exact reference"
+        #    print(f"  [MH-MCMC   ] {mcmc['avg_time']:.4f}s | {mcmc['mem_py']:.3f} MB | "
+        #          f"est={mcmc['mean']:.4f} | {err_str}")
+        #else:
+        #    print(f"  [MH-MCMC   ] FAILED")
  
         # ── 4. PT-MCMC  (unconditional) ──────────────────────────────────
         gc.collect()
